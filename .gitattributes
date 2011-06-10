@@ -67,7 +67,6 @@ src/plugin.yml -text
 src/resources/LICENSE.txt -text
 src/resources/README.txt -text
 src/resources/config.yml -text
-src/resources/designs/blocks.txt -text
 src/resources/designs/boat.yml -text
 src/resources/designs/manifest -text
 src/resources/designs/minecart.yml -text
@@ -76,6 +75,7 @@ src/resources/designs/pad.yml -text
 src/resources/designs/stargate.yml -text
 src/resources/designs/web.yml -text
 src/resources/manifest -text
+src/resources/materials.txt -text
 src/resources/overviewer/manifest -text
 src/resources/overviewer/transporter.js -text
 src/resources/permissions.properties -text
