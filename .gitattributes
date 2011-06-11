@@ -68,10 +68,12 @@ src/resources/LICENSE.txt -text
 src/resources/README.txt -text
 src/resources/config.yml -text
 src/resources/designs/boat.yml -text
+src/resources/designs/booth.yml -text
 src/resources/designs/manifest -text
 src/resources/designs/minecart.yml -text
 src/resources/designs/nether.yml -text
 src/resources/designs/pad.yml -text
+src/resources/designs/small.yml -text
 src/resources/designs/stargate.yml -text
 src/resources/designs/web.yml -text
 src/resources/manifest -text
