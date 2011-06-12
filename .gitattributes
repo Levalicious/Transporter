@@ -13,7 +13,6 @@ src/org/bennedum/transporter/DesignBlock.java -text
 src/org/bennedum/transporter/DesignBlockDetail.java -text
 src/org/bennedum/transporter/DesignCollection.java -text
 src/org/bennedum/transporter/DesignException.java -text
-src/org/bennedum/transporter/EntityListenerImpl.java -text
 src/org/bennedum/transporter/EntityState.java -text
 src/org/bennedum/transporter/ExpectedPlayer.java -text
 src/org/bennedum/transporter/FundsException.java -text
