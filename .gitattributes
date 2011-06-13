@@ -1,5 +1,6 @@
 * text=auto !eol
 /build.xml -text
+/manifest.mf -text
 nbproject/build-impl.xml -text
 nbproject/genfiles.properties -text
 nbproject/project.properties -text
@@ -43,6 +44,8 @@ src/org/bennedum/transporter/TransporterException.java -text
 src/org/bennedum/transporter/Utils.java -text
 src/org/bennedum/transporter/VehicleListenerImpl.java -text
 src/org/bennedum/transporter/VehicleState.java -text
+src/org/bennedum/transporter/client/Patcher.form -text
+src/org/bennedum/transporter/client/Patcher.java -text
 src/org/bennedum/transporter/command/CommandException.java -text
 src/org/bennedum/transporter/command/CommandProcessor.java -text
 src/org/bennedum/transporter/command/DesignCommand.java -text
@@ -65,6 +68,13 @@ src/org/bennedum/transporter/net/Result.java -text
 src/plugin.yml -text
 src/resources/LICENSE.txt -text
 src/resources/README.txt -text
+src/resources/client/1306845669000/Transporter.class -text
+src/resources/client/1306845669000/ev.class -text
+src/resources/client/1306845669000/manifest -text
+src/resources/client/bandaid.png -text
+src/resources/client/magnifier.png -text
+src/resources/client/src/Transporter.src -text
+src/resources/client/src/client.patch -text
 src/resources/config.yml -text
 src/resources/designs/boat.yml -text
 src/resources/designs/booth.yml -text
