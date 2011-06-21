@@ -87,6 +87,10 @@ src/resources/designs/stargate.yml -text
 src/resources/designs/web.yml -text
 src/resources/manifest -text
 src/resources/materials.txt -text
+src/resources/overviewer/gate-info.png -text
+src/resources/overviewer/gate-marker.png -text
 src/resources/overviewer/manifest -text
+src/resources/overviewer/transporter.css -text
 src/resources/overviewer/transporter.js -text
+src/resources/overviewer/transporterConfig.js -text
 src/resources/permissions.properties -text
