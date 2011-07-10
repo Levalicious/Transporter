@@ -59,6 +59,7 @@ src/org/bennedum/transporter/command/SaveCommand.java -text
 src/org/bennedum/transporter/command/ServerCommand.java -text
 src/org/bennedum/transporter/command/TestCommand.java -text
 src/org/bennedum/transporter/command/TrpCommandProcessor.java -text
+src/org/bennedum/transporter/command/WorldCommand.java -text
 src/org/bennedum/transporter/net/Cipher.java -text
 src/org/bennedum/transporter/net/Connection.java -text
 src/org/bennedum/transporter/net/Message.java -text
