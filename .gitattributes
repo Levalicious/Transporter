@@ -44,6 +44,7 @@ src/org/bennedum/transporter/TransporterException.java -text
 src/org/bennedum/transporter/Utils.java -text
 src/org/bennedum/transporter/VehicleListenerImpl.java -text
 src/org/bennedum/transporter/VehicleState.java -text
+src/org/bennedum/transporter/WorldListenerImpl.java -text
 src/org/bennedum/transporter/client/Patcher.form -text
 src/org/bennedum/transporter/client/Patcher.java -text
 src/org/bennedum/transporter/command/CommandException.java -text
