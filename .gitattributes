@@ -49,8 +49,8 @@ src/org/bennedum/transporter/client/Patcher.form -text
 src/org/bennedum/transporter/client/Patcher.java -text
 src/org/bennedum/transporter/command/CommandException.java -text
 src/org/bennedum/transporter/command/CommandProcessor.java -text
+src/org/bennedum/transporter/command/DebugCommand.java -text
 src/org/bennedum/transporter/command/DesignCommand.java -text
-src/org/bennedum/transporter/command/DumpCommand.java -text
 src/org/bennedum/transporter/command/GateCommand.java -text
 src/org/bennedum/transporter/command/GoCommand.java -text
 src/org/bennedum/transporter/command/HelpCommand.java -text
@@ -58,7 +58,6 @@ src/org/bennedum/transporter/command/PinCommand.java -text
 src/org/bennedum/transporter/command/ReloadCommand.java -text
 src/org/bennedum/transporter/command/SaveCommand.java -text
 src/org/bennedum/transporter/command/ServerCommand.java -text
-src/org/bennedum/transporter/command/TestCommand.java -text
 src/org/bennedum/transporter/command/TrpCommandProcessor.java -text
 src/org/bennedum/transporter/command/WorldCommand.java -text
 src/org/bennedum/transporter/net/Cipher.java -text
