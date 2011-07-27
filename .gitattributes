@@ -5,6 +5,7 @@ nbproject/build-impl.xml -text
 nbproject/genfiles.properties -text
 nbproject/project.properties -text
 nbproject/project.xml -text
+src/org/bennedum/transporter/Base64.java -text
 src/org/bennedum/transporter/BlockException.java -text
 src/org/bennedum/transporter/BlockListenerImpl.java -text
 src/org/bennedum/transporter/BuildableBlock.java -text
@@ -37,6 +38,7 @@ src/org/bennedum/transporter/ServerCollection.java -text
 src/org/bennedum/transporter/ServerException.java -text
 src/org/bennedum/transporter/ServerListenerImpl.java -text
 src/org/bennedum/transporter/SpawnDirection.java -text
+src/org/bennedum/transporter/TODO -text
 src/org/bennedum/transporter/Teleport.java -text
 src/org/bennedum/transporter/TeleportException.java -text
 src/org/bennedum/transporter/Transporter.java -text
@@ -92,6 +94,11 @@ src/resources/designs/pad.yml -text
 src/resources/designs/small.yml -text
 src/resources/designs/stargate.yml -text
 src/resources/designs/web.yml -text
+src/resources/dynmap/gate-info.png -text
+src/resources/dynmap/gate-marker.png -text
+src/resources/dynmap/manifest -text
+src/resources/dynmap/transporter.css -text
+src/resources/dynmap/transporter.js -text
 src/resources/manifest -text
 src/resources/materials.txt -text
 src/resources/overviewer/gate-info.png -text
