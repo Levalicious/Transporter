@@ -32,6 +32,8 @@ src/org/bennedum/transporter/PlayerArrival.java -text
 src/org/bennedum/transporter/PlayerListenerImpl.java -text
 src/org/bennedum/transporter/PlayerState.java -text
 src/org/bennedum/transporter/RemoteGate.java -text
+src/org/bennedum/transporter/Reservation.java -text
+src/org/bennedum/transporter/ReservationException.java -text
 src/org/bennedum/transporter/SavedBlock.java -text
 src/org/bennedum/transporter/Server.java -text
 src/org/bennedum/transporter/ServerCollection.java -text
