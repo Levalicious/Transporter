@@ -18,6 +18,7 @@ src/org/bennedum/transporter/DesignException.java -text
 src/org/bennedum/transporter/Designs.java -text
 src/org/bennedum/transporter/Economy.java -text
 src/org/bennedum/transporter/EconomyException.java -text
+src/org/bennedum/transporter/EntityListenerImpl.java -text
 src/org/bennedum/transporter/Gate.java -text
 src/org/bennedum/transporter/GateBlock.java -text
 src/org/bennedum/transporter/GateException.java -text
