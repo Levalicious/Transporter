@@ -9,7 +9,9 @@ src/org/bennedum/transporter/Base64.java -text
 src/org/bennedum/transporter/BlockException.java -text
 src/org/bennedum/transporter/BlockListenerImpl.java -text
 src/org/bennedum/transporter/BuildableBlock.java -text
+src/org/bennedum/transporter/BukkitWorld.java -text
 src/org/bennedum/transporter/Chat.java -text
+src/org/bennedum/transporter/Config.java -text
 src/org/bennedum/transporter/Context.java -text
 src/org/bennedum/transporter/Design.java -text
 src/org/bennedum/transporter/DesignBlock.java -text
@@ -28,6 +30,9 @@ src/org/bennedum/transporter/Global.java -text
 src/org/bennedum/transporter/Inventory.java -text
 src/org/bennedum/transporter/InventoryException.java -text
 src/org/bennedum/transporter/LocalGate.java -text
+src/org/bennedum/transporter/Options.java -text
+src/org/bennedum/transporter/OptionsException.java -text
+src/org/bennedum/transporter/OptionsListener.java -text
 src/org/bennedum/transporter/Permissions.java -text
 src/org/bennedum/transporter/PermissionsException.java -text
 src/org/bennedum/transporter/PlayerListenerImpl.java -text
@@ -45,7 +50,9 @@ src/org/bennedum/transporter/Transporter.java -text
 src/org/bennedum/transporter/TransporterException.java -text
 src/org/bennedum/transporter/Utils.java -text
 src/org/bennedum/transporter/VehicleListenerImpl.java -text
+src/org/bennedum/transporter/WorldException.java -text
 src/org/bennedum/transporter/WorldListenerImpl.java -text
+src/org/bennedum/transporter/Worlds.java -text
 src/org/bennedum/transporter/client/Patcher.form -text
 src/org/bennedum/transporter/client/Patcher.java -text
 src/org/bennedum/transporter/command/CommandException.java -text
@@ -55,6 +62,7 @@ src/org/bennedum/transporter/command/DesignCommand.java -text
 src/org/bennedum/transporter/command/GateCommand.java -text
 src/org/bennedum/transporter/command/GoCommand.java -text
 src/org/bennedum/transporter/command/HelpCommand.java -text
+src/org/bennedum/transporter/command/NetworkCommand.java -text
 src/org/bennedum/transporter/command/PinCommand.java -text
 src/org/bennedum/transporter/command/ReloadCommand.java -text
 src/org/bennedum/transporter/command/SaveCommand.java -text
