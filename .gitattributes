@@ -34,7 +34,10 @@ src/org/bennedum/transporter/OptionsException.java -text
 src/org/bennedum/transporter/OptionsListener.java -text
 src/org/bennedum/transporter/Permissions.java -text
 src/org/bennedum/transporter/PermissionsException.java -text
+src/org/bennedum/transporter/Pins.java -text
 src/org/bennedum/transporter/PlayerListenerImpl.java -text
+src/org/bennedum/transporter/PlayerProxy.java -text
+src/org/bennedum/transporter/Players.java -text
 src/org/bennedum/transporter/RemoteGate.java -text
 src/org/bennedum/transporter/Reservation.java -text
 src/org/bennedum/transporter/ReservationException.java -text
