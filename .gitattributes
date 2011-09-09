@@ -29,6 +29,7 @@ src/org/bennedum/transporter/Global.java -text
 src/org/bennedum/transporter/Inventory.java -text
 src/org/bennedum/transporter/InventoryException.java -text
 src/org/bennedum/transporter/LocalGate.java -text
+src/org/bennedum/transporter/Markers.java -text
 src/org/bennedum/transporter/Options.java -text
 src/org/bennedum/transporter/OptionsException.java -text
 src/org/bennedum/transporter/OptionsListener.java -text
@@ -109,6 +110,7 @@ src/resources/dynmap/gate-marker.png -text
 src/resources/dynmap/manifest -text
 src/resources/dynmap/transporter.css -text
 src/resources/dynmap/transporter.js -text
+src/resources/images/transporter-tiny.png -text
 src/resources/manifest -text
 src/resources/materials.txt -text
 src/resources/overviewer/gate-info.png -text
