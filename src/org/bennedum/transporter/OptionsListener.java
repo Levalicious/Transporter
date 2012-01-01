@@ -22,5 +22,6 @@ package org.bennedum.transporter;
 public interface OptionsListener {
 
     public void onOptionSet(Context ctx, String name, String value);
-    
+    public String getOptionPermission(Context ctx, String name);
+
 }

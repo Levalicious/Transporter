@@ -66,13 +66,15 @@ public class Design {
     private boolean sendInventory;
     private boolean receiveInventory;
     private boolean deleteInventory;
+    private boolean receiveGameMode;
+    private String allowGameModes;
     private String teleportFormat;
     private String noLinksFormat;
     private String noLinkSelectedFormat;
     private String invalidLinkFormat;
     private String unknownLinkFormat;
     private String markerFormat;
-    
+
     // Economy
     private double buildCost;
     private double createCost;
@@ -126,6 +128,8 @@ public class Design {
         sendInventory = conf.getBoolean("sendInventory", true);
         receiveInventory = conf.getBoolean("receiveInventory", true);
         deleteInventory = conf.getBoolean("deleteInventory", false);
+        receiveGameMode = conf.getBoolean("receiveGameMode", false);
+        allowGameModes = conf.getString("allowGameModes", "*");
         teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
@@ -330,6 +334,8 @@ public class Design {
         Utils.debug("  sendInventory = " + sendInventory);
         Utils.debug("  receiveInventory = " + receiveInventory);
         Utils.debug("  deleteInventory = " + deleteInventory);
+        Utils.debug("  receiveGameMode = " + receiveGameMode);
+        Utils.debug("  allowGameModes = " + allowGameModes);
         Utils.debug("  teleportFormat = " + teleportFormat);
         Utils.debug("  noLinksFormat = " + noLinksFormat);
         Utils.debug("  noLinkSelectedFormat = " + noLinkSelectedFormat);
@@ -442,19 +448,27 @@ public class Design {
     public boolean getSendInventory() {
         return sendInventory;
     }
-    
+
     public boolean getReceiveInventory() {
         return receiveInventory;
     }
-    
+
     public boolean getDeleteInventory() {
         return deleteInventory;
     }
-    
+
+    public boolean getReceiveGameMode() {
+        return receiveGameMode;
+    }
+
+    public String getAllowGameModes() {
+        return allowGameModes;
+    }
+
     public String getTeleportFormat() {
         return teleportFormat;
     }
-    
+
     public String getNoLinksFormat() {
         return noLinksFormat;
     }
@@ -470,11 +484,11 @@ public class Design {
     public String getUnknownLinkFormat() {
         return unknownLinkFormat;
     }
-    
+
     public String getMarkerFormat() {
         return markerFormat;
     }
-    
+
     public double getBuildCost() {
         return buildCost;
     }

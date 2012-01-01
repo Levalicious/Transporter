@@ -29,6 +29,7 @@ import org.bennedum.transporter.Worlds;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
+import org.bukkit.WorldCreator;
 import org.bukkit.command.Command;
 
 /**
@@ -92,19 +93,19 @@ public class WorldCommand extends TrpCommandProcessor {
             if (args.isEmpty())
                 throw new CommandException("world name required");
             String newName = args.remove(0);
-            Environment env = Environment.NORMAL;
-            Long seed = null;
+            WorldCreator wc = new WorldCreator(newName);
+            wc.environment(Environment.NORMAL);
             if (! args.isEmpty()) {
                 String arg = args.remove(0);
                 if (arg.matches("^\\d+$"))
                     try {
-                        seed = Long.parseLong(arg);
+                        wc.seed(Long.parseLong(arg));
                     } catch (NumberFormatException e) {
                         throw new CommandException("illegal seed value");
                     }
                 else
                     try {
-                        env = Utils.valueOf(Environment.class, arg);
+                        wc.environment(Utils.valueOf(Environment.class, arg));
                     } catch (IllegalArgumentException e) {
                         throw new CommandException("unknown or ambiguous environment");
                     }
@@ -112,12 +113,11 @@ public class WorldCommand extends TrpCommandProcessor {
             Permissions.require(ctx.getPlayer(), "trp.world.add");
 
             ctx.sendLog("adding world '%s'...", newName);
-            if (seed == null)
-                Global.plugin.getServer().createWorld(newName, env);
-            else
-                Global.plugin.getServer().createWorld(newName, env, seed);
+
+            wc.generator((String)null);
+            wc.createWorld();
             ctx.sendLog("added world '%s'", newName);
-            Worlds.add(new WorldProxy(newName, env));
+            Worlds.add(new WorldProxy(wc));
             return;
         }
 
@@ -133,7 +133,7 @@ public class WorldCommand extends TrpCommandProcessor {
             ctx.sendLog("removed world '%s'", name);
             return;
         }
-        
+
         if ("load".startsWith(subCmd)) {
             if (args.isEmpty())
                 throw new CommandException("world name required");

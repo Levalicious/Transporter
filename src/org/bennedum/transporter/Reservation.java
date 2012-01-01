@@ -21,9 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.bennedum.transporter.net.Message;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
@@ -130,6 +132,10 @@ public final class Reservation {
     private int health = 0;
     private int remainingAir = 0;
     private int fireTicks = 0;
+    private int foodLevel = 0;
+    private float exhaustion = 0;
+    private float saturation = 0;
+    private String gameMode = null;
     private int heldItemSlot = 0;
     private ItemStack[] armor = null;
 
@@ -240,11 +246,16 @@ public final class Reservation {
         health = in.getInt("health");
         remainingAir = in.getInt("remainingAir");
         fireTicks = in.getInt("fireTicks");
+        foodLevel = in.getInt("foodLevel");
+        exhaustion = in.getFloat("exhaustion");
+        saturation = in.getFloat("saturation");
+        gameMode = in.getString("gameMode");
+
         heldItemSlot = in.getInt("heldItemSlot");
         armor = decodeItemStackArray(in.getMessageList("armor"));
 
         fromWorldName = in.getString("fromWorld");
-        
+
         fromServer = server;
 
         if (in.get("toX") != null)
@@ -300,6 +311,10 @@ public final class Reservation {
         health = player.getHealth();
         remainingAir = player.getRemainingAir();
         fireTicks = player.getFireTicks();
+        foodLevel = player.getFoodLevel();
+        exhaustion = player.getExhaustion();
+        saturation = player.getSaturation();
+        gameMode = player.getGameMode().toString();
         PlayerInventory inv = player.getInventory();
         inventory = Arrays.copyOf(inv.getContents(), inv.getSize());
         heldItemSlot = inv.getHeldItemSlot();
@@ -343,7 +358,7 @@ public final class Reservation {
         fromDirection = fromGate.getDirection();
         fromWorld = fromGate.getWorld();
         fromWorldName = fromGate.getWorldName();
-        
+
         try {
             toGate = fromGateLocal.getDestinationGate();
         } catch (GateException e) {
@@ -402,6 +417,10 @@ public final class Reservation {
         out.put("health", health);
         out.put("remainingAir", remainingAir);
         out.put("fireTicks", fireTicks);
+        out.put("foodLevel", foodLevel);
+        out.put("exhaustion", exhaustion);
+        out.put("saturation", saturation);
+        out.put("gameMode", gameMode);
         out.put("heldItemSlot", heldItemSlot);
         out.put("armor", encodeItemStackArray(armor));
         out.put("fromGate", fromGateName);
@@ -442,6 +461,10 @@ public final class Reservation {
         MaterialData data = stack.getData();
         if (data != null)
             s.put("data", (int)data.getData());
+        Message ench = new Message();
+        for (Enchantment e : stack.getEnchantments().keySet())
+            ench.put(e.getName(), stack.getEnchantments().get(e));
+        s.put("enchantments", ench);
         return s;
     }
 
@@ -456,6 +479,10 @@ public final class Reservation {
             if (data != null)
                 data.setData((byte)s.getInt("data"));
         }
+        Message ench = s.getMessage("enchantments");
+        if (ench != null)
+            for (String name : ench.keySet())
+                stack.addEnchantment(Enchantment.getByName(name), ench.getInt(name));
         return stack;
     }
 
@@ -742,6 +769,11 @@ public final class Reservation {
                 if ((! toGateLocal.hasPin(playerPin)) && toGateLocal.getRequireValidPin())
                     throw new ReservationException("remote gate rejected your pin");
             }
+            // player game mode
+            if (toGateLocal.getReceiveGameMode()) {
+                if (! toGateLocal.isAllowedGameMode(gameMode))
+                    throw new ReservationException("remote gate rejected your game mode");
+            }
             // player cost
             if (fromServer != null) {
                 // only check this side since the departure side already checked itself
@@ -944,6 +976,11 @@ public final class Reservation {
         if (player != null) {
             player.setHealth(health);
             player.setRemainingAir(remainingAir);
+            player.setFoodLevel(foodLevel);
+            player.setExhaustion(exhaustion);
+            player.setSaturation(saturation);
+            if ((toGateLocal != null) && toGateLocal.getReceiveGameMode())
+                player.setGameMode(Utils.valueOf(GameMode.class, gameMode));
         }
         switch (entityType) {
             case PLAYER:

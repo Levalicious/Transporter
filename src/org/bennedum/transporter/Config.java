@@ -73,6 +73,10 @@ public final class Config {
             public void onOptionSet(Context ctx, String name, String value) {
                 ctx.sendLog("global option '%s' set to '%s'", name, value);
             }
+            @Override
+            public String getOptionPermission(Context ctx, String name) {
+                return name;
+            }
         });
     }
 
@@ -381,7 +385,7 @@ public final class Config {
         setPropertyDirect("global.exportedGatesFile", s);
     }
 
-    
+
     public static String getHttpProxyHost() {
         return config.getString("global.httpProxy.host", null);
     }

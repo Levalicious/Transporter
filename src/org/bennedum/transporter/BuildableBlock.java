@@ -211,6 +211,7 @@ public final class BuildableBlock {
         return true;
     }
 
+    // only applied to screens (i.e., signs)
     public BlockFace matchTypeAndDirection(Block block) {
         if (block.getTypeId() != type) return null;
 
@@ -218,15 +219,19 @@ public final class BuildableBlock {
         if (myMD == null) return null;
         if (! (myMD instanceof Directional)) return null;
         Directional myDir = (Directional)myMD;
+        if ((myDir.getFacing() == BlockFace.UP) ||
+            (myDir.getFacing() == BlockFace.DOWN)) return null;
 
         MaterialData otherMD = block.getType().getNewData(block.getData());
         if (otherMD == null) return null;
         if (! (otherMD instanceof Directional)) return null;
         Directional otherDir = (Directional)otherMD;
+        if ((otherDir.getFacing() == BlockFace.UP) ||
+            (otherDir.getFacing() == BlockFace.DOWN)) return null;
 
-        int fromYaw = Utils.directionToYaw(myDir.getFacing());
-        int toYaw = Utils.directionToYaw(otherDir.getFacing());
-        int result = toYaw - fromYaw + 90;
+        float fromYaw = Utils.directionToYaw(myDir.getFacing());
+        float toYaw = Utils.directionToYaw(otherDir.getFacing());
+        float result = toYaw - fromYaw + 90;
         return Utils.yawToDirection(result);
     }
 

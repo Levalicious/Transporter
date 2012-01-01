@@ -126,9 +126,6 @@
           <Image iconType="3" name="/resources/client/magnifier.png"/>
         </Property>
         <Property name="toolTipText" type="java.lang.String" value="Browse for the minecraft.jar file"/>
-        <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-          <Dimension value="[49, 25]"/>
-        </Property>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="browseButtonActionPerformed"/>

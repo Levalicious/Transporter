@@ -15,9 +15,9 @@
  */
 package org.bennedum.transporter;
 
-import com.iConomy.iConomy;
-import com.iConomy.system.Account;
-import com.iConomy.system.Holdings;
+//import com.iCo6.iConomy;
+//import com.iCo6.system.Account;
+//import com.iCo6.system.Holdings;
 import cosine.boseconomy.BOSEconomy;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -28,21 +28,24 @@ import org.bukkit.plugin.Plugin;
  */
 public final class Economy {
 
-    private static iConomy iconomyPlugin = null;
+//    private static iConomy iconomyPlugin = null;
     private static BOSEconomy boseconomyPlugin = null;
 
     public static boolean isAvailable() {
-        return iconomyAvailable() ||
+        return //iconomyAvailable() ||
                boseconomyAvailable();
     }
 
     public static boolean iconomyAvailable() {
         if (! Config.getUseIConomy()) return false;
+        return false;
+        /*
         if (iconomyPlugin != null) return true;
         Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("iConomy");
         if ((p == null) || (! p.getClass().getName().equals("com.iConomy.iConomy")) || (! p.isEnabled())) return false;
         iconomyPlugin = (iConomy)p;
         return true;
+         */
     }
 
     public static boolean boseconomyAvailable() {
@@ -55,8 +58,8 @@ public final class Economy {
     }
 
     public static String format(double funds) {
-        if (iconomyAvailable())
-            return iConomy.format(funds);
+//        if (iconomyAvailable())
+//            return iConomy.format(funds);
         if (boseconomyAvailable())
             return boseconomyPlugin.getMoneyFormatted(funds);
 
@@ -72,6 +75,7 @@ public final class Economy {
     public static boolean requireFunds(String accountName, double amount) throws EconomyException {
         if (accountName == null) return false;
         if (amount <= 0) return false;
+        /*
         if (iconomyAvailable()) {
             Account account = iConomy.getAccount(accountName);
             if (account == null)
@@ -81,6 +85,7 @@ public final class Economy {
                 throw new EconomyException("insufficient funds");
             return true;
         }
+         */
 
         if (boseconomyAvailable()) {
             double balance = boseconomyPlugin.getPlayerMoneyDouble(accountName);
@@ -101,6 +106,8 @@ public final class Economy {
     public static boolean deductFunds(String accountName, double amount) throws EconomyException {
         if (accountName == null) return false;
         if (amount <= 0) return false;
+
+        /*
         if (iconomyAvailable()) {
             Account account = iConomy.getAccount(accountName);
             if (account == null)
@@ -111,6 +118,7 @@ public final class Economy {
             holdings.subtract(amount);
             return true;
         }
+         */
 
         if (boseconomyAvailable()) {
             double balance = boseconomyPlugin.getPlayerMoneyDouble(accountName);

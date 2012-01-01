@@ -41,7 +41,7 @@ import org.bennedum.transporter.Utils;
 public final class Connection {
 
     private static final int HANDSHAKE_TIMEOUT = 5000;
-    private static final int PROTOCOL_VERSION = 5;
+    private static final int PROTOCOL_VERSION = 6;
     public static final int PROTOCOL_TIMEOUT = 8000;    // 8 seconds
 
     private static final byte ENCRYPTED_FLAG = 0x01;

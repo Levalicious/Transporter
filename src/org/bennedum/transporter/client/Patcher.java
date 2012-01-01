@@ -232,7 +232,7 @@ public final class Patcher extends javax.swing.JFrame {
             append("Beginning forced patching process...");
         } else
         append("Beginning patching process...");
-        
+
         final File jarFile = new File(clientPath.getText());
         File checkFile = new File(jarFile.getParentFile(), "minecraft-unpatched.jar");
         if (checkFile.exists()) {
@@ -283,7 +283,7 @@ public final class Patcher extends javax.swing.JFrame {
                         String path = srcEntry.getName();
                         if (path.indexOf("META-INF") == 0) continue;
                         if (newPatchFiles.containsKey(path)) continue;
-                        
+
                         InputStream is;
                         if (replacePatchFiles.containsKey(path)) {
                             is = getClass().getResourceAsStream("/resources/client/" + clientPatchKey + "/" + replacePatchFiles.get(path).path);
@@ -356,7 +356,7 @@ public final class Patcher extends javax.swing.JFrame {
         });
         t.start();
     }//GEN-LAST:event_patchButtonActionPerformed
-    
+
     private void append(Throwable t) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         t.printStackTrace(new PrintStream(os));
@@ -364,7 +364,7 @@ public final class Patcher extends javax.swing.JFrame {
             append(os.toString("UTF-8"));
         } catch (UnsupportedEncodingException e) {}
     }
-    
+
     private void append(final String msg) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -373,7 +373,7 @@ public final class Patcher extends javax.swing.JFrame {
             }
         });
     }
-    
+
     private void refreshClientInfo(String clientPath) {
         clientVersion.setText("unknown");
         clientState.setText("unknown");
@@ -381,7 +381,7 @@ public final class Patcher extends javax.swing.JFrame {
             append("-------------------------------------");
         patchButton.setEnabled(false);
         closeButton.setEnabled(true);
-        
+
         if (clientPath == null) {
             this.clientPath.setText("not found");
             return;
@@ -412,7 +412,7 @@ public final class Patcher extends javax.swing.JFrame {
             return;
         }
         append("Read version file '" + versionFile.getPath() + "'.");
-        
+
         // find a matching patch set
         clientPatchProps = new Properties();
         InputStreamReader r = new InputStreamReader(this.getClass().getResourceAsStream("/resources/client/" + clientPatchKey + "/manifest"));
@@ -424,12 +424,12 @@ public final class Patcher extends javax.swing.JFrame {
             return;
         }
         append("Found matching patch set for version '" + clientPatchKey + "'.");
-        
+
         clientVersion.setText(clientPatchProps.getProperty("version") + " (patchable)");
         newPatchFiles = getNewFiles(clientPatchProps);
         replacePatchFiles = getReplaceFiles(clientPatchProps);
         patchButton.setEnabled(true);
-        
+
         int newFilesFound = 0;
         int oldFilesFound = 0;
         int replacedFilesFound = 0;
@@ -465,7 +465,7 @@ public final class Patcher extends javax.swing.JFrame {
         if ((newFilesFound == 0) &&
             (replacedFilesFound == 0) &&
             (oldFilesFound == replacePatchFiles.size())) {
-            clientState.setText("ready to patch"); 
+            clientState.setText("ready to patch");
             patchButton.setEnabled(true);
             return;
         }
@@ -474,12 +474,12 @@ public final class Patcher extends javax.swing.JFrame {
         if ((newFilesFound == newPatchFiles.size()) &&
             (replacedFilesFound == replacePatchFiles.size()) &&
             (oldFilesFound == 0)) {
-            clientState.setText("already patched"); 
+            clientState.setText("already patched");
             return;
         }
         clientState.setText("conflicting patch already installed");
     }
-    
+
     private Map<String,PatchFile> getReplaceFiles(Properties props) {
         Map<String,PatchFile> files = new HashMap<String,PatchFile>();
         for (int i = 1; ; i++) {
@@ -495,7 +495,7 @@ public final class Patcher extends javax.swing.JFrame {
         }
         return files;
     }
-    
+
     private Map<String,PatchFile> getNewFiles(Properties props) {
         Map<String,PatchFile> files = new HashMap<String,PatchFile>();
         for (int i = 1; ; i++) {
@@ -510,7 +510,7 @@ public final class Patcher extends javax.swing.JFrame {
         }
         return files;
     }
-    
+
     /**
      * @param args the command line arguments
      */
@@ -518,6 +518,7 @@ public final class Patcher extends javax.swing.JFrame {
         Properties plugin = loadProperties("/plugin.yml");
         name = plugin.getProperty("name");
         version = plugin.getProperty("version");
+        version = version.replace("\"", "");
         
         File file = new File(System.getProperty("user.home") + File.separator + ".minecraft");
         if (! file.isDirectory()) {
@@ -528,17 +529,17 @@ public final class Patcher extends javax.swing.JFrame {
             if (! file.isDirectory())
                 file = null;
         }
-        
+
         final String clientPath;
         if (file != null)
             clientPath = file.getPath() + File.separator + "bin" + File.separator + "minecraft.jar";
         else
             clientPath = null;
-        
+
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {}
-        
+
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -549,7 +550,7 @@ public final class Patcher extends javax.swing.JFrame {
             }
         });
     }
-    
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton browseButton;
     private javax.swing.JTextField clientPath;
@@ -565,7 +566,7 @@ public final class Patcher extends javax.swing.JFrame {
     private Map<String,PatchFile> newPatchFiles;
     private Map<String,PatchFile> replacePatchFiles;
     private boolean needForce = false;
-    
+
     private static Properties loadProperties(String path) {
         Properties props = new Properties();
         InputStreamReader r = new InputStreamReader(Patcher.class.getResourceAsStream(path));
@@ -585,6 +586,6 @@ public final class Patcher extends javax.swing.JFrame {
             this.oldCrc = oldCrc;
         }
     }
-    
-    
+
+
 }

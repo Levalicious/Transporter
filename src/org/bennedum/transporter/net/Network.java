@@ -86,6 +86,10 @@ public final class Network {
                     restart(ctx);
                 }
             }
+            @Override
+            public String getOptionPermission(Context ctx, String name) {
+                return name;
+            }
         });
     }
 

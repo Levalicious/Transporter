@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import org.bennedum.transporter.GateMap.Entry;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -63,6 +64,8 @@ public class LocalGate extends Gate implements OptionsListener {
         OPTIONS.add("sendInventory");
         OPTIONS.add("receiveInventory");
         OPTIONS.add("deleteInventory");
+        OPTIONS.add("receiveGameMode");
+        OPTIONS.add("allowGameModes");
         OPTIONS.add("teleportFormat");
         OPTIONS.add("noLinksFormat");
         OPTIONS.add("noLinkSelectedFormat");
@@ -115,6 +118,8 @@ public class LocalGate extends Gate implements OptionsListener {
     private boolean sendInventory;
     private boolean receiveInventory;
     private boolean deleteInventory;
+    private boolean receiveGameMode;
+    private String allowGameModes;
     private String teleportFormat;
     private String noLinksFormat;
     private String noLinkSelectedFormat;
@@ -174,6 +179,8 @@ public class LocalGate extends Gate implements OptionsListener {
         sendInventory = design.getSendInventory();
         receiveInventory = design.getReceiveInventory();
         deleteInventory = design.getDeleteInventory();
+        receiveGameMode = design.getReceiveGameMode();
+        allowGameModes = design.getAllowGameModes();
         teleportFormat = design.getTeleportFormat();
         noLinksFormat = design.getNoLinksFormat();
         noLinkSelectedFormat = design.getNoLinkSelectedFormat();
@@ -275,6 +282,8 @@ public class LocalGate extends Gate implements OptionsListener {
         sendInventory = conf.getBoolean("sendInventory", true);
         receiveInventory = conf.getBoolean("receiveInventory", true);
         deleteInventory = conf.getBoolean("deleteInventory", false);
+        receiveGameMode = conf.getBoolean("receiveGameMode", false);
+        allowGameModes = conf.getString("allowGameModes", "*");
         teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
@@ -371,6 +380,8 @@ public class LocalGate extends Gate implements OptionsListener {
         conf.setProperty("sendInventory", sendInventory);
         conf.setProperty("receiveInventory", receiveInventory);
         conf.setProperty("deleteInventory", deleteInventory);
+        conf.setProperty("receiveGameMode", receiveGameMode);
+        conf.setProperty("allowGameModes", allowGameModes);
         conf.setProperty("teleportFormat", teleportFormat);
         conf.setProperty("noLinksFormat", noLinksFormat);
         conf.setProperty("noLinkSelectedFormat", noLinkSelectedFormat);
@@ -643,6 +654,40 @@ public class LocalGate extends Gate implements OptionsListener {
         deleteInventory = b;
     }
 
+    public boolean getReceiveGameMode() {
+        return receiveGameMode;
+    }
+
+    public void setReceiveGameMode(boolean b) {
+        receiveGameMode = b;
+    }
+
+    public String getAllowGameModes() {
+        return allowGameModes;
+    }
+
+    public void setAllowGameModes(String s) {
+        if (s != null) {
+            if (s.equals("*")) s = null;
+        }
+        if (s == null) s = "*";
+        String[] parts = s.split(",");
+        String modes = "";
+        for (String part : parts) {
+            if (part.equals("*")) {
+                modes = "*,";
+                break;
+            }
+            try {
+                GameMode mode = Utils.valueOf(GameMode.class, part);
+                modes += mode.toString() + ",";
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("allowGameModes: " + e.getMessage());
+            }
+        }
+        allowGameModes = modes.substring(0, modes.length() - 1);
+    }
+
     public String getTeleportFormat() {
         return teleportFormat;
     }
@@ -830,6 +875,11 @@ public class LocalGate extends Gate implements OptionsListener {
         dirty = true;
         ctx.sendLog("option '%s' set to '%s' for gate '%s'", name, value, getName(ctx));
         saveInBackground();
+    }
+
+    @Override
+    public String getOptionPermission(Context ctx, String name) {
+        return name + "." + name;
     }
 
     /* End options */
@@ -1337,6 +1387,14 @@ public class LocalGate extends Gate implements OptionsListener {
         }
         dirty = true;
         saveInBackground();
+    }
+
+    public boolean isAllowedGameMode(String mode) {
+        if (allowGameModes == null) return false;
+        if (allowGameModes.equals("*")) return true;
+        for (String part : allowGameModes.split(","))
+            if (part.equals(mode)) return true;
+        return false;
     }
 
     public boolean isAcceptableInventory(ItemStack[] stacks) {

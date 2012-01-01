@@ -290,6 +290,11 @@ public final class Server implements OptionsListener {
         ctx.sendLog("option '%s' set to '%s' for server '%s'", name, value, getName());
     }
 
+    @Override
+    public String getOptionPermission(Context ctx, String name) {
+        return name;
+    }
+
     /* End options */
 
     public String getRemotePublicAddress() {
@@ -299,7 +304,7 @@ public final class Server implements OptionsListener {
     public String getRemotePrivateAddress() {
         return remotePrivateAddress;
     }
-    
+
     public String getReconnectAddressForClient(InetSocketAddress clientAddress) {
         String clientAddrStr = clientAddress.getAddress().getHostAddress();
 

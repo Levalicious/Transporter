@@ -28,18 +28,19 @@ import java.util.regex.PatternSyntaxException;
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class Options {
-    
+
     private Object target;
     private Set<String> names;
     private String basePerm;
     private OptionsListener listener = null;
-    
+
     public Options(Object target, Set<String> names, String basePerm, OptionsListener listener) {
         this.target = target;
         this.names = names;
+        this.basePerm = basePerm;
         this.listener = listener;
     }
-    
+
     public void getOptions(Context ctx, String option) throws OptionsException, PermissionsException  {
         List<String> options = new ArrayList<String>();
         String opt = resolveOption(option);
@@ -62,7 +63,7 @@ public final class Options {
             } catch (PermissionsException e) {}
         }
     }
-    
+
     private String resolveOption(String option) throws OptionsException {
         String matched = null;
         for (String opt : names) {
@@ -76,12 +77,12 @@ public final class Options {
         }
         return matched;
     }
-    
+
     public String getOption(Context ctx, String option) throws OptionsException, PermissionsException  {
         option = resolveOption(option);
         if (option == null)
             throw new OptionsException("unknown option");
-        Permissions.require(ctx.getPlayer(), basePerm + ".option.get." + option);
+        Permissions.require(ctx.getPlayer(), basePerm + ".option.get." + listener.getOptionPermission(ctx, option));
         String methodName = "get" +
                 option.substring(0, 1).toUpperCase() +
                 option.substring(1);
@@ -103,12 +104,12 @@ public final class Options {
             throw new OptionsException("unable to read the option");
         }
     }
-    
+
     public void setOption(Context ctx, String option, String value) throws OptionsException, PermissionsException {
         option = resolveOption(option);
         if (option == null)
             throw new OptionsException("unknown option");
-        Permissions.require(ctx.getPlayer(), basePerm + ".option.set." + option);
+        Permissions.require(ctx.getPlayer(), basePerm + ".option.set." + listener.getOptionPermission(ctx, option));
         String methodName = "set" +
                 option.substring(0, 1).toUpperCase() +
                 option.substring(1);
@@ -133,7 +134,7 @@ public final class Options {
                 m.invoke(target, value);
             else
                 throw new OptionsException("unsupported option type '%s'", rCls);
-            
+
             if (listener != null)
                 listener.onOptionSet(ctx, option, getOption(ctx, option));
 
