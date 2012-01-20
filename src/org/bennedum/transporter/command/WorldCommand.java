@@ -21,15 +21,11 @@ import java.util.Comparator;
 import java.util.List;
 import org.bennedum.transporter.WorldProxy;
 import org.bennedum.transporter.Context;
-import org.bennedum.transporter.Global;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.TransporterException;
-import org.bennedum.transporter.Utils;
 import org.bennedum.transporter.Worlds;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.World.Environment;
-import org.bukkit.WorldCreator;
 import org.bukkit.command.Command;
 
 /**
@@ -51,7 +47,7 @@ public class WorldCommand extends TrpCommandProcessor {
         List<String> cmds = new ArrayList<String>();
         cmds.add(getPrefix(ctx) + GROUP + "list");
         // TODO: change to add, add remove
-        cmds.add(getPrefix(ctx) + GROUP + "add <world> [<env>] [<seed>]");
+        cmds.add(getPrefix(ctx) + GROUP + "add <world> [<env>[/<gen>] [<seed>]]");
         cmds.add(getPrefix(ctx) + GROUP + "remove <world>");
         cmds.add(getPrefix(ctx) + GROUP + "load <world>");
         cmds.add(getPrefix(ctx) + GROUP + "unload <world>");
@@ -81,8 +77,11 @@ public class WorldCommand extends TrpCommandProcessor {
             });
             ctx.send("%d worlds:", worlds.size());
             for (WorldProxy world : worlds) {
-                ctx.send("  %s (%s) %s",
-                        world.getName(), world.getEnvironment(),
+                ctx.send("  %s (%s/%s) %s %s",
+                        world.getName(),
+                        world.getEnvironment(),
+                        (world.getGenerator() == null) ? "-" : world.getGenerator(),
+                        (world.getSeed() == null) ? "-" : world.getSeed(),
                         world.isLoaded() ? "loaded" : "not loaded");
                 ctx.send("    autoLoad: %s", world.getAutoLoad());
             }
@@ -92,32 +91,28 @@ public class WorldCommand extends TrpCommandProcessor {
         if ("add".startsWith(subCmd)) {
             if (args.isEmpty())
                 throw new CommandException("world name required");
-            String newName = args.remove(0);
-            WorldCreator wc = new WorldCreator(newName);
-            wc.environment(Environment.NORMAL);
+            String worldName = args.remove(0);
+            String environment = "NORMAL";
+            String generator = null;
+            String seed = null;
+
             if (! args.isEmpty()) {
-                String arg = args.remove(0);
-                if (arg.matches("^\\d+$"))
-                    try {
-                        wc.seed(Long.parseLong(arg));
-                    } catch (NumberFormatException e) {
-                        throw new CommandException("illegal seed value");
-                    }
-                else
-                    try {
-                        wc.environment(Utils.valueOf(Environment.class, arg));
-                    } catch (IllegalArgumentException e) {
-                        throw new CommandException("unknown or ambiguous environment");
-                    }
+                environment = args.remove(0);
+                int pos = environment.indexOf("/");
+                if (pos != -1) {
+                    generator = environment.substring(pos + 1);
+                    environment = environment.substring(0, pos);
+                }
+
+                if (! args.isEmpty())
+                    seed = args.remove(0);
             }
             Permissions.require(ctx.getPlayer(), "trp.world.add");
 
-            ctx.sendLog("adding world '%s'...", newName);
-
-            wc.generator((String)null);
-            wc.createWorld();
-            ctx.sendLog("added world '%s'", newName);
-            Worlds.add(new WorldProxy(wc));
+            WorldProxy wp = new WorldProxy(worldName, environment, generator, seed);
+            wp.load(ctx);
+            ctx.sendLog("added world '%s'", worldName);
+            Worlds.add(wp);
             return;
         }
 

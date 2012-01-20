@@ -23,6 +23,7 @@ import java.util.Map;
 import org.bennedum.transporter.net.Message;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.enchantments.Enchantment;
@@ -643,15 +644,25 @@ public final class Reservation {
                 Utils.warning("reconnect address for '%s' is null?", toServer.getName());
                 return;
             }
-            String[] addrParts = addr.split("/");
+            final String[] addrParts = addr.split("/");
             if (addrParts.length == 1) {
                 // this is a client based reconnect
                 Utils.debug("sending player '%s' to '%s' via client reconnect", player.getName(), addrParts[0]);
-                player.kickPlayer("[Redirect] please reconnect to: " + addrParts[0]);
+                Utils.fire(new Runnable() {
+                    @Override
+                    public void run() {
+                        player.kickPlayer("[Redirect] please reconnect to: " + addrParts[0]);
+                    }
+                });
             } else {
                 // this is a proxy based reconnect
                 Utils.debug("sending player '%s' to '%s,%s' via proxy reconnect", player.getName(), addrParts[0], addrParts[1]);
-                player.kickPlayer("[Redirect] please reconnect to: " + addrParts[0] + "," + addrParts[1]);
+                Utils.fire(new Runnable() {
+                    @Override
+                    public void run() {
+                        player.kickPlayer("[Redirect] please reconnect to: " + addrParts[0] + "," + addrParts[1]);
+                    }
+                });
             }
         }
         if ((entity != null) && (entity != player))
@@ -680,9 +691,18 @@ public final class Reservation {
 
         if ((toServer != null) && (player != null)) {
             if ((fromGateLocal != null) && fromGateLocal.getDeleteInventory()) {
-                PlayerInventory inv = player.getInventory();
-                inv.clear();
-                player.saveData();
+                Utils.fire(new Runnable() {
+                    @Override
+                    public void run() {
+                        PlayerInventory inv = player.getInventory();
+                        inv.clear();
+                        inv.setBoots(new ItemStack(Material.AIR));
+                        inv.setHelmet(new ItemStack(Material.AIR));
+                        inv.setChestplate(new ItemStack(Material.AIR));
+                        inv.setLeggings(new ItemStack(Material.AIR));
+                        player.saveData();
+                    }
+                });
             }
         }
     }

@@ -22,9 +22,6 @@ import java.util.Set;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
-import org.bukkit.craftbukkit.generator.NetherChunkGenerator;
-import org.bukkit.craftbukkit.generator.NormalChunkGenerator;
-import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.util.config.ConfigurationNode;
 
 /**
@@ -36,6 +33,9 @@ public final class WorldProxy implements OptionsListener {
     private static final Set<String> OPTIONS = new HashSet<String>();
 
     static {
+        OPTIONS.add("environment");
+        OPTIONS.add("generator");
+        OPTIONS.add("seed");
         OPTIONS.add("autoLoad");
     }
 
@@ -46,15 +46,17 @@ public final class WorldProxy implements OptionsListener {
 
     private Options options = new Options(this, OPTIONS, "trp.world", this);
     private String name;
-    private Environment environment;
-    private long seed;
+    private String environment;
+    private String generator;
+    private String seed;
     private boolean autoLoad;
 
-    public WorldProxy(WorldCreator wc) throws WorldException {
+    public WorldProxy(String name, String environment, String generator, String seed) throws WorldException {
         try {
             setName(name);
-            environment = wc.environment();
-            seed = wc.seed();
+            setEnvironment(environment);
+            setGenerator(generator);
+            setSeed(seed);
             autoLoad = true;
         } catch (IllegalArgumentException e) {
             throw new WorldException(e.getMessage());
@@ -68,15 +70,10 @@ public final class WorldProxy implements OptionsListener {
             // try to convert old environment to new environment/generator
             String envStr = node.getString("environment", "NORMAL");
             if (envStr.equals("SKYLANDS")) envStr = "NORMAL";
-
             setEnvironment(envStr);
 
-            String seedStr = node.getString("seed", "0");
-            try {
-                setSeed(Long.parseLong(seedStr));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("illegal seed value '" + seedStr + "'");
-            }
+            setGenerator(node.getString("generator", null));
+            setSeed(node.getString("seed", null));
             setAutoLoad(node.getBoolean("autoLoad", true));
         } catch (IllegalArgumentException e) {
             throw new WorldException(e.getMessage());
@@ -95,29 +92,43 @@ public final class WorldProxy implements OptionsListener {
         this.name = name;
     }
 
-    public Environment getEnvironment() {
+    /* Begin options */
+
+    public String getEnvironment() {
         return environment;
     }
 
-    private void setEnvironment(String name) {
-        if (name == null)
-            throw new IllegalArgumentException("environment is required");
+    public void setEnvironment(String environment) {
+        if ((environment == null) ||
+            (environment.isEmpty() ||
+            environment.equals("-"))) environment = "NORMAL";
         try {
-            environment = Utils.valueOf(Environment.class, name);
+            environment = Utils.valueOf(Environment.class, environment).toString();
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("environment is ambiguous or not valid");
+            throw new IllegalArgumentException("unknown or ambiguous environment");
         }
+        this.environment = environment;
     }
 
-    public long getSeed() {
+    public String getGenerator() {
+        return generator;
+    }
+
+    public void setGenerator(String generator) {
+        if ((generator != null) &&
+            (generator.isEmpty() || generator.equals("-"))) generator = null;
+        this.generator = generator;
+    }
+
+    public String getSeed() {
         return seed;
     }
 
-    public void setSeed(long seed) {
+    public void setSeed(String seed) {
+        if ((seed != null) &&
+            (seed.isEmpty() || seed.equals("-"))) seed = null;
         this.seed = seed;
     }
-
-    /* Begin options */
 
     public boolean getAutoLoad() {
         return autoLoad;
@@ -154,7 +165,8 @@ public final class WorldProxy implements OptionsListener {
     public Map<String,Object> encode() {
         Map<String,Object> node = new HashMap<String,Object>();
         node.put("name", name);
-        node.put("environment", environment.toString());
+        node.put("environment", environment);
+        node.put("generator", generator);
         node.put("seed", seed);
         node.put("autoLoad", autoLoad);
         return node;
@@ -170,12 +182,29 @@ public final class WorldProxy implements OptionsListener {
         if (world == null) {
             ctx.send("loading world '%s'...", name);
             WorldCreator wc = new WorldCreator(name);
-            wc.environment(environment);
-            wc.seed(seed);
-            wc.generator((String)null);
+
+            try {
+                wc.environment(Utils.valueOf(Environment.class, environment));
+            } catch (IllegalArgumentException e) {
+                wc.environment(Environment.NORMAL);
+            }
+            wc.generator(generator);
+            if (seed != null)
+                try {
+                    wc.seed(Long.parseLong(seed));
+                } catch (NumberFormatException e) {
+                    wc.seed(seed.hashCode());
+                }
             world = wc.createWorld();
-        } else
+            if (seed == null) {
+                seed = world.getSeed() + "";
+                ctx.send("seed set to %s", seed);
+            }
+        } else {
             ctx.send("world '%s' is already loaded", name);
+            if (seed == null)
+                seed = world.getSeed() + "";
+        }
         if (loadGates)
             Gates.loadGatesForWorld(ctx, world);
         return world;

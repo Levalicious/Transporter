@@ -118,6 +118,7 @@ public final class Gates {
     public static void remove(LocalGate gate) {
         String name = gate.getFullName();
         if (! gates.containsKey(name)) return;
+        gate.save();
         gates.remove(name);
         screenBlocks.removeGate(gate);
         switchBlocks.removeGate(gate);

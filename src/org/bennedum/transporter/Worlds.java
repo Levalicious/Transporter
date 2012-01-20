@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
 import org.bukkit.util.config.ConfigurationNode;
 
 /**
@@ -52,12 +51,9 @@ public final class Worlds {
         // add default world if it doesn't exist
         World world = Global.plugin.getServer().getWorlds().get(0);
         if (! worlds.containsKey(world.getName())) {
-            WorldCreator wc = new WorldCreator(world.getName());
-            wc.environment(world.getEnvironment());
-            wc.seed(world.getSeed());
             try {
-                WorldProxy newWorld = new WorldProxy(wc);
-                add(newWorld);
+                WorldProxy wp = new WorldProxy(world.getName(), world.getEnvironment().toString(), null, world.getSeed() + "");
+                add(wp);
             } catch (WorldException e) {}
         }
 

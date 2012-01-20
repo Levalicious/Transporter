@@ -421,18 +421,11 @@ public class LocalGate extends Gate implements OptionsListener {
         conf.save();
     }
 
-    public void forceSave() {
-        dirty = true;
-        saveInBackground();
-    }
-
-    public void saveInBackground() {
-        if (! dirty) return;
-        Utils.worker(new Runnable() {
+    public void saveSafe() {
+        Utils.fire(new Runnable() {
             @Override
             public void run() {
                 save();
-                Markers.update();
             }
         });
     }
@@ -874,7 +867,7 @@ public class LocalGate extends Gate implements OptionsListener {
     public void onOptionSet(Context ctx, String name, String value) {
         dirty = true;
         ctx.sendLog("option '%s' set to '%s' for gate '%s'", name, value, getName(ctx));
-        saveInBackground();
+        save();
     }
 
     @Override
@@ -922,7 +915,7 @@ public class LocalGate extends Gate implements OptionsListener {
     public void onRenameComplete() {
         file.delete();
         generateFile();
-        saveInBackground();
+        saveSafe();
         updateScreens();
     }
 
@@ -949,7 +942,7 @@ public class LocalGate extends Gate implements OptionsListener {
             if (gate != null)
                 gate.attach(this);
         }
-        saveInBackground();
+        saveSafe();
     }
 
     @Override
@@ -960,7 +953,7 @@ public class LocalGate extends Gate implements OptionsListener {
         incoming.remove(gateName);
         dirty = true;
         closeIfAllowed();
-        saveInBackground();
+        saveSafe();
     }
 
     @Override
@@ -1009,7 +1002,7 @@ public class LocalGate extends Gate implements OptionsListener {
             incoming.add(newName);
             dirty = true;
         }
-        saveInBackground();
+        saveSafe();
     }
 
     public void onGateDestroyed(LocalGate gate) {
@@ -1027,7 +1020,7 @@ public class LocalGate extends Gate implements OptionsListener {
             dirty = true;
         }
         closeIfAllowed();
-        saveInBackground();
+        saveSafe();
     }
 
     public void onGateDestroyed(RemoteGate gate) {
@@ -1044,7 +1037,7 @@ public class LocalGate extends Gate implements OptionsListener {
             dirty = true;
         }
         closeIfAllowed();
-        saveInBackground();
+        saveSafe();
     }
 
     public void onGateRemoved(LocalGate gate) {
@@ -1056,7 +1049,7 @@ public class LocalGate extends Gate implements OptionsListener {
             updateScreens();
         }
         closeIfAllowed();
-        saveInBackground();
+        saveSafe();
     }
 
     public void onGateRemoved(RemoteGate gate) {
@@ -1067,7 +1060,7 @@ public class LocalGate extends Gate implements OptionsListener {
             updateScreens();
         }
         closeIfAllowed();
-        saveInBackground();
+        saveSafe();
     }
 
     public void onSend(Entity entity) {
@@ -1106,7 +1099,7 @@ public class LocalGate extends Gate implements OptionsListener {
 
         openPortal();
         gate.attach(this);
-        saveInBackground();
+        saveSafe();
 
         if (duration > 0) {
             final LocalGate myself = this;
@@ -1131,7 +1124,7 @@ public class LocalGate extends Gate implements OptionsListener {
             if (gate != null)
                 gate.detach(this);
         }
-        saveInBackground();
+        saveSafe();
     }
 
     public boolean addLink(String link) {
@@ -1143,7 +1136,7 @@ public class LocalGate extends Gate implements OptionsListener {
         }
         dirty = true;
         updateScreens();
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1157,7 +1150,7 @@ public class LocalGate extends Gate implements OptionsListener {
         dirty = true;
         updateScreens();
         closeIfAllowed();
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1226,7 +1219,7 @@ public class LocalGate extends Gate implements OptionsListener {
             if (gate != null)
                 gate.attach(this);
         }
-        saveInBackground();
+        saveSafe();
         getDestinationGate();
     }
 
@@ -1282,7 +1275,7 @@ public class LocalGate extends Gate implements OptionsListener {
             if (pins.contains(pin)) return false;
             pins.remove(pin);
         }
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1290,7 +1283,7 @@ public class LocalGate extends Gate implements OptionsListener {
         synchronized (pins) {
             pins.clear();
         }
-        saveInBackground();
+        saveSafe();
     }
 
     public boolean hasPin(String pin) {
@@ -1306,7 +1299,7 @@ public class LocalGate extends Gate implements OptionsListener {
             throw new GateException(e.getMessage());
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1317,7 +1310,7 @@ public class LocalGate extends Gate implements OptionsListener {
             throw new GateException(e.getMessage());
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1326,7 +1319,7 @@ public class LocalGate extends Gate implements OptionsListener {
             bannedItems.clear();
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
     }
 
     public boolean addAllowedItem(String item) throws GateException {
@@ -1336,7 +1329,7 @@ public class LocalGate extends Gate implements OptionsListener {
             throw new GateException(e.getMessage());
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1347,7 +1340,7 @@ public class LocalGate extends Gate implements OptionsListener {
             throw new GateException(e.getMessage());
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1356,7 +1349,7 @@ public class LocalGate extends Gate implements OptionsListener {
             allowedItems.clear();
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
     }
 
     public boolean addReplaceItem(String fromItem, String toItem) throws GateException {
@@ -1366,7 +1359,7 @@ public class LocalGate extends Gate implements OptionsListener {
             throw new GateException(e.getMessage());
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1377,7 +1370,7 @@ public class LocalGate extends Gate implements OptionsListener {
             throw new GateException(e.getMessage());
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
         return true;
     }
 
@@ -1386,7 +1379,7 @@ public class LocalGate extends Gate implements OptionsListener {
             replaceItems.clear();
         }
         dirty = true;
-        saveInBackground();
+        saveSafe();
     }
 
     public boolean isAllowedGameMode(String mode) {
