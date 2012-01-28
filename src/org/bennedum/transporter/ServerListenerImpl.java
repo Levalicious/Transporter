@@ -15,16 +15,18 @@
  */
 package org.bennedum.transporter;
 
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerCommandEvent;
-import org.bukkit.event.server.ServerListener;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class ServerListenerImpl extends ServerListener {
+public class ServerListenerImpl implements Listener {
 
-    @Override
+    @EventHandler(priority = EventPriority.LOW)
     public void onServerCommand(ServerCommandEvent event) {
         Context ctx = new Context(event.getSender());
         String cmd = event.getCommand();

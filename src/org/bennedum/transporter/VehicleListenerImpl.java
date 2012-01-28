@@ -17,16 +17,18 @@ package org.bennedum.transporter;
 
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
-import org.bukkit.event.vehicle.VehicleListener;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class VehicleListenerImpl extends VehicleListener {
+public class VehicleListenerImpl implements Listener {
 
-    @Override
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onVehicleMove(VehicleMoveEvent event) {
         Vehicle vehicle = event.getVehicle();
         LocalGate fromGate = Gates.findGateForPortal(event.getTo());
@@ -35,7 +37,7 @@ public class VehicleListenerImpl extends VehicleListener {
             return;
         }
         if (Reservation.isGateLocked(vehicle)) return;
-        
+
         try {
             Reservation r = new Reservation(vehicle, fromGate);
             r.depart();

@@ -15,7 +15,9 @@
  */
 package org.bennedum.transporter;
 
-import org.bukkit.event.world.WorldListener;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
@@ -23,14 +25,14 @@ import org.bukkit.event.world.WorldUnloadEvent;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class WorldListenerImpl extends WorldListener {
+public class WorldListenerImpl implements Listener {
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onWorldLoad(WorldLoadEvent event) {
         Gates.loadGatesForWorld(new Context(), event.getWorld());
     }
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onWorldUnload(WorldUnloadEvent event) {
         // TODO: remove when Bukkit sends onWorldUnloaded events
         Utils.debug("Yeeehaaa! we got an onWorldUnload event!");

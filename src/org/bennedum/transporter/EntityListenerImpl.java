@@ -15,16 +15,18 @@
  */
 package org.bennedum.transporter;
 
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityListener;
 
 /**
  *
  * @author Thomas Bennedum <frdfsnlght@gmail.com>
  */
-public final class EntityListenerImpl extends EntityListener {
+public final class EntityListenerImpl implements Listener {
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onEntityDamage(EntityDamageEvent event) {
         if (Reservation.isGateLocked(event.getEntity()))
             event.setCancelled(true);

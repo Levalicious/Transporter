@@ -17,19 +17,21 @@ package org.bennedum.transporter;
 
 import java.util.List;
 import org.bukkit.block.Block;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.event.block.BlockListener;
 import org.bukkit.event.block.SignChangeEvent;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class BlockListenerImpl extends BlockListener {
+public class BlockListenerImpl implements Listener {
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockDamage(BlockDamageEvent event) {
         LocalGate gate = Gates.findGateForProtection(event.getBlock().getLocation());
         if (gate != null) {
@@ -37,21 +39,22 @@ public class BlockListenerImpl extends BlockListener {
         }
     }
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockBreak(BlockBreakEvent event) {
-        LocalGate gate = Gates.findGateForScreen(event.getBlock().getLocation());
+        LocalGate gate = Gates.findGateForProtection(event.getBlock().getLocation());
+        if (gate != null) {
+            event.setCancelled(true);
+            return;
+        }
+        gate = Gates.findGateForScreen(event.getBlock().getLocation());
         if (gate != null) {
             Context ctx = new Context(event.getPlayer());
             Gates.destroy(gate, false);
             ctx.sendLog("destroyed gate '%s'", gate.getName());
         }
-        gate = Gates.findGateForProtection(event.getBlock().getLocation());
-        if (gate != null) {
-            event.setCancelled(true);
-        }
     }
 
-    @Override
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onSignChange(SignChangeEvent event) {
         Block block = event.getBlock();
         LocalGate gate = Gates.findGateForScreen(block.getLocation());
@@ -92,7 +95,7 @@ public class BlockListenerImpl extends BlockListener {
         }
     }
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockFromTo(BlockFromToEvent event) {
         LocalGate gate = Gates.findGateForPortal(event.getBlock().getLocation());
         if (gate != null) {

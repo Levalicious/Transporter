@@ -1091,7 +1091,7 @@ public class LocalGate extends Gate implements OptionsListener {
                 throw new GateException("this gate has no links");
             outgoing = getLinks().get(0);
             dirty = true;
-            updateScreens();
+            //updateScreens();
         }
         Gate gate = Gates.get(outgoing);
         if (gate == null)
@@ -1099,6 +1099,7 @@ public class LocalGate extends Gate implements OptionsListener {
 
         openPortal();
         gate.attach(this);
+        updateScreens();
         saveSafe();
 
         if (duration > 0) {
@@ -1117,6 +1118,7 @@ public class LocalGate extends Gate implements OptionsListener {
 
         incoming.clear();
         closePortal();
+        updateScreens();
 
         // try to detach from our destination
         if (outgoing != null) {
@@ -1508,10 +1510,14 @@ public class LocalGate extends Gate implements OptionsListener {
     private void generateFile() {
         File worldFolder = Worlds.worldPluginFolder(world);
         File gatesFolder = new File(worldFolder, "gates");
-        file = new File(gatesFolder, "gate." + name.hashCode() + ".yml");
+        String fileName = name.replaceAll("[^\\w-\\.]", "_");
+        if (name.hashCode() > 0) fileName += "-";
+        fileName += name.hashCode();
+        fileName += ".yml";
+        file = new File(gatesFolder, fileName);
     }
 
-    private void updateScreens() {
+    public void updateScreens() {
         List<String> lines = new ArrayList<String>();
         lines.add(name);
 

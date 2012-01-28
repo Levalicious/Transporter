@@ -23,8 +23,6 @@ import org.bennedum.transporter.command.CommandProcessor;
 import org.bennedum.transporter.net.Network;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.event.Event.Type;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
@@ -87,21 +85,12 @@ public class Transporter extends JavaPlugin {
 
         PluginManager pm = getServer().getPluginManager();
 
-        pm.registerEvent(Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);  // save-all
-        pm.registerEvent(Type.SIGN_CHANGE, blockListener, Priority.Monitor, this);  // create gate
-        pm.registerEvent(Type.BLOCK_DAMAGE, blockListener, Priority.Normal, this);  // protection
-        pm.registerEvent(Type.BLOCK_BREAK, blockListener, Priority.Normal, this);  // destroy gate, protection
-        pm.registerEvent(Type.BLOCK_FROMTO, blockListener, Priority.Normal, this);  // prevent liquids flowing
-        pm.registerEvent(Type.PLAYER_INTERACT, playerListener, Priority.Normal, this); // open gate/change link
-        pm.registerEvent(Type.PLAYER_MOVE, playerListener, Priority.Normal, this); // outgoing player teleport
-        pm.registerEvent(Type.PLAYER_JOIN, playerListener, Priority.Normal, this); // incoming player teleport
-        pm.registerEvent(Type.PLAYER_QUIT, playerListener, Priority.Normal, this);
-        pm.registerEvent(Type.PLAYER_KICK, playerListener, Priority.Normal, this);
-        pm.registerEvent(Type.PLAYER_CHAT, playerListener, Priority.Monitor, this); // server-server chat
-        pm.registerEvent(Type.VEHICLE_MOVE, vehicleListener, Priority.Monitor, this); // outgoing vehicle teleport
-        pm.registerEvent(Type.WORLD_LOAD, worldListener, Priority.Normal, this); // add gates on a world
-        pm.registerEvent(Type.WORLD_UNLOAD, worldListener, Priority.Normal, this); // remove gates on a world
-        pm.registerEvent(Type.ENTITY_DAMAGE, entityListener, Priority.Normal, this); // nullify damage in portal blocks
+        pm.registerEvents(serverListener, this);
+        pm.registerEvents(blockListener, this);
+        pm.registerEvents(playerListener, this);
+        pm.registerEvents(vehicleListener, this);
+        pm.registerEvents(worldListener, this);
+        pm.registerEvents(entityListener, this);
 
         Global.started = true;
 
@@ -117,7 +106,7 @@ public class Transporter extends JavaPlugin {
                 Markers.update();
             }
         }, 5000);
-        
+
     }
 
     @Override

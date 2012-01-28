@@ -27,9 +27,9 @@ import org.bukkit.entity.Player;
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class Players {
-    
+
     private static final Map<String,PlayerProxy> players = new HashMap<String,PlayerProxy>();
-    
+
     public static List<PlayerProxy> getAll() {
         synchronized (players) {
             return new ArrayList<PlayerProxy>(players.values());
@@ -51,32 +51,36 @@ public final class Players {
         synchronized (players) {
             proxy = players.get(player.getName());
         }
+        /*
+        if ((proxy.getWorldName() == null) ||
+            (to == null) || (to.getWorld() == null)) return;
+         */
         if (! proxy.getWorldName().equals(to.getWorld().getName()))
             for (Server server : Servers.getAll())
                 server.doPlayerChangedWorld(player, to.getWorld());
     }
-    
+
     public static void onJoin(Player player, Reservation res) {
         add(new PlayerProxy(player.getName(), player.getDisplayName(), null, player.getWorld().getName()));
         for (Server server : Servers.getAll())
             if (server.getSendJoin())
                 server.doPlayerJoined(player, res == null);
     }
-    
+
     public static void onQuit(Player player, Reservation res) {
         remove(player.getName());
         for (Server server : Servers.getAll())
             if (server.getSendJoin())
                 server.doPlayerQuit(player, res == null);
     }
-    
+
     public static void onKick(Player player, Reservation res) {
         remove(player.getName());
         for (Server server : Servers.getAll())
             if (server.getSendJoin())
                 server.doPlayerKicked(player, res == null);
     }
-    
+
     public static void remoteChangeWorld(Server server, String playerName, String worldName) {
         PlayerProxy proxy;
         synchronized (players) {
@@ -85,7 +89,7 @@ public final class Players {
         if (proxy == null) return;
         proxy.setWorldName(worldName);
     }
-    
+
     public static void remoteJoin(Server server, String name, String displayName, String worldName, boolean announce) {
         PlayerProxy player = new PlayerProxy(name, displayName, server.getName(), worldName);
         add(player);
@@ -94,7 +98,7 @@ public final class Players {
             Global.plugin.getServer().broadcastMessage(message);
         }
     }
-    
+
     public static void remoteQuit(Server server, String name, boolean announce) {
         PlayerProxy player = remove(name);
         if (announce && (player != null) && server.getReceiveJoin()) {
@@ -102,7 +106,7 @@ public final class Players {
             Global.plugin.getServer().broadcastMessage(message);
         }
     }
-    
+
     public static void remoteKick(Server server, String name, boolean announce) {
         PlayerProxy player = remove(name);
         if (announce && (player != null) && server.getReceiveJoin()) {
@@ -110,7 +114,7 @@ public final class Players {
             Global.plugin.getServer().broadcastMessage(message);
         }
     }
-    
+
     public static void remove(Server server) {
         synchronized (players) {
             for (String name : new ArrayList<String>(players.keySet())) {
@@ -121,24 +125,24 @@ public final class Players {
             }
         }
     }
-    
+
     public static void add(PlayerProxy player) {
         synchronized (players) {
             players.put(player.getName(), player);
         }
     }
-    
+
     private static PlayerProxy remove(String name) {
         synchronized (players) {
             return players.remove(name);
         }
     }
-    
+
     private static String formatMessage(String format, PlayerProxy player) {
         format = format.replace("%player%", player.getDisplayName());
         format = format.replace("%world%", player.getWorldName());
         format = format.replace("%server%", player.getServerName());
         return format;
     }
-    
+
 }

@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
-import org.dynmap.DynmapPlugin;
+import org.dynmap.DynmapAPI;
 import org.dynmap.markers.Marker;
 import org.dynmap.markers.MarkerAPI;
 import org.dynmap.markers.MarkerIcon;
@@ -34,24 +34,24 @@ import org.dynmap.markers.MarkerSet;
  * @author Thomas A. Bennedum <tab@bennedum.org>
  */
 public final class Markers {
-    
+
     private static final String DYNMAP_MARKERSET_ID = "transporter-markers";
     private static final String DYNMAP_MARKERICON_ID = "transporter-marker";
-    
-    private static DynmapPlugin dynmapPlugin = null;
-    
+
+    private static DynmapAPI dynmapPlugin = null;
+
     public static boolean dynmapAvailable() {
         if (! Config.getUseDynmap()) return false;
         if (dynmapPlugin != null) return true;
         Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("dynmap");
         if ((p == null) || (! p.isEnabled())) return false;
-        dynmapPlugin = (org.dynmap.DynmapPlugin)p;
+        dynmapPlugin = (org.dynmap.DynmapAPI)p;
         return true;
     }
 
     public static void update() {
         exportJSON();
-        
+
         if (dynmapAvailable()) {
             MarkerAPI api = dynmapPlugin.getMarkerAPI();
             MarkerIcon markerIcon = api.getMarkerIcon(DYNMAP_MARKERICON_ID);
@@ -73,14 +73,14 @@ public final class Markers {
                 LocalGate gate = i.next();
                 Vector center = gate.getCenter();
                 Marker marker = currentMarkers.remove(gate.getFullName());
-                
+
                 String format = gate.getMarkerFormat();
                 if (format == null) {
                     if (marker != null)
                         marker.deleteMarker();
                     continue;
                 }
-                
+
                 format = format.replace("\\n", "\n");
                 format = format.replace("%name%", gate.getName());
                 format = format.replace("%design%", gate.getDesignName());
@@ -91,13 +91,13 @@ public final class Markers {
                 format = format.replace("%receiveLocal%", Economy.format(gate.getReceiveLocalCost()));
                 format = format.replace("%receiveWorld%", Economy.format(gate.getReceiveWorldCost()));
                 format = format.replace("%receiveServer%", Economy.format(gate.getReceiveServerCost()));
-                
+
                 if (format.trim().isEmpty()) {
                     if (marker != null)
                         marker.deleteMarker();
                     continue;
                 }
-                
+
                 if (marker == null) {
                     marker = markerSet.createMarker(gate.getFullName(), format, gate.getWorldName(), center.getX(), center.getY(), center.getZ(), markerIcon, false);
                     if (marker != null)
@@ -112,9 +112,9 @@ public final class Markers {
                 Utils.debug("marker for %s created", marker.getMarkerID());
             }
         }
-        
+
     }
-    
+
     private static void exportJSON() {
         String fileName = Config.getExportedGatesFile();
         if (fileName == null) return;
@@ -165,5 +165,5 @@ public final class Markers {
         }
     }
 
-    
+
 }

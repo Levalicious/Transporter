@@ -18,11 +18,13 @@ package org.bennedum.transporter;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
-import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -31,9 +33,9 @@ import org.bukkit.event.player.PlayerTeleportEvent;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public final class PlayerListenerImpl extends PlayerListener {
+public final class PlayerListenerImpl implements Listener {
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
         if (block == null) return;
@@ -94,7 +96,7 @@ public final class PlayerListenerImpl extends PlayerListener {
         }
     }
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         LocalGate fromGate = Gates.findGateForPortal(event.getTo());
@@ -122,14 +124,14 @@ public final class PlayerListenerImpl extends PlayerListener {
         }
     }
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         Player player = event.getPlayer();
         Location location = event.getTo();
         Players.onTeleport(player, location);
     }
-    
-    @Override
+
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         Reservation r = Reservation.get(player);
@@ -147,7 +149,7 @@ public final class PlayerListenerImpl extends PlayerListener {
         }
     }
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         Reservation r = Reservation.get(player);
@@ -156,7 +158,7 @@ public final class PlayerListenerImpl extends PlayerListener {
             event.setQuitMessage(null);
     }
 
-    @Override
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerKick(PlayerKickEvent event) {
         Player player = event.getPlayer();
         Reservation r = Reservation.get(player);
@@ -164,8 +166,8 @@ public final class PlayerListenerImpl extends PlayerListener {
         if (r != null)
             event.setLeaveMessage(null);
     }
-    
-    @Override
+
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChat(PlayerChatEvent event) {
         Chat.send(event.getPlayer(), event.getMessage());
     }
