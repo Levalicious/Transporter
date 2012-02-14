@@ -35,7 +35,7 @@ import ru.tehkode.permissions.bukkit.PermissionsEx;
  * This class doesn't support Bukkit's built-in permissions because there's no
  * way to check permissions for non-players yet (players who are not currently
  * connected to the server).
- * 
+ *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class Permissions {
@@ -171,9 +171,9 @@ public final class Permissions {
         if (Global.plugin.getServer().getOnlinePlayers().length >= Global.plugin.getServer().getMaxPlayers())
             throw new PermissionsException("maximim players already connected");
         if (getProperties(new File(SERVERPROPERTIES_FILE)).getProperty("white-list", "false").equalsIgnoreCase("true"))
-            if (! getList(new File(WHITELIST_FILE)).contains(playerName))
+            if (! getList(new File(WHITELIST_FILE), true).contains(playerName.toLowerCase()))
                 throw new PermissionsException("player is not white-listed");
-        if (getList(new File(BANNEDPLAYERS_FILE)).contains(playerName))
+        if (getList(new File(BANNEDPLAYERS_FILE), false).contains(playerName))
             throw new PermissionsException("player is banned");
     }
 
@@ -183,10 +183,10 @@ public final class Permissions {
     }
 
     public static boolean isOp(String playerName) {
-        return getList(new File(OPS_FILE)).contains(playerName);
+        return getList(new File(OPS_FILE), false).contains(playerName);
     }
 
-    private static Set<String> getList(File file) {
+    private static Set<String> getList(File file, boolean forceLower) {
         ListFile listFile = listFiles.get(file.getAbsolutePath());
         if (listFile == null) {
             listFile = new ListFile();
@@ -200,6 +200,7 @@ public final class Permissions {
                 while ((line = r.readLine()) != null) {
                     line = line.trim();
                     if (line.isEmpty()) continue;
+                    if (forceLower) line = line.toLowerCase();
                     listFile.data.add(line);
                 }
                 r.close();

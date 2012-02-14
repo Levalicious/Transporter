@@ -197,8 +197,14 @@ public final class Connection {
                         messageData = cipher.doFinal(messageData);
                     }
                     String encoded = new String(messageData, "UTF-8");
-                    Message message = Message.decode(encoded);
-                    onMessage(message);
+                    try {
+                        Message message = Message.decode(encoded);
+                        onMessage(message);
+                    } catch (StringIndexOutOfBoundsException e) {
+                        Exception ne = new TransporterException("%s in %s", e.getMessage(), encoded);
+                        ne.initCause(e);
+                        throw ne;
+                    }
                 } catch (Throwable t) {
                     Utils.severe(t, "exception while processing message from %s: %s", name, t.getMessage());
                     close();

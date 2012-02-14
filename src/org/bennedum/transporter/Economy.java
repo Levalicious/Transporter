@@ -18,6 +18,8 @@ package org.bennedum.transporter;
 //import com.iCo6.iConomy;
 //import com.iCo6.system.Account;
 //import com.iCo6.system.Holdings;
+import com.nijikokun.register.payment.Methods;
+import com.nijikokun.register.payment.Method;
 import cosine.boseconomy.BOSEconomy;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -29,6 +31,7 @@ import org.bukkit.plugin.Plugin;
 public final class Economy {
 
 //    private static iConomy iconomyPlugin = null;
+    private static Method registerPlugin = null;
     private static BOSEconomy boseconomyPlugin = null;
 
     public static boolean isAvailable() {
@@ -36,16 +39,25 @@ public final class Economy {
                boseconomyAvailable();
     }
 
+    /*
     public static boolean iconomyAvailable() {
         if (! Config.getUseIConomy()) return false;
         return false;
-        /*
         if (iconomyPlugin != null) return true;
         Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("iConomy");
         if ((p == null) || (! p.getClass().getName().equals("com.iConomy.iConomy")) || (! p.isEnabled())) return false;
         iconomyPlugin = (iConomy)p;
         return true;
-         */
+    }
+    */
+
+    public static boolean registerAvailable() {
+        if (! Config.getUseRegisterEconomy()) return false;
+        if (registerPlugin != null) return true;
+        Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("Register");
+        if ((p == null) || (! p.isEnabled())) return false;
+        registerPlugin = Methods.getMethod();
+        return true;
     }
 
     public static boolean boseconomyAvailable() {
@@ -60,6 +72,8 @@ public final class Economy {
     public static String format(double funds) {
 //        if (iconomyAvailable())
 //            return iConomy.format(funds);
+        if (registerAvailable())
+            return registerPlugin.format(funds);
         if (boseconomyAvailable())
             return boseconomyPlugin.getMoneyFormatted(funds);
 
@@ -87,6 +101,12 @@ public final class Economy {
         }
          */
 
+        if (registerAvailable()) {
+            Method.MethodAccount account = registerPlugin.getAccount(accountName);
+            if (! account.hasEnough(amount))
+                throw new EconomyException("insufficient funds");
+            return true;
+        }
         if (boseconomyAvailable()) {
             double balance = boseconomyPlugin.getPlayerMoneyDouble(accountName);
             if (balance < amount)
@@ -119,7 +139,12 @@ public final class Economy {
             return true;
         }
          */
-
+        if (registerAvailable()) {
+            Method.MethodAccount account = registerPlugin.getAccount(accountName);
+            if (! account.hasEnough(amount))
+                throw new EconomyException("insufficient funds");
+            return account.subtract(amount);
+        }
         if (boseconomyAvailable()) {
             double balance = boseconomyPlugin.getPlayerMoneyDouble(accountName);
             if (balance < amount)

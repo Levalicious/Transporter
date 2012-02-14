@@ -55,7 +55,8 @@ public final class Config {
         OPTIONS.add("serverJoinFormat");
         OPTIONS.add("serverQuitFormat");
         OPTIONS.add("serverKickFormat");
-        OPTIONS.add("useIConomy");
+//        OPTIONS.add("useIConomy");
+        OPTIONS.add("useRegisterEconomy");
         OPTIONS.add("useBOSEconomy");
         OPTIONS.add("useDynmap");
         OPTIONS.add("usePermissions");
@@ -327,12 +328,22 @@ public final class Config {
         setPropertyDirect("global.serverKickFormat", s);
     }
 
+    /*
     public static boolean getUseIConomy() {
         return config.getBoolean("global.useIConomy", false);
     }
 
     public static void setUseIConomy(boolean b) {
         config.setProperty("global.useIConomy", b);
+    }
+    */
+
+    public static boolean getUseRegisterEconomy() {
+        return config.getBoolean("global.useRegisterEconomy", false);
+    }
+
+    public static void setUseRegisterEconomy(boolean b) {
+        config.setProperty("global.useRegisterEconomy", b);
     }
 
     public static boolean getUseBOSEconomy() {

@@ -51,10 +51,10 @@ public final class Players {
         synchronized (players) {
             proxy = players.get(player.getName());
         }
-        /*
-        if ((proxy.getWorldName() == null) ||
-            (to == null) || (to.getWorld() == null)) return;
-         */
+        if ((proxy == null) ||
+            (proxy.getWorldName() == null) ||
+            (to == null) ||
+            (to.getWorld() == null)) return;
         if (! proxy.getWorldName().equals(to.getWorld().getName()))
             for (Server server : Servers.getAll())
                 server.doPlayerChangedWorld(player, to.getWorld());
