@@ -33,6 +33,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +46,8 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import org.bennedum.transporter.net.Cipher;
+import org.bennedum.transporter.net.Message;
 
 /**
  *
@@ -58,6 +61,103 @@ public final class Patcher extends javax.swing.JFrame {
     /** Creates new form Patcher */
     public Patcher() {
         initComponents();
+
+        /*
+        try {
+            for (int x = 1; x < 1000; x++) {
+                System.out.println("------------- " + x);
+
+                Message messageOut = new Message();
+                for (int i = 0; i < x; i++)
+                    messageOut.put("key" + i, "value" + i);
+
+                String encodedOut = messageOut.encode();
+                System.out.println("encodedOut.length=" + encodedOut.length());
+
+                byte[] plainOut = encodedOut.getBytes("UTF-8");
+                System.out.println("plainOut.length=" + plainOut.length);
+
+                Cipher cipher = new Cipher(256);
+                cipher.initEncrypt("tab".getBytes("UTF-8"));
+                byte[] cipherOut = cipher.doFinal(plainOut);
+                System.out.println("cipherOut.length=" + cipherOut.length);
+
+                byte[] streamOut = new byte[cipherOut.length + 4];
+                System.arraycopy(cipherOut, 0, streamOut, 4, cipherOut.length);
+                streamOut[1] = (byte)(0x00ff & (cipherOut.length >> 16));
+                streamOut[2] = (byte)(0x00ff & (cipherOut.length >> 8));
+                streamOut[3] = (byte)(0x00ff & cipherOut.length);
+                System.out.println("streamOut.length=" + streamOut.length);
+
+                // decode
+
+                int recLen =
+                        (0x00ff0000 & ((int)streamOut[1] << 16)) +
+                        (0x0000ff00 & ((int)streamOut[2] << 8)) +
+                        (0x000000ff & (int)streamOut[3]);
+                System.out.println("recLen=" + recLen);
+
+                if (recLen != cipherOut.length)
+                    System.out.println("ERROR!!!");
+                else
+                    System.out.println("length is OK");
+
+                byte[] cipherIn = Arrays.copyOfRange(streamOut, 4, recLen + 4);
+                System.out.println("cipherIn.length=" + cipherIn.length);
+
+                cipher = new Cipher(256);
+                cipher.initDecrypt("tab".getBytes("UTF-8"));
+                byte[] plainIn = cipher.doFinal(cipherIn);
+                System.out.println("plainIn.length=" + plainIn.length);
+
+                String encodedIn = new String(plainIn, "UTF-8");
+                System.out.println("encodedIn.length=" + encodedIn.length());
+
+                Message messageIn = Message.decode(encodedIn);
+//                System.out.println(messageIn);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.exit(1);
+        */
+
+        /*
+        try {
+            BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(new File("C:\\messages.txt"))));
+            String line;
+            for (;;) {
+                line = r.readLine();
+                if (line == null) break;
+                line = line.trim();
+                if (line.length() == 0) continue;
+                if (line.startsWith("#")) continue;
+
+                byte[] plainDataIn = line.getBytes("UTF-8");
+
+                System.out.println("plainDataIn.length=" + plainDataIn.length);
+
+                Cipher cipher = new Cipher(256);
+                cipher.initEncrypt("tab".getBytes("UTF-8"));
+                byte[] cipherDataIn = cipher.doFinal(plainDataIn);
+                System.out.println("cipherDataIn.length=" + cipherDataIn.length);
+
+                cipher = new Cipher(256);
+                cipher.initDecrypt("tab".getBytes("UTF-8"));
+                byte[] plainDataOut = cipher.doFinal(cipherDataIn);
+                System.out.println("plainDataOut.length=" + plainDataOut.length);
+
+                String encoded = new String(plainDataOut, "UTF-8");
+
+                Message m = Message.decode(encoded);
+                System.out.println(m);
+            }
+            r.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        */
     }
 
     /** This method is called from within the constructor to
@@ -519,7 +619,7 @@ public final class Patcher extends javax.swing.JFrame {
         name = plugin.getProperty("name");
         version = plugin.getProperty("version");
         version = version.replace("\"", "");
-        
+
         File file = new File(System.getProperty("user.home") + File.separator + ".minecraft");
         if (! file.isDirectory()) {
             String appData = System.getenv("APPDATA");

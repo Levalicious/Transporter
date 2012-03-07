@@ -88,6 +88,14 @@ public class Utils {
         logger.log(Level.WARNING, String.format("[%s] %s", Global.pluginName, msg));
     }
 
+    public static void severe(String msg, Object ... args) {
+        if (args.length > 0)
+            msg = String.format(msg, args);
+        msg = ChatColor.stripColor(msg);
+        if (msg.isEmpty()) return;
+        logger.log(Level.SEVERE, String.format("[%s] %s", Global.pluginName, msg));
+    }
+
     public static void severe(Throwable t, String msg, Object ... args) {
         if (args.length > 0)
             msg = String.format(msg, args);
@@ -613,6 +621,27 @@ public class Utils {
                 zipFile.delete();
         }
 
+    }
+
+    public static String byteArrayToString(byte[] buffer, int pos, int len) {
+        StringBuilder b = new StringBuilder();
+        for (int i = pos; i < pos + len; i++) {
+            if (i >= buffer.length) {
+                b.append("??");
+                break;
+            }
+            int v = unsignedByteToInt(buffer[i]);
+            if (v < 16) b.append('0');
+            b.append(Integer.toHexString(v));
+            b.append(' ');
+        }
+        return b.toString();
+    }
+
+    public static int unsignedByteToInt(byte in) {
+        int out = (int)in;
+        if (out < 0) out += 256;
+        return out;
     }
 
 }

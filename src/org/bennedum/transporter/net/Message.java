@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import org.bennedum.transporter.Utils;
 
 /**
  *
@@ -50,13 +49,16 @@ public final class Message extends HashMap<String,Object> {
     }
 
     private static Object decodeObject(StringBuilder b) {
+        //if (b.length() == 0) return null;   // to fix StringIndexOutOfBoundsException?
         char type = b.charAt(0);
         b.delete(0, 2);
         int pos = b.indexOf(":");
         int len = Integer.parseInt(b.substring(0, pos));
         b.delete(0, pos + 1);
         switch (type) {
-            case 'n': return null;
+            case 'n':
+//System.out.println("decoded null");
+                return null;
             case 's': return decodeString(b, len);
             case 'b': return decodeBoolean(b, len);
             case 'l': return decodeLong(b, len);
@@ -91,11 +93,17 @@ public final class Message extends HashMap<String,Object> {
     }
 
     private static String decodeString(StringBuilder b, int len) {
+//System.out.print("decode string (" + len + "): ");
         String str = b.substring(0, len);
         b.delete(0, len);
         try {
-            return URLDecoder.decode(str, "UTF-8");
-        } catch (UnsupportedEncodingException e) { return null; }
+            String s = URLDecoder.decode(str, "UTF-8");
+//System.out.println(s);
+            return s;
+        } catch (UnsupportedEncodingException e) {
+//System.out.println("unsupported encoding!!!!!");
+            return null;
+        }
     }
 
     private static String stringifyString(String v) {
@@ -110,7 +118,9 @@ public final class Message extends HashMap<String,Object> {
     private static Boolean decodeBoolean(StringBuilder b, int len) {
         String str = b.substring(0, len);
         b.delete(0, len);
-        return Boolean.parseBoolean(str);
+        Boolean bool = Boolean.parseBoolean(str);
+//System.out.println("decode boolean: " + bool);
+        return bool;
     }
 
     private static String stringifyBoolean(Boolean v) {
@@ -125,7 +135,9 @@ public final class Message extends HashMap<String,Object> {
     private static Long decodeLong(StringBuilder b, int len) {
         String str = b.substring(0, len);
         b.delete(0, len);
-        return Long.parseLong(str);
+        Long l = Long.parseLong(str);
+//System.out.println("decode long: " + l);
+        return l;
     }
 
     private static String stringifyLong(Long v) {
@@ -140,7 +152,9 @@ public final class Message extends HashMap<String,Object> {
     private static Double decodeDouble(StringBuilder b, int len) {
         String str = b.substring(0, len);
         b.delete(0, len);
-        return Double.parseDouble(str);
+        Double d = Double.parseDouble(str);
+//System.out.println("decode double: " + d);
+        return d;
     }
 
     private static String stringifyDouble(Double v) {
@@ -158,8 +172,10 @@ public final class Message extends HashMap<String,Object> {
     }
 
     private static Message decodeMessage(StringBuilder b, int len) {
+//System.out.println("decode message (" + len + ")");
         Message m = new Message();
         for (int i = 0; i < len; i++) {
+//System.out.print(" message item " + i + ": ");
             String key = (String)decodeObject(b);
             Object value = decodeObject(b);
             m.put(key, value);
@@ -185,9 +201,12 @@ public final class Message extends HashMap<String,Object> {
     }
 
     private static List<Object> decodeList(StringBuilder b, int len) {
+//System.out.println("decode list (" + len + ")");
         List<Object> l = new ArrayList<Object>();
-        for (int i = 0; i < len; i++)
+        for (int i = 0; i < len; i++) {
+//System.out.print(" list item " + i + ": ");
             l.add(decodeObject(b));
+        }
         return l;
     }
 

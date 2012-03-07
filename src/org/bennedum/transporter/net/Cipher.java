@@ -36,18 +36,18 @@ public final class Cipher {
      * used to indicate decryption mode
      */
     public static final int Decrypt = 2;
-    
+
     private static final int None = 0;
     private static final long randomP1 = 16807;
     private static final long randomP2 = 0;
     private static final long randomN = Integer.MAX_VALUE;
-    
+
     // The randomSeed value was arbitrarily choosen, but shouldn't be
     // changed if you ever expect to decrypt something you've already
     // encrypted before the value was changed!
     private static long randomSeed = 4587243876L;
     private static final List<Byte> scramble;
-    
+
     static {
         List<Byte> seed = new ArrayList<Byte>(256);
         scramble = new ArrayList<Byte>(256);
@@ -67,7 +67,7 @@ public final class Cipher {
         randomSeed = ((randomP1 * randomSeed) + randomP2) % randomN;
         return (int)(((double)randomSeed / (double)randomN) * (double)range);
     }
-    
+
     private ByteArrayOutputStream buffer;
     private int padSize;
     private int mode;
@@ -75,14 +75,14 @@ public final class Cipher {
     private int keyIndex;
     private int factor1;
     private int factor2;
-    
+
     /**
      * Creates a new instance of Cipher.
      */
     public Cipher() {
         this(0);
     }
-    
+
     /**
      * Creates a new instance of Cipher with the specified pad size.
      */
@@ -91,7 +91,7 @@ public final class Cipher {
         setPadSize(padSize);
         reset();
     }
-    
+
     /**
      * Returns the current pad size.
      * @return the current pad size
@@ -99,7 +99,7 @@ public final class Cipher {
     public int getPadSize() {
         return padSize;
     }
-    
+
     /**
      * Sets the current pad size.
      * <p>
@@ -124,7 +124,7 @@ public final class Cipher {
             throw new IllegalArgumentException("padSize must be >= 0");
         this.padSize = padSize;
     }
-    
+
     /**
      * Initializes the cipher in the specified mode with the specified key data.
      * <p>
@@ -161,7 +161,7 @@ public final class Cipher {
     public void init(int mode, Key key) {
         init(mode, key.getEncoded());
     }
-    
+
     /**
      * Initializes the cipher for encryption with the specified key data.
      * @param key the key data used during encryption
@@ -169,7 +169,7 @@ public final class Cipher {
     public void initEncrypt(byte[] key) {
         init(Encrypt, key);
     }
-    
+
     /**
      * Initializes the cipher for encryption with the specified key.
      * @param key the key used during encryption
@@ -177,7 +177,7 @@ public final class Cipher {
     public void initEncrypt(Key key) {
         init(Encrypt, key);
     }
-    
+
     /**
      * Initializes the cipher for decryption with the specified key data.
      * @param key the key data used during decryption
@@ -185,7 +185,7 @@ public final class Cipher {
     public void initDecrypt(byte[] key) {
         init(Decrypt, key);
     }
-    
+
     /**
      * Initializes the cipher for decryption with the specified key.
      * @param key the key used during decryption
@@ -193,7 +193,7 @@ public final class Cipher {
     public void initDecrypt(Key key) {
         init(Decrypt, key);
     }
-    
+
     /**
      * Resets the cipher, canceling any de/encryption currently in progress.
      */
@@ -203,7 +203,7 @@ public final class Cipher {
         factor1 = factor2 = 0;
         mode = None;
     }
-    
+
     /**
      * Returns the specified plain text data encrypted with the specified key.
      * @param key the key data used during encryption
@@ -214,7 +214,7 @@ public final class Cipher {
         init(Encrypt, key);
         return doFinal(plainText);
     }
-    
+
     /**
      * Returns the specified cipher text data decrypted with the specified key.
      * @param key the key data used during decryption
@@ -225,7 +225,7 @@ public final class Cipher {
         init(Decrypt, key);
         return doFinal(cipherText);
     }
-    
+
     /**
      * Updates the cipher stream with a single byte of data.
      * @param data the byte of data
@@ -233,30 +233,30 @@ public final class Cipher {
     public void update(byte data) {
         if (mode == None)
             throw new IllegalStateException("encrypt/decrypt mode not set");
-        
+
         int posIn = scramble.indexOf(data);
         int adj = scramble.indexOf(key[keyIndex++]);
         if (keyIndex >= key.length) keyIndex = 0;
-        
+
         factor1 = factor2 + adj;
-        
+
         int posOut;
         if (mode == Encrypt)
             posOut = posIn + factor1;
         else
             posOut = posIn - factor1;
-        
+
         posOut = (posOut % scramble.size());
         if (posOut < 0) posOut += scramble.size();
-        
+
         if (mode == Encrypt)
             factor2 = factor1 + posOut;
         else
             factor2 = factor1 + posIn;
-        
+
         buffer.write(scramble.get(posOut));
     }
-    
+
     /**
      * Updates the cipher stream with an array of data.
      * @param data an array of data
@@ -266,7 +266,7 @@ public final class Cipher {
         for (byte b : data)
             update(b);
     }
-    
+
     /**
      * Updates the cipher stream with a portion of the data in an array.
      * @param data the array containing the data
@@ -278,7 +278,7 @@ public final class Cipher {
         for (int i = offset; i < (i + length); i++)
             update(data[i]);
     }
-    
+
     /**
      * Completes the de/encryption cycle, resets the cipher instance,
      * and returns the de/encrypted (cipher) data.
@@ -291,6 +291,7 @@ public final class Cipher {
             if (padSize > 0) {
                 if (mode == Encrypt) {
                     int extraBytes = padSize - ((buffer.size() + 4) % padSize);
+                    if (extraBytes == padSize) extraBytes = 0;
                     Random r = new Random();
                     for (int i = 0; i < extraBytes; i++)
                         update((byte)(r.nextInt(256) + Byte.MIN_VALUE));
@@ -301,18 +302,20 @@ public final class Cipher {
                     return buffer.toByteArray();
                 } else {
                     byte[] tmp = buffer.toByteArray();
-                    if ((tmp.length % padSize) != 0)
+                    if ((tmp.length % padSize) != 0) {
                         // decryption failed
                         return new byte[0];
+                    }
                     int extraBytes =
                             ((int)tmp[tmp.length - 1] & 0x000000ff) |
                             (((int)tmp[tmp.length - 2] << 8) & 0x0000ff00) |
                             (((int)tmp[tmp.length - 3] << 16) & 0x00ff0000) |
                             (((int)tmp[tmp.length - 4] << 24) & 0xff000000);
-                    if ((extraBytes >= (padSize - 4)) || (extraBytes < 0))
+                    if ((extraBytes >= padSize) || (extraBytes < 0)) {
                         // something went wrong
                         return new byte[0];
-                    
+                    }
+
                     byte[] data = new byte[tmp.length - 4 - extraBytes];
                     System.arraycopy(tmp, 0, data, 0, data.length);
                     return data;
@@ -323,7 +326,7 @@ public final class Cipher {
             reset();
         }
     }
-    
+
     /**
      * Completes the de/encryption cycle, resets the cipher instance,
      * and returns the de/encrypted (cipher) data.
@@ -341,5 +344,5 @@ public final class Cipher {
         update(data);
         return doFinal();
     }
-    
+
 }

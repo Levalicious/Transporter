@@ -31,7 +31,6 @@ import java.util.Map;
 import org.bennedum.transporter.Global;
 import org.bennedum.transporter.Server;
 import org.bennedum.transporter.Servers;
-import org.bennedum.transporter.TransporterException;
 import org.bennedum.transporter.Utils;
 
 /**
@@ -41,7 +40,7 @@ import org.bennedum.transporter.Utils;
 public final class Connection {
 
     private static final int HANDSHAKE_TIMEOUT = 5000;
-    private static final int PROTOCOL_VERSION = 6;
+    private static final int PROTOCOL_VERSION = 7;
     public static final int PROTOCOL_TIMEOUT = 8000;    // 8 seconds
 
     private static final byte ENCRYPTED_FLAG = 0x01;
@@ -179,6 +178,10 @@ public final class Connection {
         // extract and process all records received
         while (readBuffer.length >= 4) {
             byte flags = readBuffer[0];
+            int recLenNew =
+                    (0x00ff0000 & (Utils.unsignedByteToInt(readBuffer[1]) << 16)) +
+                    (0x0000ff00 & (Utils.unsignedByteToInt(readBuffer[2]) << 8)) +
+                    (0x000000ff & Utils.unsignedByteToInt(readBuffer[3]));
             int recLen =
                     (0x00ff0000 & ((int)readBuffer[1] << 16)) +
                     (0x0000ff00 & ((int)readBuffer[2] << 8)) +
@@ -191,19 +194,38 @@ public final class Connection {
             if (readBuffer.length >= (recLen + 4)) {
                 try {
                     byte[] messageData = Arrays.copyOfRange(readBuffer, 4, recLen + 4);
+                    byte[] cipherData = null;
                     if ((flags & ENCRYPTED_FLAG) == ENCRYPTED_FLAG) {
                         Cipher cipher = new Cipher(CIPHER_PAD_SIZE);
                         cipher.initDecrypt(Network.getCachedKey().getBytes("UTF-8"));
+                        cipherData = messageData;
                         messageData = cipher.doFinal(messageData);
                     }
                     String encoded = new String(messageData, "UTF-8");
                     try {
                         Message message = Message.decode(encoded);
-                        onMessage(message);
+                        if (message != null)
+                            onMessage(message);
                     } catch (StringIndexOutOfBoundsException e) {
-                        Exception ne = new TransporterException("%s in %s", e.getMessage(), encoded);
-                        ne.initCause(e);
-                        throw ne;
+                        Utils.severe("Got a StringIndexOutOfBounds, dumping debug state!!!");
+                        Utils.severe("flags=%s", flags);
+                        Utils.severe("recLen bytes: %s %s %s",
+                            (0x00ff0000 & ((int)readBuffer[1] << 16)),
+                            (0x0000ff00 & ((int)readBuffer[2] << 8)),
+                            (0x000000ff & (int)readBuffer[3])
+                        );
+                        Utils.severe("recLen=%s", recLen);
+                        Utils.severe("recLenNew=%s", recLenNew);
+                        Utils.severe("readBuffer.length=%s", readBuffer.length);
+                        Utils.severe("cipherData.length=%s", (cipherData == null) ? "-" : cipherData.length);
+                        Utils.severe("messageData.length=%s", messageData.length);
+                        Utils.severe("encoded.length=%s", encoded.length());
+                        Utils.severe("encoded=%s", encoded);
+                        Utils.severe("first 16 bytes of messageData: %s", Utils.byteArrayToString(messageData, 0, 16));
+                        Utils.severe("last 16 bytes of messageData: %s", Utils.byteArrayToString(messageData, messageData.length - 16, 16));
+                        Utils.severe("first 16 bytes of readBuffer: %s", Utils.byteArrayToString(readBuffer, 0, 16));
+                        Utils.severe("next 16 bytes of readBuffer: %s", Utils.byteArrayToString(readBuffer, recLen + 4, 16));
+                        throw e;
                     }
                 } catch (Throwable t) {
                     Utils.severe(t, "exception while processing message from %s: %s", name, t.getMessage());
@@ -416,6 +438,7 @@ public final class Connection {
                 Utils.warning("connection '%s' has been disowned by server '%s'!?!", getName(), server.getName());
                 server = null;
                 close();
+                return;
             }
             if (message.containsKey("responseId")) {
                 int responseId = message.getInt("responseId");
