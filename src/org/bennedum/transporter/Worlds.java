@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.World;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *
@@ -48,15 +48,16 @@ public final class Worlds {
             }
         }
 
-        // add default world if it doesn't exist
-        World world = Global.plugin.getServer().getWorlds().get(0);
-        if (! worlds.containsKey(world.getName())) {
+        // add default worlds if they don't exist
+        for (String name : new String[] { "world", "world_nether", "world_the_end"} ) {
+            World world = Global.plugin.getServer().getWorld(name);
+            if (world == null) continue;
             try {
                 WorldProxy wp = new WorldProxy(world.getName(), world.getEnvironment().toString(), null, world.getSeed() + "");
                 add(wp);
             } catch (WorldException e) {}
         }
-
+        
         if (Global.started)
             autoLoad(ctx);
     }

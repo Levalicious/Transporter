@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.bennedum.transporter.GateMap.Entry;
+import org.bennedum.transporter.config.Configuration;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -34,8 +36,6 @@ import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
-import org.bukkit.util.config.Configuration;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *
@@ -66,6 +66,7 @@ public class LocalGate extends Gate implements OptionsListener {
         OPTIONS.add("deleteInventory");
         OPTIONS.add("receiveGameMode");
         OPTIONS.add("allowGameModes");
+        OPTIONS.add("receiveXP");
         OPTIONS.add("teleportFormat");
         OPTIONS.add("noLinksFormat");
         OPTIONS.add("noLinkSelectedFormat");
@@ -120,6 +121,7 @@ public class LocalGate extends Gate implements OptionsListener {
     private boolean deleteInventory;
     private boolean receiveGameMode;
     private String allowGameModes;
+    private boolean receiveXP;
     private String teleportFormat;
     private String noLinksFormat;
     private String noLinkSelectedFormat;
@@ -181,6 +183,7 @@ public class LocalGate extends Gate implements OptionsListener {
         deleteInventory = design.getDeleteInventory();
         receiveGameMode = design.getReceiveGameMode();
         allowGameModes = design.getAllowGameModes();
+        receiveXP = design.getReceiveXP();
         teleportFormat = design.getTeleportFormat();
         noLinksFormat = design.getNoLinksFormat();
         noLinkSelectedFormat = design.getNoLinkSelectedFormat();
@@ -284,6 +287,7 @@ public class LocalGate extends Gate implements OptionsListener {
         deleteInventory = conf.getBoolean("deleteInventory", false);
         receiveGameMode = conf.getBoolean("receiveGameMode", false);
         allowGameModes = conf.getString("allowGameModes", "*");
+        receiveXP = conf.getBoolean("receiveXP", false);
         teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
@@ -305,7 +309,7 @@ public class LocalGate extends Gate implements OptionsListener {
         receiveWorldCost = conf.getDouble("receiveWorldCost", 0);
         receiveServerCost = conf.getDouble("receiveServerCost", 0);
 
-        List<ConfigurationNode> nodes = conf.getNodeList("blocks", null);
+        List<ConfigurationNode> nodes = conf.getNodeList("blocks");
         if (nodes == null)
             throw new GateException("missing blocks");
         blocks = new ArrayList<GateBlock>();
@@ -382,6 +386,7 @@ public class LocalGate extends Gate implements OptionsListener {
         conf.setProperty("deleteInventory", deleteInventory);
         conf.setProperty("receiveGameMode", receiveGameMode);
         conf.setProperty("allowGameModes", allowGameModes);
+        conf.setProperty("receiveXP", receiveXP);
         conf.setProperty("teleportFormat", teleportFormat);
         conf.setProperty("noLinksFormat", noLinksFormat);
         conf.setProperty("noLinkSelectedFormat", noLinkSelectedFormat);
@@ -681,6 +686,14 @@ public class LocalGate extends Gate implements OptionsListener {
         allowGameModes = modes.substring(0, modes.length() - 1);
     }
 
+    public boolean getReceiveXP() {
+        return receiveXP;
+    }
+
+    public void setReceiveXP(boolean b) {
+        receiveXP = b;
+    }
+    
     public String getTeleportFormat() {
         return teleportFormat;
     }

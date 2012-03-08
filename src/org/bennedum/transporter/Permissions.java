@@ -28,20 +28,16 @@ import java.util.Properties;
 import java.util.Set;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import ru.tehkode.permissions.PermissionManager;
 import ru.tehkode.permissions.bukkit.PermissionsEx;
 
 /**
- * This class doesn't support Bukkit's built-in permissions because there's no
- * way to check permissions for non-players yet (players who are not currently
- * connected to the server).
- *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class Permissions {
 
     private static final String OPS_FILE = "ops.txt";
-    private static final String BANNEDIPS_FILE = "banned-ips.txt";
     private static final String BANNEDPLAYERS_FILE = "banned-players.txt";
     private static final String WHITELIST_FILE = "white-list.txt";
     private static final String SERVERPROPERTIES_FILE = "server.properties";
@@ -53,24 +49,58 @@ public final class Permissions {
     private static Map<String,ListFile> listFiles = new HashMap<String,ListFile>();
     private static Map<String,PropertiesFile> propertiesFiles = new HashMap<String,PropertiesFile>();
 
+    private static boolean superPermsInitted = false;
+    private static boolean basicPermsInitted = false;
+    private static net.milkbowl.vault.permission.Permission vaultPlugin = null;
     private static PermissionHandler permissionsPlugin = null;
     private static PermissionManager permissionsExPlugin = null;
 
+    public static boolean superPermsAvailable() {
+        if (! Config.getUseSuperPermissions()) return false;
+        if (superPermsInitted) return true;
+        superPermsInitted = true;
+        Utils.info("Initialized SuperPermissions for Permissions");
+        return true;
+    }
+
+    public static boolean basicPermsAvailable() {
+        if (basicPermsInitted) return true;
+        basicPermsInitted = true;
+        Utils.info("Initialized Basic for Permissions");
+        return true;
+    }
+    
+    public static boolean vaultAvailable() {
+        if (! Config.getUseVaultPermissions()) return false;
+        Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("Vault");
+        if ((p == null) || (! p.isEnabled())) return false;
+        if (vaultPlugin != null) return true;
+        RegisteredServiceProvider<net.milkbowl.vault.permission.Permission> rsp =
+                Global.plugin.getServer().getServicesManager().getRegistration(net.milkbowl.vault.permission.Permission.class);
+        if (rsp == null) return false;
+        vaultPlugin = rsp.getProvider();
+        if (vaultPlugin == null) return false;
+        Utils.info("Initialized Vault for Permissions");
+        return true;
+    }
+    
     public static boolean permissionsAvailable() {
         if (! Config.getUsePermissions()) return false;
-        if (permissionsPlugin != null) return true;
         Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("Permissions");
         if ((p == null) || (! p.isEnabled())) return false;
+        if (permissionsPlugin != null) return true;
         permissionsPlugin = ((com.nijikokun.bukkit.Permissions.Permissions)p).getHandler();
+        Utils.info("Initialized Permissions for Permissions");
         return true;
     }
 
     public static boolean permissionsExAvailable() {
         if (! Config.getUsePermissionsEx()) return false;
-        if (permissionsExPlugin != null) return true;
         Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("PermissionsEx");
         if ((p == null) || (! p.isEnabled())) return false;
+        if (permissionsExPlugin != null) return true;
         permissionsExPlugin = PermissionsEx.getPermissionManager();
+        Utils.info("Initialized PermissionsEx for Permissions");
         return true;
     }
 
@@ -80,23 +110,43 @@ public final class Permissions {
 
     public static boolean hasBasic(String name, String perm) {
         Properties permissions = getProperties(permissionsFile);
-        String[] parts = perm.split("\\.");
-        String builtPerm = null;
-        for (String part : parts) {
-            if (builtPerm == null)
-                builtPerm = part;
-            else
-                builtPerm = builtPerm + "." + part;
-            String prop = permissions.getProperty(builtPerm);
+        Utils.debug("basic permissions check '%s' for %s", perm, name);
+        for (;;) {
+            String prop = permissions.getProperty(perm);
             if (prop == null)
-                prop = permissions.getProperty(builtPerm + ".*");
-            if (prop == null)
-                continue;
-            String[] players = prop.split("\\s*,\\s*");
-            for (String player : players)
-                if (player.equals("*") || player.equals(name)) return true;
+                prop = permissions.getProperty(perm + ".*");
+            if (prop != null) {
+                Utils.debug("found basic permissions node for '%s': %s", perm, prop);
+                String[] players = prop.split("\\s*,\\s*");
+                boolean grant = false;
+                boolean found = false;
+                for (String player : players) {
+                    if (player.equals("*") || player.equals("+*")) {
+                        grant = true;
+                        found = true;
+                    } else if (player.equals("-*")) {
+                        grant = false;
+                        found = true;
+                    } else if (player.equals(name) || player.equals("+" + name)) {
+                        grant = true;
+                        found = true;
+                    } else if (player.equals("-" + name)) {
+                        grant = false;
+                        found = true;
+                    }
+                }
+                if (found) {
+                    Utils.debug("basic permission %s granted", grant ? "is" : "is not");
+                    return grant;
+                }
+            }
+            int pos = perm.lastIndexOf(".");
+            if (pos == -1) {
+                Utils.debug("basic permission is not granted");
+                return false;
+            }
+            perm = perm.substring(0, pos);
         }
-        return false;
     }
 
     public static boolean has(Player player, String perm) {
@@ -125,17 +175,52 @@ public final class Permissions {
 
     private static void require(String worldName, String playerName, boolean requireAll, String ... perms) throws PermissionsException {
         if (isOp(playerName)) return;
+        
+        if (superPermsAvailable()) {
+            
+            // NOTE: this doesn't use the world name in any way!!!
+        
+            PlayerProxy proxy = Players.get(playerName);
+            if (proxy == null)
+                throw new PermissionsException("player not found");
+            for (String perm : perms) {
+                if (requireAll) {
+                    if (! proxy.hasPermission(perm))
+                        throw new PermissionsException("not permitted");
+                } else {
+                    if (proxy.hasPermission(perm)) return;
+                }
+            }
+            if (! requireAll)
+                throw new PermissionsException("not permitted (SuperPerms)");
+            return;
+        }
+        
+        if (vaultAvailable()) {
+            for (String perm : perms) {
+                if (requireAll) {
+                    if (! vaultPlugin.has(worldName, playerName, perm))
+                        throw new PermissionsException("not permitted");
+                } else {
+                    if (vaultPlugin.has(worldName, playerName, perm)) return;
+                }
+            }
+            if (! requireAll)
+                throw new PermissionsException("not permitted");
+            return;
+        }
+        
         if (permissionsAvailable()) {
             for (String perm : perms) {
                 if (requireAll) {
                     if (! permissionsPlugin.permission(worldName, playerName, perm))
-                        throw new PermissionsException("not permitted (Permissions)");
+                        throw new PermissionsException("not permitted");
                 } else {
                     if (permissionsPlugin.permission(worldName, playerName, perm)) return;
                 }
             }
             if (! requireAll)
-                throw new PermissionsException("not permitted (Permissions)");
+                throw new PermissionsException("not permitted");
             return;
         }
 
@@ -143,27 +228,32 @@ public final class Permissions {
             for (String perm : perms) {
                 if (requireAll) {
                     if (! permissionsExPlugin.has(playerName, perm, worldName))
-                        throw new PermissionsException("not permitted (PermissionsEx)");
+                        throw new PermissionsException("not permitted");
                 } else {
                     if (permissionsExPlugin.has(playerName, perm, worldName)) return;
                 }
             }
             if (! requireAll)
-                throw new PermissionsException("not permitted (PermissionsEx)");
+                throw new PermissionsException("not permitted");
             return;
         }
 
-        // use built-in permissions
-        for (String perm : perms) {
-            if (requireAll) {
-                if (! hasBasic(playerName, perm))
-                    throw new PermissionsException("not permitted (basic)");
-            } else {
-                if (hasBasic(playerName, perm)) return;
+        if (basicPermsAvailable()) {
+            for (String perm : perms) {
+                if (requireAll) {
+                    if (! hasBasic(playerName, perm))
+                        throw new PermissionsException("not permitted");
+                } else {
+                    if (hasBasic(playerName, perm)) return;
+                }
             }
+            if (! requireAll)
+                throw new PermissionsException("not permitted");
         }
-        if (! requireAll)
-            throw new PermissionsException("not permitted (basic)");
+        
+        // should never get here!
+        throw new PermissionsException("not permitted");
+        
     }
 
     // can't check player's IP because it might not be what it is on the sending side due to NAT
@@ -183,7 +273,7 @@ public final class Permissions {
     }
 
     public static boolean isOp(String playerName) {
-        return getList(new File(OPS_FILE), false).contains(playerName);
+        return getList(new File(OPS_FILE), true).contains(playerName);
     }
 
     private static Set<String> getList(File file, boolean forceLower) {

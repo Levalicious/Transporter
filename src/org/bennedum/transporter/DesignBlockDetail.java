@@ -17,9 +17,9 @@ package org.bennedum.transporter;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *

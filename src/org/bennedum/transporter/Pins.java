@@ -17,8 +17,8 @@ package org.bennedum.transporter;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.entity.Player;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *

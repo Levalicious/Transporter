@@ -53,7 +53,7 @@ public class Transporter extends JavaPlugin {
 
         final Context ctx = new Context();
 
-        ctx.sendLog("this is v%s", Global.pluginVersion);
+        //ctx.sendLog("this is v%s", Global.pluginVersion);
 
         // install/update resources
 

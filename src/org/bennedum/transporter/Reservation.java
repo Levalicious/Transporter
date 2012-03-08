@@ -139,7 +139,8 @@ public final class Reservation {
     private String gameMode = null;
     private int heldItemSlot = 0;
     private ItemStack[] armor = null;
-
+    private float xp = 0;
+    
     private Location fromLocation = null;
     private Vector fromVelocity = null;
     private BlockFace fromDirection = null;
@@ -255,6 +256,8 @@ public final class Reservation {
         heldItemSlot = in.getInt("heldItemSlot");
         armor = decodeItemStackArray(in.getMessageList("armor"));
 
+        xp = in.getFloat("xp");
+        
         fromWorldName = in.getString("fromWorld");
 
         fromServer = server;
@@ -320,6 +323,7 @@ public final class Reservation {
         inventory = Arrays.copyOf(inv.getContents(), inv.getSize());
         heldItemSlot = inv.getHeldItemSlot();
         armor = inv.getArmorContents();
+        xp = player.getExp();
         fromLocation = player.getLocation();
         fromVelocity = player.getVelocity();
         fromWorldName = player.getWorld().getName();
@@ -424,6 +428,7 @@ public final class Reservation {
         out.put("gameMode", gameMode);
         out.put("heldItemSlot", heldItemSlot);
         out.put("armor", encodeItemStackArray(armor));
+        out.put("xp", xp);
         out.put("fromGate", fromGateName);
         if (fromDirection != null)
             out.put("fromGateDirection", fromDirection.toString());
@@ -732,7 +737,7 @@ public final class Reservation {
         if (player != null) {
             // player permission
             try {
-                Permissions.require(player, "trp.use." + fromGateLocal.getName());
+                Permissions.require(player, "trp.gate.use." + fromGateLocal.getFullName());
             } catch (PermissionsException e) {
                 throw new ReservationException("not permitted to use this gate");
             }
@@ -778,7 +783,7 @@ public final class Reservation {
         if (player != null) {
             // player permission
             try {
-                Permissions.require(player, "trp.use." + toGateLocal.getName());
+                Permissions.require(player, "trp.gate.use." + toGateLocal.getFullName());
             } catch (PermissionsException e) {
                 throw new ReservationException("not permitted to use the remote gate");
             }
@@ -1001,6 +1006,8 @@ public final class Reservation {
             player.setSaturation(saturation);
             if ((toGateLocal != null) && toGateLocal.getReceiveGameMode())
                 player.setGameMode(Utils.valueOf(GameMode.class, gameMode));
+            if ((toGateLocal != null) && toGateLocal.getReceiveXP())
+                player.setExp(xp);
         }
         switch (entityType) {
             case PLAYER:

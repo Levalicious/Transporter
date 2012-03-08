@@ -30,13 +30,13 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bennedum.transporter.net.Connection;
 import org.bennedum.transporter.net.Network;
 import org.bennedum.transporter.net.Message;
 import org.bennedum.transporter.net.Result;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *
@@ -1065,7 +1065,7 @@ public final class Server implements OptionsListener {
         LocalGate fromGateLocal = (LocalGate)toGate;
         RemoteGate toGateRemote = (RemoteGate)fromGate;
 
-        Permissions.require(fromGateLocal.getWorldName(), playerName, "trp.gate.link.add." + fromGateLocal.getName());
+        Permissions.require(fromGateLocal.getWorldName(), playerName, "trp.gate.link.add." + fromGateLocal.getFullName());
 
         if (fromGateLocal.isLinked() && (! fromGateLocal.getMultiLink()))
             throw new ServerException("gate '%s' cannot accept multiple links", fromGate.getFullName());
@@ -1157,7 +1157,7 @@ public final class Server implements OptionsListener {
         LocalGate fromGateLocal = (LocalGate)toGate;
         RemoteGate toGateRemote = (RemoteGate)fromGate;
 
-        Permissions.require(fromGateLocal.getWorldName(), playerName, "trp.gate.link.remove." + fromGateLocal.getName());
+        Permissions.require(fromGateLocal.getWorldName(), playerName, "trp.gate.link.remove." + fromGateLocal.getFullName());
 
         if (! fromGateLocal.removeLink(toGateRemote.getFullName()))
             throw new ServerException("gate '%s' doesn't link to '%s'", fromGateLocal.getFullName(), toGateRemote.getFullName());

@@ -6,3 +6,14 @@
 Testing/TODO:
 
 Wiki Updates:
+    * new config code
+    * fixed some/all? of StringOutOfBoundsException occurrences
+    * changed trp.use to trp.gate.use
+    * changed all gate permissions to use full gate name
+    * changed basic permissions system
+    * new gate option, "receiveXP"
+    * fixed gate destroy permission check when sign is destroyed
+    * auto add world_nether and world_the_end during startup
+    * experimental support for SuperPerms (needs LOTS of testing by users)
+    * added support for redstone activated gates
+    * added "Redstone" gate design with redstone trigger and switch

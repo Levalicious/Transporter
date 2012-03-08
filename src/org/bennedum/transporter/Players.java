@@ -61,7 +61,7 @@ public final class Players {
     }
 
     public static void onJoin(Player player, Reservation res) {
-        add(new PlayerProxy(player.getName(), player.getDisplayName(), null, player.getWorld().getName()));
+        add(new PlayerProxy(player));
         for (Server server : Servers.getAll())
             if (server.getSendJoin())
                 server.doPlayerJoined(player, res == null);
@@ -132,9 +132,17 @@ public final class Players {
         }
     }
 
+    public static PlayerProxy get(String name) {
+        synchronized (players) {
+            return players.get(name);
+        }
+    }
+    
     private static PlayerProxy remove(String name) {
         synchronized (players) {
-            return players.remove(name);
+            PlayerProxy p = players.remove(name);
+            if (p != null) p.destroy();
+            return p;
         }
     }
 

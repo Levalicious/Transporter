@@ -27,15 +27,13 @@ import org.bukkit.event.world.WorldUnloadEvent;
  */
 public class WorldListenerImpl implements Listener {
 
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldLoad(WorldLoadEvent event) {
         Gates.loadGatesForWorld(new Context(), event.getWorld());
     }
 
-    @EventHandler(priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldUnload(WorldUnloadEvent event) {
-        // TODO: remove when Bukkit sends onWorldUnloaded events
-        Utils.debug("Yeeehaaa! we got an onWorldUnload event!");
         Gates.remove(event.getWorld());
     }
 

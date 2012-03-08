@@ -16,9 +16,9 @@
 package org.bennedum.transporter;
 
 import java.util.Map;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  * A block that belongs to a local gate.

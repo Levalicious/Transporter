@@ -60,8 +60,34 @@ public final class Patcher extends javax.swing.JFrame {
 
     /** Creates new form Patcher */
     public Patcher() {
-        initComponents();
-
+        
+        /*
+        for (int i = 1; i < 20000; i++) {
+            byte[] data = new byte[3];
+            
+            data[0] = (byte)(0x00ff & (i >> 16));
+            data[1] = (byte)(0x00ff & (i >> 8));
+            data[2] = (byte)(0x00ff & i);
+        
+            int x = (0x00ff0000 & ((int)data[0] << 16)) +
+                    (0x0000ff00 & ((int)data[1] << 8)) +
+                    (0x000000ff & (int)data[2]);
+        
+            if (i != x) {
+                System.out.println("i=" + i);
+                System.out.println("x=" + x);
+                System.out.println(
+                        Integer.toHexString(data[0]) + " " +
+                        Integer.toHexString(data[1]) + " " +
+                        Integer.toHexString(data[2])
+                        );
+                System.exit(1);
+            }
+        }
+        
+        System.exit(1);
+        */
+        
         /*
         try {
             for (int x = 1; x < 1000; x++) {
@@ -158,6 +184,9 @@ public final class Patcher extends javax.swing.JFrame {
             e.printStackTrace();
         }
         */
+
+        initComponents();
+
     }
 
     /** This method is called from within the constructor to

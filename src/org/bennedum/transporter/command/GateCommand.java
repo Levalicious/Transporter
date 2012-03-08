@@ -105,7 +105,7 @@ public class GateCommand extends TrpCommandProcessor {
 
         if ("select".startsWith(subCmd)) {
             LocalGate gate = getGate(ctx, args);
-            Permissions.require(ctx.getPlayer(), "trp.gate.select." + gate.getName());
+            Permissions.require(ctx.getPlayer(), "trp.gate.select." + gate.getFullName());
             Global.setSelectedGate(ctx.getPlayer(), gate);
             ctx.send("selected gate '%s'", gate.getFullName());
             return;
@@ -113,7 +113,7 @@ public class GateCommand extends TrpCommandProcessor {
 
         if ("info".startsWith(subCmd)) {
             LocalGate gate = getGate(ctx, args);
-            Permissions.require(ctx.getPlayer(), "trp.gate.info." + gate.getName());
+            Permissions.require(ctx.getPlayer(), "trp.gate.info." + gate.getFullName());
             ctx.send("Full name: %s", gate.getFullName());
             ctx.send("Design: %s", gate.getDesignName());
             ctx.send("Creator: %s", gate.getCreatorName());
@@ -143,7 +143,7 @@ public class GateCommand extends TrpCommandProcessor {
             if (gate.isOpen())
                 ctx.warn("gate '%s' is already open", gate.getName(ctx));
             else {
-                Permissions.require(ctx.getPlayer(), "trp.gate.open." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.open." + gate.getFullName());
                 gate.open();
                 ctx.sendLog("opened gate '%s'", gate.getName(ctx));
             }
@@ -153,7 +153,7 @@ public class GateCommand extends TrpCommandProcessor {
         if ("close".startsWith(subCmd)) {
             LocalGate gate = getGate(ctx, args);
             if (gate.isOpen()) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.close." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.close." + gate.getFullName());
                 gate.close();
                 ctx.sendLog("closed gate '%s'", gate.getName(ctx));
             } else
@@ -163,7 +163,7 @@ public class GateCommand extends TrpCommandProcessor {
 
         if ("rebuild".startsWith(subCmd)) {
             LocalGate gate = getGate(ctx, args);
-            Permissions.require(ctx.getPlayer(), "trp.gate.rebuild." + gate.getName());
+            Permissions.require(ctx.getPlayer(), "trp.gate.rebuild." + gate.getFullName());
             gate.rebuild();
             ctx.sendLog("rebuilt gate '%s'", gate.getName(ctx));
             return;
@@ -176,7 +176,7 @@ public class GateCommand extends TrpCommandProcessor {
                 args.remove(args.size() - 1);
             }
             LocalGate gate = getGate(ctx, args);
-            Permissions.require(ctx.getPlayer(), "trp.gate.destroy." + gate.getName());
+            Permissions.require(ctx.getPlayer(), "trp.gate.destroy." + gate.getFullName());
             Gates.destroy(gate, unbuild);
             ctx.sendLog("destroyed gate '%s'", gate.getName(ctx));
             return;
@@ -215,7 +215,7 @@ public class GateCommand extends TrpCommandProcessor {
                 throw new CommandException("unknown 'to' gate '%s'", toGateName);
 
             if ("add".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.link.add." + fromGate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.link.add." + fromGate.getFullName());
 
                 if (fromGate.isLinked() && (! fromGate.getMultiLink()))
                     throw new CommandException("gate '%s' cannot accept multiple links", fromGate.getName(ctx));
@@ -261,7 +261,7 @@ public class GateCommand extends TrpCommandProcessor {
             }
 
             if ("remove".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.link.remove." + fromGate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.link.remove." + fromGate.getFullName());
                 if (toGate != null) toGateName = toGate.getFullName();
 
                 if (! fromGate.removeLink(toGateName))
@@ -295,7 +295,7 @@ public class GateCommand extends TrpCommandProcessor {
             LocalGate gate = getGate(ctx, args);
 
             if ("add".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.pin.add." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.pin.add." + gate.getFullName());
                 if (gate.addPin(pin))
                     ctx.send("added pin to '%s'", gate.getName(ctx));
                 else
@@ -304,7 +304,7 @@ public class GateCommand extends TrpCommandProcessor {
             }
 
             if ("remove".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.pin.remove." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.pin.remove." + gate.getFullName());
                 if (pin.equals("*")) {
                     gate.removeAllPins();
                     ctx.send("removed all pins from '%s'", gate.getName(ctx));
@@ -327,7 +327,7 @@ public class GateCommand extends TrpCommandProcessor {
             LocalGate gate = getGate(ctx, args);
 
             if ("add".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.ban.add." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.ban.add." + gate.getFullName());
                 if (gate.addBannedItem(item))
                     ctx.send("added banned item to '%s'", gate.getName(ctx));
                 else
@@ -336,7 +336,7 @@ public class GateCommand extends TrpCommandProcessor {
             }
 
             if ("remove".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.ban.remove." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.ban.remove." + gate.getFullName());
                 if (item.equals("*")) {
                     gate.removeAllBannedItems();
                     ctx.send("removed all banned items from '%s'", gate.getName(ctx));
@@ -359,7 +359,7 @@ public class GateCommand extends TrpCommandProcessor {
             LocalGate gate = getGate(ctx, args);
 
             if ("add".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.allow.add." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.allow.add." + gate.getFullName());
                 if (gate.addAllowedItem(item))
                     ctx.send("added allowed item to '%s'", gate.getName(ctx));
                 else
@@ -368,7 +368,7 @@ public class GateCommand extends TrpCommandProcessor {
             }
 
             if ("remove".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.allow.remove." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.allow.remove." + gate.getFullName());
                 if (item.equals("*")) {
                     gate.removeAllAllowedItems();
                     ctx.send("removed all allowed items from '%s'", gate.getName(ctx));
@@ -394,7 +394,7 @@ public class GateCommand extends TrpCommandProcessor {
                     throw new CommandException("new item required");
                 String newItem = args.remove(0);
                 LocalGate gate = getGate(ctx, args);
-                Permissions.require(ctx.getPlayer(), "trp.gate.replace.add." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.replace.add." + gate.getFullName());
                 if (gate.addReplaceItem(oldItem, newItem))
                     ctx.send("added replace item to '%s'", gate.getName(ctx));
                 else
@@ -404,7 +404,7 @@ public class GateCommand extends TrpCommandProcessor {
 
             if ("remove".startsWith(subCmd)) {
                 LocalGate gate = getGate(ctx, args);
-                Permissions.require(ctx.getPlayer(), "trp.gate.replace.remove." + gate.getName());
+                Permissions.require(ctx.getPlayer(), "trp.gate.replace.remove." + gate.getFullName());
                 if (oldItem.equals("*")) {
                     gate.removeAllReplaceItems();
                     ctx.send("removed all replace items from '%s'", gate.getName(ctx));
@@ -452,7 +452,7 @@ public class GateCommand extends TrpCommandProcessor {
             if (gate == null)
                 throw new CommandException("gate name required");
 
-            Permissions.require(ctx.getPlayer(), "trp.gate.go." + gate.getName());
+            Permissions.require(ctx.getPlayer(), "trp.gate.go." + gate.getFullName());
             try {
                 Reservation r = new Reservation(ctx.getPlayer(), gate);
                 r.depart();

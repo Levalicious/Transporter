@@ -48,6 +48,7 @@ src/org/bennedum/transporter/ServerException.java -text
 src/org/bennedum/transporter/ServerListenerImpl.java -text
 src/org/bennedum/transporter/Servers.java -text
 src/org/bennedum/transporter/SpawnDirection.java -text
+src/org/bennedum/transporter/SuperPermsPrincipal.java -text
 src/org/bennedum/transporter/TODO -text
 src/org/bennedum/transporter/Transporter.java -text
 src/org/bennedum/transporter/TransporterException.java -text
@@ -73,6 +74,8 @@ src/org/bennedum/transporter/command/SaveCommand.java -text
 src/org/bennedum/transporter/command/ServerCommand.java -text
 src/org/bennedum/transporter/command/TrpCommandProcessor.java -text
 src/org/bennedum/transporter/command/WorldCommand.java -text
+src/org/bennedum/transporter/config/Configuration.java -text
+src/org/bennedum/transporter/config/ConfigurationNode.java -text
 src/org/bennedum/transporter/net/Cipher.java -text
 src/org/bennedum/transporter/net/Connection.java -text
 src/org/bennedum/transporter/net/Message.java -text
@@ -111,6 +114,7 @@ src/resources/designs/manifest -text
 src/resources/designs/minecart.yml -text
 src/resources/designs/nether.yml -text
 src/resources/designs/pad.yml -text
+src/resources/designs/redstone.yml -text
 src/resources/designs/small.yml -text
 src/resources/designs/stargate.yml -text
 src/resources/designs/web.yml -text

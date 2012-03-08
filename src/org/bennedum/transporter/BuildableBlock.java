@@ -18,6 +18,7 @@ package org.bennedum.transporter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,7 +29,6 @@ import org.bukkit.block.Sign;
 import org.bukkit.material.Colorable;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *

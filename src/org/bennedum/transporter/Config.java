@@ -22,10 +22,10 @@ import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.bennedum.transporter.config.Configuration;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bennedum.transporter.net.Network;
 import org.bukkit.ChatColor;
-import org.bukkit.util.config.Configuration;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *
@@ -55,10 +55,12 @@ public final class Config {
         OPTIONS.add("serverJoinFormat");
         OPTIONS.add("serverQuitFormat");
         OPTIONS.add("serverKickFormat");
-//        OPTIONS.add("useIConomy");
+        OPTIONS.add("useVaultEconomy");
         OPTIONS.add("useRegisterEconomy");
         OPTIONS.add("useBOSEconomy");
         OPTIONS.add("useDynmap");
+        OPTIONS.add("useSuperPermissions");
+        OPTIONS.add("useVaultPermissions");
         OPTIONS.add("usePermissions");
         OPTIONS.add("usePermissionsEx");
         OPTIONS.add("dynmapMarkerSetLabel");
@@ -161,11 +163,11 @@ public final class Config {
     }
 
     public static List<String> getStringList(String path) {
-        return config.getStringList(path, null);
+        return config.getStringList(path);
     }
 
     public static List<ConfigurationNode> getNodeList(String path) {
-        return config.getNodeList(path, null);
+        return config.getNodeList(path);
     }
 
     public static ConfigurationNode getNode(String path) {
@@ -328,15 +330,13 @@ public final class Config {
         setPropertyDirect("global.serverKickFormat", s);
     }
 
-    /*
-    public static boolean getUseIConomy() {
-        return config.getBoolean("global.useIConomy", false);
+    public static boolean getUseVaultEconomy() {
+        return config.getBoolean("global.useVaultEconomy", false);
     }
 
-    public static void setUseIConomy(boolean b) {
-        config.setProperty("global.useIConomy", b);
+    public static void setUseVaultEconomy(boolean b) {
+        config.setProperty("global.useVaultEconomy", b);
     }
-    */
 
     public static boolean getUseRegisterEconomy() {
         return config.getBoolean("global.useRegisterEconomy", false);
@@ -362,6 +362,22 @@ public final class Config {
         config.setProperty("global.useDynmap", b);
     }
 
+    public static boolean getUseSuperPermissions() {
+        return config.getBoolean("global.useSuperPermissions", false);
+    }
+    
+    public static void setUseSuperPermissions(boolean b) {
+        config.setProperty("global.useSuperPermissions", b);
+    }
+    
+    public static boolean getUseVaultPermissions() {
+        return config.getBoolean("global.useVaultPermissions", false);
+    }
+    
+    public static void setUseVaultPermissions(boolean b) {
+        config.setProperty("global.useVaultPermissions", b);
+    }
+    
     public static boolean getUsePermissions() {
         return config.getBoolean("global.usePermissions", false);
     }

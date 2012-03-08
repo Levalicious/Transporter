@@ -26,14 +26,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.bennedum.transporter.config.Configuration;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.util.config.Configuration;
-import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *
@@ -68,6 +68,7 @@ public class Design {
     private boolean deleteInventory;
     private boolean receiveGameMode;
     private String allowGameModes;
+    private boolean receiveXP;
     private String teleportFormat;
     private String noLinksFormat;
     private String noLinkSelectedFormat;
@@ -130,6 +131,7 @@ public class Design {
         deleteInventory = conf.getBoolean("deleteInventory", false);
         receiveGameMode = conf.getBoolean("receiveGameMode", false);
         allowGameModes = conf.getString("allowGameModes", "*");
+        receiveXP = conf.getBoolean("receiveXP", false);
         teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
@@ -336,6 +338,7 @@ public class Design {
         Utils.debug("  deleteInventory = " + deleteInventory);
         Utils.debug("  receiveGameMode = " + receiveGameMode);
         Utils.debug("  allowGameModes = " + allowGameModes);
+        Utils.debug("  receiveXP = " + receiveXP);
         Utils.debug("  teleportFormat = " + teleportFormat);
         Utils.debug("  noLinksFormat = " + noLinksFormat);
         Utils.debug("  noLinkSelectedFormat = " + noLinkSelectedFormat);
@@ -463,6 +466,10 @@ public class Design {
 
     public String getAllowGameModes() {
         return allowGameModes;
+    }
+
+    public boolean getReceiveXP() {
+        return receiveXP;
     }
 
     public String getTeleportFormat() {
@@ -637,7 +644,6 @@ public class Design {
         Utils.debug("world is OK");
 
         Block targetBlock = location.getBlock();
-        location = null;
         BlockFace direction = null;
         List<GateBlock> gateBlocks = null;
         matched = false;

@@ -20,10 +20,7 @@ import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDamageEvent;
-import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.block.*;
 
 /**
  *
@@ -36,6 +33,7 @@ public class BlockListenerImpl implements Listener {
         LocalGate gate = Gates.findGateForProtection(event.getBlock().getLocation());
         if (gate != null) {
             event.setCancelled(true);
+            gate.updateScreens();
         }
     }
 
@@ -44,13 +42,21 @@ public class BlockListenerImpl implements Listener {
         LocalGate gate = Gates.findGateForProtection(event.getBlock().getLocation());
         if (gate != null) {
             event.setCancelled(true);
+            gate.updateScreens();
             return;
         }
         gate = Gates.findGateForScreen(event.getBlock().getLocation());
         if (gate != null) {
             Context ctx = new Context(event.getPlayer());
-            Gates.destroy(gate, false);
-            ctx.sendLog("destroyed gate '%s'", gate.getName());
+            try {
+                Permissions.require(ctx.getPlayer(), "trp.gate.destroy." + gate.getFullName());
+                Gates.destroy(gate, false);
+                ctx.sendLog("destroyed gate '%s'", gate.getName());
+            } catch (PermissionsException pe) {
+                ctx.warn(pe.getMessage());
+                event.setCancelled(true);
+                gate.updateScreens();
+            }
         }
     }
 
@@ -97,10 +103,43 @@ public class BlockListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockFromTo(BlockFromToEvent event) {
+        // This prevents liquid portals from flowing out
         LocalGate gate = Gates.findGateForPortal(event.getBlock().getLocation());
         if (gate != null) {
             event.setCancelled(true);
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onBlockRedstone(BlockRedstoneEvent event) {
+        LocalGate gate = Gates.findGateForTrigger(event.getBlock().getLocation());
+        if (gate != null) {
+            if (gate.isClosed() && (event.getNewCurrent() > 0)) {
+                if (gate.hasValidDestination()) {
+                    try {
+                        gate.open();
+                        Utils.info("gate '%s' opened via redstone", gate.getName());
+                    } catch (GateException ge) {
+                        Utils.warning(ge.getMessage());
+                    }
+                }
+            } else if (gate.isOpen() && (event.getNewCurrent() <= 0)) {
+                gate.close();
+                Utils.info("gate '%s' closed via redstone", gate.getName());
+            }
+            return;
+        }
+        
+        gate = Gates.findGateForSwitch(event.getBlock().getLocation());
+        if (gate != null) {
+            if ((event.getNewCurrent() > 0) && (event.getOldCurrent() == 0)) {
+                try {
+                    gate.nextLink();
+                } catch (GateException ge) {
+                    Utils.warning(ge.getMessage());
+                }
+            }
+        }
+    }
+    
 }
