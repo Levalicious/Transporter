@@ -57,9 +57,9 @@ public final class Config {
         OPTIONS.add("serverKickFormat");
         OPTIONS.add("useVaultEconomy");
         OPTIONS.add("useRegisterEconomy");
-        OPTIONS.add("useBOSEconomy");
+//        OPTIONS.add("useBOSEconomy");
         OPTIONS.add("useDynmap");
-        OPTIONS.add("useSuperPermissions");
+//        OPTIONS.add("useSuperPermissions");
         OPTIONS.add("useVaultPermissions");
         OPTIONS.add("usePermissions");
         OPTIONS.add("usePermissionsEx");
@@ -346,6 +346,7 @@ public final class Config {
         config.setProperty("global.useRegisterEconomy", b);
     }
 
+    /*
     public static boolean getUseBOSEconomy() {
         return config.getBoolean("global.useBOSEconomy", false);
     }
@@ -353,7 +354,8 @@ public final class Config {
     public static void setUseBOSEconomy(boolean b) {
         config.setProperty("global.useBOSEconomy", b);
     }
-
+    */
+    
     public static boolean getUseDynmap() {
         return config.getBoolean("global.useDynmap", false);
     }
@@ -362,6 +364,7 @@ public final class Config {
         config.setProperty("global.useDynmap", b);
     }
 
+    /*
     public static boolean getUseSuperPermissions() {
         return config.getBoolean("global.useSuperPermissions", false);
     }
@@ -369,6 +372,7 @@ public final class Config {
     public static void setUseSuperPermissions(boolean b) {
         config.setProperty("global.useSuperPermissions", b);
     }
+    */
     
     public static boolean getUseVaultPermissions() {
         return config.getBoolean("global.useVaultPermissions", false);

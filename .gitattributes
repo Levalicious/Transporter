@@ -48,7 +48,6 @@ src/org/bennedum/transporter/ServerException.java -text
 src/org/bennedum/transporter/ServerListenerImpl.java -text
 src/org/bennedum/transporter/Servers.java -text
 src/org/bennedum/transporter/SpawnDirection.java -text
-src/org/bennedum/transporter/SuperPermsPrincipal.java -text
 src/org/bennedum/transporter/TODO -text
 src/org/bennedum/transporter/Transporter.java -text
 src/org/bennedum/transporter/TransporterException.java -text
@@ -103,6 +102,9 @@ src/resources/client/1321653290000/manifest -text
 src/resources/client/1326382442000/Transporter.class -text
 src/resources/client/1326382442000/dr.class -text
 src/resources/client/1326382442000/manifest -text
+src/resources/client/1330677677000/Transporter.class -text
+src/resources/client/1330677677000/du.class -text
+src/resources/client/1330677677000/manifest -text
 src/resources/client/bandaid.png -text
 src/resources/client/magnifier.png -text
 src/resources/client/src/Transporter.src -text

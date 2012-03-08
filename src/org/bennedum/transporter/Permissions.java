@@ -49,19 +49,10 @@ public final class Permissions {
     private static Map<String,ListFile> listFiles = new HashMap<String,ListFile>();
     private static Map<String,PropertiesFile> propertiesFiles = new HashMap<String,PropertiesFile>();
 
-    private static boolean superPermsInitted = false;
     private static boolean basicPermsInitted = false;
     private static net.milkbowl.vault.permission.Permission vaultPlugin = null;
     private static PermissionHandler permissionsPlugin = null;
     private static PermissionManager permissionsExPlugin = null;
-
-    public static boolean superPermsAvailable() {
-        if (! Config.getUseSuperPermissions()) return false;
-        if (superPermsInitted) return true;
-        superPermsInitted = true;
-        Utils.info("Initialized SuperPermissions for Permissions");
-        return true;
-    }
 
     public static boolean basicPermsAvailable() {
         if (basicPermsInitted) return true;
@@ -175,26 +166,6 @@ public final class Permissions {
 
     private static void require(String worldName, String playerName, boolean requireAll, String ... perms) throws PermissionsException {
         if (isOp(playerName)) return;
-        
-        if (superPermsAvailable()) {
-            
-            // NOTE: this doesn't use the world name in any way!!!
-        
-            PlayerProxy proxy = Players.get(playerName);
-            if (proxy == null)
-                throw new PermissionsException("player not found");
-            for (String perm : perms) {
-                if (requireAll) {
-                    if (! proxy.hasPermission(perm))
-                        throw new PermissionsException("not permitted");
-                } else {
-                    if (proxy.hasPermission(perm)) return;
-                }
-            }
-            if (! requireAll)
-                throw new PermissionsException("not permitted (SuperPerms)");
-            return;
-        }
         
         if (vaultAvailable()) {
             for (String perm : perms) {

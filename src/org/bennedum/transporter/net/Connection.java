@@ -221,6 +221,8 @@ public final class Connection {
                         Utils.severe("messageData.length=%s", messageData.length);
                         Utils.severe("encoded.length=%s", encoded.length());
                         Utils.severe("encoded=%s", encoded);
+                        Utils.severe("first 16 bytes of cipherData: %s", Utils.byteArrayToString(cipherData, 0, 16));
+                        Utils.severe("last 16 bytes of cipherData: %s", Utils.byteArrayToString(cipherData, cipherData.length - 16, 16));
                         Utils.severe("first 16 bytes of messageData: %s", Utils.byteArrayToString(messageData, 0, 16));
                         Utils.severe("last 16 bytes of messageData: %s", Utils.byteArrayToString(messageData, messageData.length - 16, 16));
                         Utils.severe("first 16 bytes of readBuffer: %s", Utils.byteArrayToString(readBuffer, 0, 16));
