@@ -16,16 +16,14 @@
 package org.bennedum.transporter;
 
 import com.nijiko.permissions.PermissionHandler;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -37,16 +35,16 @@ import ru.tehkode.permissions.bukkit.PermissionsEx;
  */
 public final class Permissions {
 
-    private static final String OPS_FILE = "ops.txt";
-    private static final String BANNEDPLAYERS_FILE = "banned-players.txt";
-    private static final String WHITELIST_FILE = "white-list.txt";
-    private static final String SERVERPROPERTIES_FILE = "server.properties";
+//    private static final String OPS_FILE = "ops.txt";
+//    private static final String BANNEDPLAYERS_FILE = "banned-players.txt";
+//    private static final String WHITELIST_FILE = "white-list.txt";
+//    private static final String SERVERPROPERTIES_FILE = "server.properties";
     private static final String PERMISSIONS_FILE = "permissions.properties";
 
     private static final File permissionsFile =
             new File(Global.plugin.getDataFolder(), PERMISSIONS_FILE);
 
-    private static Map<String,ListFile> listFiles = new HashMap<String,ListFile>();
+//    private static Map<String,ListFile> listFiles = new HashMap<String,ListFile>();
     private static Map<String,PropertiesFile> propertiesFiles = new HashMap<String,PropertiesFile>();
 
     private static boolean basicPermsInitted = false;
@@ -60,27 +58,51 @@ public final class Permissions {
         Utils.info("Initialized Basic for Permissions");
         return true;
     }
-    
+
     public static boolean vaultAvailable() {
         if (! Config.getUseVaultPermissions()) return false;
         Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("Vault");
-        if ((p == null) || (! p.isEnabled())) return false;
+        if (p == null) {
+            Utils.warning("Vault is not installed!");
+            return false;
+        }
+        if (! p.isEnabled()) {
+            Utils.warning("Vault is not enabled!");
+            return false;
+        }
         if (vaultPlugin != null) return true;
         RegisteredServiceProvider<net.milkbowl.vault.permission.Permission> rsp =
                 Global.plugin.getServer().getServicesManager().getRegistration(net.milkbowl.vault.permission.Permission.class);
-        if (rsp == null) return false;
+        if (rsp == null) {
+            Utils.warning("Vault didn't return a service provider!");
+            return false;
+        }
         vaultPlugin = rsp.getProvider();
-        if (vaultPlugin == null) return false;
+        if (vaultPlugin == null) {
+            Utils.warning("Vault didn't return a permissions provider!");
+            return false;
+        }
         Utils.info("Initialized Vault for Permissions");
         return true;
     }
-    
+
     public static boolean permissionsAvailable() {
         if (! Config.getUsePermissions()) return false;
         Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("Permissions");
-        if ((p == null) || (! p.isEnabled())) return false;
+        if (p == null) {
+            Utils.warning("Permissions is not installed!");
+            return false;
+        }
+        if (! p.isEnabled()) {
+            Utils.warning("Permissions is not enabled!");
+            return false;
+        }
         if (permissionsPlugin != null) return true;
         permissionsPlugin = ((com.nijikokun.bukkit.Permissions.Permissions)p).getHandler();
+        if (permissionsPlugin == null) {
+            Utils.warning("Permissions didn't return a handler!");
+            return false;
+        }
         Utils.info("Initialized Permissions for Permissions");
         return true;
     }
@@ -88,9 +110,20 @@ public final class Permissions {
     public static boolean permissionsExAvailable() {
         if (! Config.getUsePermissionsEx()) return false;
         Plugin p = Global.plugin.getServer().getPluginManager().getPlugin("PermissionsEx");
-        if ((p == null) || (! p.isEnabled())) return false;
+        if (p == null) {
+            Utils.warning("PermissionsEx is not installed!");
+            return false;
+        }
+        if (! p.isEnabled()) {
+            Utils.warning("PermissionsEx is not enabled!");
+            return false;
+        }
         if (permissionsExPlugin != null) return true;
         permissionsExPlugin = PermissionsEx.getPermissionManager();
+        if (permissionsExPlugin == null) {
+            Utils.warning("PermissionsEx didn't return a manager!");
+            return false;
+        }
         Utils.info("Initialized PermissionsEx for Permissions");
         return true;
     }
@@ -166,7 +199,7 @@ public final class Permissions {
 
     private static void require(String worldName, String playerName, boolean requireAll, String ... perms) throws PermissionsException {
         if (isOp(playerName)) return;
-        
+
         if (vaultAvailable()) {
             for (String perm : perms) {
                 if (requireAll) {
@@ -180,7 +213,7 @@ public final class Permissions {
                 throw new PermissionsException("not permitted");
             return;
         }
-        
+
         if (permissionsAvailable()) {
             for (String perm : perms) {
                 if (requireAll) {
@@ -221,32 +254,45 @@ public final class Permissions {
             if (! requireAll)
                 throw new PermissionsException("not permitted");
         }
-        
+
         // should never get here!
-        throw new PermissionsException("not permitted");
-        
+        throw new PermissionsException("not permitted because no permissions system is available?");
+
     }
 
     // can't check player's IP because it might not be what it is on the sending side due to NAT
     public static void connect(String playerName) throws PermissionsException {
         if (Global.plugin.getServer().getOnlinePlayers().length >= Global.plugin.getServer().getMaxPlayers())
             throw new PermissionsException("maximim players already connected");
+        for (OfflinePlayer p : Global.plugin.getServer().getWhitelistedPlayers())
+            if (p.getName().equalsIgnoreCase(playerName)) return;
+        for (OfflinePlayer p : Global.plugin.getServer().getBannedPlayers())
+            if (p.getName().equalsIgnoreCase(playerName))
+                throw new PermissionsException("player is banned");
+        /*
         if (getProperties(new File(SERVERPROPERTIES_FILE)).getProperty("white-list", "false").equalsIgnoreCase("true"))
             if (! getList(new File(WHITELIST_FILE), true).contains(playerName.toLowerCase()))
                 throw new PermissionsException("player is not white-listed");
         if (getList(new File(BANNEDPLAYERS_FILE), false).contains(playerName))
             throw new PermissionsException("player is banned");
+         */
     }
 
     public static boolean isOp(Player player) {
         if (player == null) return true;
-        return isOp(player.getName());
+        return player.isOp();
+//        return isOp(player.getName());
     }
 
     public static boolean isOp(String playerName) {
-        return getList(new File(OPS_FILE), true).contains(playerName);
+        Set<OfflinePlayer> ops = Global.plugin.getServer().getOperators();
+        for (OfflinePlayer p : Global.plugin.getServer().getOperators())
+            if (p.getName().equalsIgnoreCase(playerName)) return true;
+        return false;
+//        return getList(new File(OPS_FILE), true).contains(playerName);
     }
 
+    /*
     private static Set<String> getList(File file, boolean forceLower) {
         ListFile listFile = listFiles.get(file.getAbsolutePath());
         if (listFile == null) {
@@ -272,6 +318,7 @@ public final class Permissions {
         }
         return listFile.data;
     }
+     */
 
     private static Properties getProperties(File file) {
         PropertiesFile propsFile = propertiesFiles.get(file.getAbsolutePath());
@@ -291,10 +338,12 @@ public final class Permissions {
         return propsFile.data;
     }
 
+    /*
     private static class ListFile {
         Set<String> data = null;
         long lastRead = 0;
     }
+*/
 
     private static class PropertiesFile {
         Properties data = null;

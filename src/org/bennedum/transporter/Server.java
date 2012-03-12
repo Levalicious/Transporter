@@ -26,7 +26,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -877,14 +880,30 @@ public final class Server implements OptionsListener {
     }
 
     private void handleRenameGate(Message message) throws ServerException, GateException {
-        String oldName = message.getString("oldName");
-        if (oldName == null)
+        String oName = message.getString("oldName");
+        if (oName == null)
             throw new ServerException("missing oldName");
-        oldName = Gate.makeFullName(this, oldName);
-        String newName = message.getString("newName");
+        final String oldName = Gate.makeFullName(this, oName);
+        final String newName = message.getString("newName");
         if (newName == null)
             throw new ServerException("missing newName");
-        Gates.rename(oldName, newName);
+
+        Future<GateException> future = Utils.call(new Callable<GateException>() {
+            @Override
+            public GateException call() {
+                try {
+                    Gates.rename(oldName, newName);
+                    return null;
+                } catch (GateException ge) {
+                    return ge;
+                }
+            }
+        });
+        try {
+            GateException ge = future.get();
+            if (ge != null) throw ge;
+        } catch (InterruptedException e) {
+        } catch (ExecutionException e) {}
     }
 
     private void handleRemoveGate(Message message) throws ServerException {
@@ -892,12 +911,18 @@ public final class Server implements OptionsListener {
         if (gateName == null)
             throw new ServerException("missing name");
         gateName = Gate.makeFullName(this, gateName);
-        Gate gate = Gates.get(gateName);
+        final Gate gate = Gates.get(gateName);
         if (gate == null)
             throw new ServerException("unknown gate '%s'", gateName);
         if (gate.isSameServer())
             throw new ServerException("gate '%s' is not remote", gateName);
-        Gates.remove((RemoteGate)gate);
+
+        Utils.fire(new Runnable() {
+            @Override
+            public void run() {
+                Gates.remove((RemoteGate)gate);
+            }
+        });
     }
 
     private void handleDestroyGate(Message message) throws ServerException {
@@ -905,12 +930,18 @@ public final class Server implements OptionsListener {
         if (gateName == null)
             throw new ServerException("missing name");
         gateName = Gate.makeFullName(this, gateName);
-        Gate gate = Gates.get(gateName);
+        final Gate gate = Gates.get(gateName);
         if (gate == null)
             throw new ServerException("unknown gate '%s'", gateName);
         if (gate.isSameServer())
             throw new ServerException("gate '%s' is not remote", gateName);
-        Gates.destroy((RemoteGate)gate);
+
+        Utils.fire(new Runnable() {
+            @Override
+            public void run() {
+                Gates.destroy((RemoteGate)gate);
+            }
+        });
     }
 
     private void handleAttachGate(Message message) throws ServerException {
@@ -924,17 +955,23 @@ public final class Server implements OptionsListener {
             throw new ServerException("missing from");
         fromName = Gate.makeFullName(this, fromName);
 
-        Gate toGate = Gates.get(toName);
+        final Gate toGate = Gates.get(toName);
         if (toGate == null)
             throw new ServerException("unknown to gate '%s'", toName);
         if (! toGate.isSameServer())
             throw new ServerException("to gate '%s' is not local", toName);
-        Gate fromGate = Gates.get(fromName);
+        final Gate fromGate = Gates.get(fromName);
         if (fromGate == null)
             throw new ServerException("unknown from gate '%s'", fromName);
         if (fromGate.isSameServer())
             throw new ServerException("from gate '%s' is not remote", fromName);
-        toGate.attach(fromGate);
+
+        Utils.fire(new Runnable() {
+            @Override
+            public void run() {
+                toGate.attach(fromGate);
+            }
+        });
     }
 
     private void handleDetachGate(Message message) throws ServerException {
@@ -948,17 +985,23 @@ public final class Server implements OptionsListener {
             throw new ServerException("missing from");
         fromName = Gate.makeFullName(this, fromName);
 
-        Gate toGate = Gates.get(toName);
+        final Gate toGate = Gates.get(toName);
         if (toGate == null)
             throw new ServerException("unknown to gate '%s'", toName);
         if (! toGate.isSameServer())
             throw new ServerException("to gate '%s' is not local", toName);
-        Gate fromGate = Gates.get(fromName);
+        final Gate fromGate = Gates.get(fromName);
         if (fromGate == null)
             throw new ServerException("unknown from gate '%s'", fromName);
         if (fromGate.isSameServer())
             throw new ServerException("from gate '%s' is not remote", fromName);
-        toGate.detach(fromGate);
+
+        Utils.fire(new Runnable() {
+            @Override
+            public void run() {
+                toGate.detach(fromGate);
+            }
+        });
     }
 
     private void handleSendReservation(Message message) throws ServerException {
