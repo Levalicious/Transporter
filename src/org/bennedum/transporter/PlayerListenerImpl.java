@@ -42,53 +42,58 @@ public final class PlayerListenerImpl implements Listener {
         Location location = block.getLocation();
         Context ctx = new Context(event.getPlayer());
 
-        // open a closed gate, change destinations, close an opened gate if the end of the links are reached
+        LocalGate triggerGate = Gates.findGateForTrigger(location);
+        LocalGate switchGate = null;
 
-        LocalGate gate = Gates.findGateForTrigger(location);
-        if (gate != null) {
-            Global.setSelectedGate(event.getPlayer(), gate);
+        if (triggerGate != null) {
+            Global.setSelectedGate(event.getPlayer(), triggerGate);
 
-            if (gate.isClosed() &&
-                Permissions.has(ctx.getPlayer(), "trp.gate.open." + gate.getFullName())) {
-                if (gate.hasValidDestination()) {
+            if (triggerGate.isClosed() &&
+                Permissions.has(ctx.getPlayer(), "trp.gate.open." + triggerGate.getFullName())) {
+                if (triggerGate.hasValidDestination()) {
                     try {
-                        gate.open();
-                        ctx.sendLog("opened gate '%s'", gate.getName());
+                        triggerGate.open();
+                        ctx.sendLog("opened gate '%s'", triggerGate.getName());
                         return;
                     } catch (GateException ge) {
                         ctx.warnLog(ge.getMessage());
                     }
                 }
             } else {
-                Gate switchGate = Gates.findGateForSwitch(location);
-                if (switchGate == gate) {
+
+                switchGate = Gates.findGateForSwitch(location);
+                if (switchGate == triggerGate) {
                     // the trigger is the same block as the switch, so do something special
-                    if (gate.isLastLink() &&
-                        Permissions.has(ctx.getPlayer(), "trp.gate.close." + gate.getFullName()) &&
-                        Permissions.has(ctx.getPlayer(), "trp.gate.changeLink." + gate.getFullName())) {
-                        gate.close();
-                        ctx.sendLog("closed gate '%s'", gate.getName());
-                        try {
-                            gate.nextLink();
-                        } catch (GateException ge) {
-                            ctx.warnLog(ge.getMessage());
+                    if (triggerGate.isLastLink() &&
+                        Permissions.has(ctx.getPlayer(), "trp.gate.close." + triggerGate.getFullName())) {
+                        triggerGate.close();
+                        ctx.sendLog("closed gate '%s'", triggerGate.getName());
+                        if (Permissions.has(ctx.getPlayer(), "trp.gate.changeLink." + triggerGate.getFullName())) {
+                            try {
+                                triggerGate.nextLink();
+                            } catch (GateException ge) {
+                                ctx.warnLog(ge.getMessage());
+                            }
                         }
                         return;
                     }
-                } else if (Permissions.has(ctx.getPlayer(), "trp.gate.close." + gate.getFullName())) {
-                    gate.close();
-                    ctx.sendLog("closed gate '%s'", gate.getName());
+
+                } else if (Permissions.has(ctx.getPlayer(), "trp.gate.close." + triggerGate.getFullName())) {
+                    triggerGate.close();
+                    ctx.sendLog("closed gate '%s'", triggerGate.getName());
                     return;
                 }
             }
         }
 
-        gate = Gates.findGateForSwitch(location);
-        if (gate != null) {
-            Global.setSelectedGate(event.getPlayer(), gate);
+        if (switchGate == null)
+            switchGate = Gates.findGateForSwitch(location);
+
+        if (switchGate != null) {
+            Global.setSelectedGate(event.getPlayer(), switchGate);
             try {
-                Permissions.require(ctx.getPlayer(), "trp.gate.changeLink." + gate.getFullName());
-                gate.nextLink();
+                Permissions.require(ctx.getPlayer(), "trp.gate.changeLink." + switchGate.getFullName());
+                switchGate.nextLink();
             } catch (TransporterException te) {
                 ctx.warnLog(te.getMessage());
             }
