@@ -115,12 +115,15 @@ public final class Gates {
             Markers.update();
             for (Server server : Servers.getAll())
                 server.doGateAdded((LocalGate)gate);
+            World world = ((LocalGate)gate).getWorld();
             if (Config.getAutoAddWorlds())
                 try {
-                    WorldProxy wp = Worlds.add(((LocalGate)gate).getWorld());
+                    WorldProxy wp = Worlds.add(world);
                     if (wp != null)
-                        Utils.info("added world '%s'", wp.getName());
+                        Utils.info("automatically added world '%s' for new gate '%s'", wp.getName(), gate.getClass());
                 } catch (WorldException we) {}
+            else if (Worlds.get(world.getName()) == null)
+                Utils.warning("Gate '%s' has been added to world '%s' but the world has not been added to the plugin's list of worlds!", gate.getName(), world.getName());
         }
     }
 

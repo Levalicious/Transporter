@@ -34,19 +34,6 @@ public final class Worlds {
 
     public static void onConfigLoad(Context ctx) {
         worlds.clear();
-        List<ConfigurationNode> worldNodes = Config.getNodeList("worlds");
-        if (worldNodes != null) {
-            for (ConfigurationNode node : worldNodes) {
-                try {
-                    WorldProxy world = new WorldProxy(node);
-                    add(world);
-                    if (Global.started && Config.getAutoLoadWorlds() && world.getAutoLoad())
-                        world.load(ctx);
-                } catch (WorldException e) {
-                    ctx.warn(e.getMessage());
-                }
-            }
-        }
 
         // add default worlds if they don't exist
         for (String name : new String[] { "world", "world_nether", "world_the_end"} ) {
@@ -55,6 +42,21 @@ public final class Worlds {
             try {
                 add(world);
             } catch (WorldException e) {}
+        }
+
+        List<ConfigurationNode> worldNodes = Config.getNodeList("worlds");
+        if (worldNodes != null) {
+            for (ConfigurationNode node : worldNodes) {
+                try {
+                    WorldProxy world = new WorldProxy(node);
+                    if (add(world)) {
+                        if (Global.started && Config.getAutoLoadWorlds() && world.getAutoLoad())
+                            world.load(ctx);
+                    }
+                } catch (WorldException e) {
+                    ctx.warn(e.getMessage());
+                }
+            }
         }
 
         if (Global.started)
@@ -82,8 +84,8 @@ public final class Worlds {
         return wp;
     }
 
-    public static void add(WorldProxy world) {
-        worlds.put(world.getName(), world);
+    public static boolean add(WorldProxy world) {
+        return worlds.put(world.getName(), world) == null;
     }
 
     public static void remove(WorldProxy world) {
