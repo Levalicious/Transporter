@@ -53,11 +53,10 @@ public final class Worlds {
             World world = Global.plugin.getServer().getWorld(name);
             if (world == null) continue;
             try {
-                WorldProxy wp = new WorldProxy(world.getName(), world.getEnvironment().toString(), null, world.getSeed() + "");
-                add(wp);
+                add(world);
             } catch (WorldException e) {}
         }
-        
+
         if (Global.started)
             autoLoad(ctx);
     }
@@ -74,6 +73,13 @@ public final class Worlds {
         for (WorldProxy world : worlds.values())
             if (world.getAutoLoad())
                 world.load(ctx);
+    }
+
+    public static WorldProxy add(World world) throws WorldException {
+        if (worlds.containsKey(world.getName())) return null;
+        WorldProxy wp = new WorldProxy(world.getName(), world.getEnvironment().toString(), null, world.getSeed() + "");
+        add(wp);
+        return wp;
     }
 
     public static void add(WorldProxy world) {

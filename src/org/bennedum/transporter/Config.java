@@ -47,6 +47,7 @@ public final class Config {
         OPTIONS.add("allowLinkLocal");
         OPTIONS.add("allowLinkWorld");
         OPTIONS.add("allowLinkServer");
+        OPTIONS.add("autoAddWorlds");
         OPTIONS.add("autoLoadWorlds");
         OPTIONS.add("gateLockExpiration");
         OPTIONS.add("arrivalWindow");
@@ -246,6 +247,14 @@ public final class Config {
         config.setProperty("global.allowLinkServer", b);
     }
 
+    public static boolean getAutoAddWorlds() {
+        return config.getBoolean("global.autoAddWorlds", true);
+    }
+
+    public static void setAutoAddWorlds(boolean b) {
+        config.setProperty("global.autoAddWorlds", b);
+    }
+
     public static boolean getAutoLoadWorlds() {
         return config.getBoolean("global.autoLoadWorlds", true);
     }
@@ -355,7 +364,7 @@ public final class Config {
         config.setProperty("global.useBOSEconomy", b);
     }
     */
-    
+
     public static boolean getUseDynmap() {
         return config.getBoolean("global.useDynmap", false);
     }
@@ -368,20 +377,20 @@ public final class Config {
     public static boolean getUseSuperPermissions() {
         return config.getBoolean("global.useSuperPermissions", false);
     }
-    
+
     public static void setUseSuperPermissions(boolean b) {
         config.setProperty("global.useSuperPermissions", b);
     }
     */
-    
+
     public static boolean getUseVaultPermissions() {
         return config.getBoolean("global.useVaultPermissions", false);
     }
-    
+
     public static void setUseVaultPermissions(boolean b) {
         config.setProperty("global.useVaultPermissions", b);
     }
-    
+
     public static boolean getUsePermissions() {
         return config.getBoolean("global.usePermissions", false);
     }

@@ -59,13 +59,14 @@ public final class Gates {
             loadGatesForWorld(ctx, world);
     }
 
-    public static void loadGatesForWorld(Context ctx, World world) {
+    public static int loadGatesForWorld(Context ctx, World world) {
         File worldFolder = Worlds.worldPluginFolder(world);
         File gatesFolder = new File(worldFolder, "gates");
         if (! gatesFolder.exists()) {
             Utils.warning("gates folder '%s' for world '%s' not found; no gates will be loaded", gatesFolder.getAbsolutePath(), world.getName());
-            return;
+            return 0;
         }
+        int loadedCount = 0;
         for (File gateFile : Utils.listYAMLFiles(gatesFolder)) {
             try {
                 LocalGate gate = new LocalGate(world, gateFile);
@@ -73,6 +74,7 @@ public final class Gates {
                     add(gate);
                     gate.initialize();
                     ctx.sendLog("loaded gate '%s' for world '%s'", gate.getName(), world.getName());
+                    loadedCount++;
                 } catch (GateException ge) {
                     ctx.warnLog("unable to load gate '%s' for world '%s': %s", gate.getName(), world.getName(), ge.getMessage());
                 }
@@ -80,6 +82,7 @@ public final class Gates {
                 ctx.warnLog("'%s' contains an invalid gate: %s", gateFile.getPath(), ge.getMessage());
             }
         }
+        return loadedCount;
     }
 
     public static void save(Context ctx) {
@@ -112,6 +115,12 @@ public final class Gates {
             Markers.update();
             for (Server server : Servers.getAll())
                 server.doGateAdded((LocalGate)gate);
+            if (Config.getAutoAddWorlds())
+                try {
+                    WorldProxy wp = Worlds.add(((LocalGate)gate).getWorld());
+                    if (wp != null)
+                        Utils.info("added world '%s'", wp.getName());
+                } catch (WorldException we) {}
         }
     }
 
