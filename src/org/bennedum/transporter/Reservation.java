@@ -652,7 +652,7 @@ public final class Reservation {
             final String[] addrParts = addr.split("/");
             if (addrParts.length == 1) {
                 // this is a client based reconnect
-                Utils.debug("sending player '%s' to '%s' via client reconnect", player.getName(), addrParts[0]);
+                Utils.debug("sending player '%s' @%s to '%s' via client reconnect", player.getName(), player.getAddress().getAddress().getHostAddress(), addrParts[0]);
                 Utils.fire(new Runnable() {
                     @Override
                     public void run() {
@@ -661,7 +661,7 @@ public final class Reservation {
                 });
             } else {
                 // this is a proxy based reconnect
-                Utils.debug("sending player '%s' to '%s,%s' via proxy reconnect", player.getName(), addrParts[0], addrParts[1]);
+                Utils.debug("sending player '%s' @%s to '%s,%s' via proxy reconnect", player.getName(), player.getAddress().getAddress().getHostAddress(), addrParts[0], addrParts[1]);
                 Utils.fire(new Runnable() {
                     @Override
                     public void run() {

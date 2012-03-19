@@ -137,10 +137,14 @@ public final class Permissions {
         Utils.debug("basic permissions check '%s' for %s", perm, name);
         for (;;) {
             String prop = permissions.getProperty(perm);
-            if (prop == null)
-                prop = permissions.getProperty(perm + ".*");
-            if (prop != null) {
+            if (prop != null)
                 Utils.debug("found basic permissions node for '%s': %s", perm, prop);
+            else {
+                prop = permissions.getProperty(perm + ".*");
+                if (prop != null)
+                    Utils.debug("found basic permissions node for '%s.*': %s", perm, prop);
+            }
+            if (prop != null) {
                 String[] players = prop.split("\\s*,\\s*");
                 boolean grant = false;
                 boolean found = false;
@@ -163,7 +167,8 @@ public final class Permissions {
                     Utils.debug("basic permission %s granted", grant ? "is" : "is not");
                     return grant;
                 }
-            }
+            } else
+                Utils.debug("basic permissions node '%s' not found", perm);
             int pos = perm.lastIndexOf(".");
             if (pos == -1) {
                 Utils.debug("basic permission is not granted");
@@ -198,7 +203,10 @@ public final class Permissions {
     }
 
     private static void require(String worldName, String playerName, boolean requireAll, String ... perms) throws PermissionsException {
-        if (isOp(playerName)) return;
+        if (isOp(playerName)) {
+            Utils.debug("player '%s' is op", playerName);
+            return;
+        }
 
         if (vaultAvailable()) {
             for (String perm : perms) {
@@ -209,7 +217,7 @@ public final class Permissions {
                     if (vaultPlugin.has(worldName, playerName, perm)) return;
                 }
             }
-            if (! requireAll)
+            if ((! requireAll) && (perms.length > 0))
                 throw new PermissionsException("not permitted");
             return;
         }
@@ -223,7 +231,7 @@ public final class Permissions {
                     if (permissionsPlugin.permission(worldName, playerName, perm)) return;
                 }
             }
-            if (! requireAll)
+            if ((! requireAll) && (perms.length > 0))
                 throw new PermissionsException("not permitted");
             return;
         }
@@ -237,7 +245,7 @@ public final class Permissions {
                     if (permissionsExPlugin.has(playerName, perm, worldName)) return;
                 }
             }
-            if (! requireAll)
+            if ((! requireAll) && (perms.length > 0))
                 throw new PermissionsException("not permitted");
             return;
         }
@@ -251,8 +259,9 @@ public final class Permissions {
                     if (hasBasic(playerName, perm)) return;
                 }
             }
-            if (! requireAll)
+            if ((! requireAll) && (perms.length > 0))
                 throw new PermissionsException("not permitted");
+            return;
         }
 
         // should never get here!

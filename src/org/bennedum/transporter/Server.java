@@ -329,8 +329,10 @@ public final class Server implements OptionsListener {
         for (String address : remotePublicAddressMap.keySet()) {
             Set<Pattern> patterns = remotePublicAddressMap.get(address);
             for (Pattern pattern : patterns)
-                if (pattern.matcher(clientAddrStr).matches())
+                if (pattern.matcher(clientAddrStr).matches()) {
+                    Utils.debug("client address %s matched pattern %s, so using %s", clientAddrStr, pattern.pattern(), address);
                     return address;
+                }
         }
         return null;
     }

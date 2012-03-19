@@ -53,6 +53,12 @@ public class Design {
     private boolean linkLocal;
     private boolean linkWorld;
     private boolean linkServer;
+    private String linkNoneFormat;
+    private String linkUnselectedFormat;
+    private String linkOfflineFormat;
+    private String linkLocalFormat;
+    private String linkWorldFormat;
+    private String linkServerFormat;
     private boolean multiLink;
     private boolean restoreOnClose;
     private boolean requirePin;
@@ -116,6 +122,12 @@ public class Design {
         linkLocal = conf.getBoolean("linkLocal", true);
         linkWorld = conf.getBoolean("linkWorld", true);
         linkServer = conf.getBoolean("linkServer", true);
+        linkNoneFormat = conf.getString("linkNoneFormat", "%fromGate%\\n\\n<none>");
+        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromGate%\\n\\n<unselected>");
+        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromGate%\\n\\n<offline>");
+        linkLocalFormat = conf.getString("linkLocalFormat", "%fromGate%\\n%toGate%");
+        linkWorldFormat = conf.getString("linkWorldFormat", "%fromGate%\\n%toWorld%\\n%toGate%");
+        linkServerFormat = conf.getString("linkServerFormat", "%fromGate%\\n%toServer%\\n%toWorld%\\n%toGate%");
         multiLink = conf.getBoolean("multiLink", true);
         restoreOnClose = conf.getBoolean("restoreOnClose", false);
         requirePin = conf.getBoolean("requirePin", false);
@@ -271,8 +283,8 @@ public class Design {
 
         if (sizeX > 255)
             throw new DesignException("must be less than 255 blocks wide");
-        if (sizeY > 127)
-            throw new DesignException("must be less than 127 blocks high");
+        if (sizeY > 255)
+            throw new DesignException("must be less than 255 blocks high");
         if (sizeZ > 255)
             throw new DesignException("must be less than 255 blocks deep");
         if ((sizeX * sizeY * sizeZ) < 4)
@@ -324,6 +336,14 @@ public class Design {
         Utils.debug("  linkLocal = " + linkLocal);
         Utils.debug("  linkWorld = " + linkWorld);
         Utils.debug("  linkServer = " + linkServer);
+        
+        Utils.debug("  linkNoneFormat = " + linkNoneFormat);
+        Utils.debug("  linkUnselectedFormat = " + linkUnselectedFormat);
+        Utils.debug("  linkOfflineFormat = " + linkOfflineFormat);
+        Utils.debug("  linkLocalFormat = " + linkLocalFormat);
+        Utils.debug("  linkWorldFormat = " + linkWorldFormat);
+        Utils.debug("  linkServerFormat = " + linkServerFormat);
+        
         Utils.debug("  multiLink = " + multiLink);
         Utils.debug("  restoreOnClose = " + restoreOnClose);
         Utils.debug("  requirePin = " + requirePin);
@@ -396,6 +416,30 @@ public class Design {
         return linkServer;
     }
 
+    public String getLinkNoneFormat() {
+        return linkNoneFormat;
+    }
+    
+    public String getLinkUnselectedFormat() {
+        return linkUnselectedFormat;
+    }
+    
+    public String getLinkOfflineFormat() {
+        return linkOfflineFormat;
+    }
+    
+    public String getLinkLocalFormat() {
+        return linkLocalFormat;
+    }
+    
+    public String getLinkWorldFormat() {
+        return linkWorldFormat;
+    }
+    
+    public String getLinkServerFormat() {
+        return linkServerFormat;
+    }
+    
     public boolean getMultiLink() {
         return multiLink;
     }
@@ -601,7 +645,7 @@ public class Design {
                 break;
         }
 
-        if ((location.getBlockY() + sizeY) > 127)
+        if ((location.getBlockY() + sizeY) > 255)
             throw new DesignException("insertion point is too high to build");
         if (location.getBlockY() < 0)
             throw new DesignException("insertion point is too low to build");

@@ -63,7 +63,7 @@ public final class Gates {
         File worldFolder = Worlds.worldPluginFolder(world);
         File gatesFolder = new File(worldFolder, "gates");
         if (! gatesFolder.exists()) {
-            Utils.warning("gates folder '%s' for world '%s' not found; no gates will be loaded", gatesFolder.getAbsolutePath(), world.getName());
+            Utils.info("no gates found for world '%s'", world.getName());
             return 0;
         }
         int loadedCount = 0;
@@ -120,7 +120,7 @@ public final class Gates {
                 try {
                     WorldProxy wp = Worlds.add(world);
                     if (wp != null)
-                        Utils.info("automatically added world '%s' for new gate '%s'", wp.getName(), gate.getClass());
+                        Utils.info("automatically added world '%s' for new gate '%s'", wp.getName(), gate.getName());
                 } catch (WorldException we) {}
             else if (Worlds.get(world.getName()) == null)
                 Utils.warning("Gate '%s' has been added to world '%s' but the world has not been added to the plugin's list of worlds!", gate.getName(), world.getName());

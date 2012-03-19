@@ -110,7 +110,7 @@ public class Utils {
             msg = String.format(msg, args);
         msg = ChatColor.stripColor(msg);
         if (msg.isEmpty()) return;
-        logger.log(Level.INFO, String.format("[DEBUG] %s", msg));
+        logger.log(Level.INFO, String.format("[%s] (DEBUG) %s", Global.pluginName, msg));
     }
 
     public static String block(Block b) {

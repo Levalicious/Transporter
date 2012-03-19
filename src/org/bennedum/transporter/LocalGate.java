@@ -17,11 +17,13 @@ package org.bennedum.transporter;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.bennedum.transporter.GateMap.Entry;
 import org.bennedum.transporter.config.Configuration;
 import org.bennedum.transporter.config.ConfigurationNode;
@@ -44,12 +46,19 @@ import org.bukkit.util.Vector;
 public class LocalGate extends Gate implements OptionsListener {
 
     public static final Set<String> OPTIONS = new HashSet<String>();
+    private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\\\n");
 
     static {
         OPTIONS.add("duration");
         OPTIONS.add("linkLocal");
         OPTIONS.add("linkWorld");
         OPTIONS.add("linkServer");
+        OPTIONS.add("linkNoneFormat");
+        OPTIONS.add("linkUnselectedFormat");
+        OPTIONS.add("linkOfflineFormat");
+        OPTIONS.add("linkLocalFormat");
+        OPTIONS.add("linkWorldFormat");
+        OPTIONS.add("linkServerFormat");
         OPTIONS.add("multiLink");
         OPTIONS.add("protect");
         OPTIONS.add("restoreOnClose");
@@ -105,6 +114,12 @@ public class LocalGate extends Gate implements OptionsListener {
     private boolean linkLocal;
     private boolean linkWorld;
     private boolean linkServer;
+    private String linkNoneFormat;
+    private String linkUnselectedFormat;
+    private String linkOfflineFormat;
+    private String linkLocalFormat;
+    private String linkWorldFormat;
+    private String linkServerFormat;
     private boolean multiLink;
     private boolean restoreOnClose;
     private boolean requirePin;
@@ -167,6 +182,12 @@ public class LocalGate extends Gate implements OptionsListener {
         linkLocal = design.getLinkLocal();
         linkWorld = design.getLinkWorld();
         linkServer = design.getLinkServer();
+        linkNoneFormat = design.getLinkNoneFormat();
+        linkUnselectedFormat = design.getLinkUnselectedFormat();
+        linkOfflineFormat = design.getLinkOfflineFormat();
+        linkLocalFormat = design.getLinkLocalFormat();
+        linkWorldFormat = design.getLinkWorldFormat();
+        linkServerFormat = design.getLinkServerFormat();
         multiLink = design.getMultiLink();
         restoreOnClose = design.getRestoreOnClose();
         requirePin = design.getRequirePin();
@@ -238,6 +259,14 @@ public class LocalGate extends Gate implements OptionsListener {
         linkLocal = conf.getBoolean("linkLocal", true);
         linkWorld = conf.getBoolean("linkWorld", true);
         linkServer = conf.getBoolean("linkServer", true);
+        
+        linkNoneFormat = conf.getString("linkNoneFormat", "%fromGate%\\n\\n<none>");
+        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromGate%\\n\\n<unselected>");
+        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromGate%\\n\\n<offline>");
+        linkLocalFormat = conf.getString("linkLocalFormat", "%fromGate%\\n%toGate%");
+        linkWorldFormat = conf.getString("linkWorldFormat", "%fromGate%\\n%toWorld%\\n%toGate%");
+        linkServerFormat = conf.getString("linkServerFormat", "%fromGate%\\n%toServer%\\n%toWorld%\\n%toGate%");
+        
         multiLink = conf.getBoolean("multiLink", true);
         restoreOnClose = conf.getBoolean("restoreOnClose", false);
         links.addAll(conf.getStringList("links", new ArrayList<String>()));
@@ -355,6 +384,14 @@ public class LocalGate extends Gate implements OptionsListener {
         conf.setProperty("linkLocal", linkLocal);
         conf.setProperty("linkWorld", linkWorld);
         conf.setProperty("linkServer", linkServer);
+        
+        conf.setProperty("linkNoneFormat", linkNoneFormat);
+        conf.setProperty("linkUnselectedFormat", linkUnselectedFormat);
+        conf.setProperty("linkOfflineFormat", linkOfflineFormat);
+        conf.setProperty("linkLocalFormat", linkLocalFormat);
+        conf.setProperty("linkWorldFormat", linkWorldFormat);
+        conf.setProperty("linkServerFormat", linkServerFormat);
+        
         conf.setProperty("multiLink", multiLink);
         conf.setProperty("restoreOnClose", restoreOnClose);
         synchronized (links) {
@@ -534,6 +571,84 @@ public class LocalGate extends Gate implements OptionsListener {
         linkServer = b;
     }
 
+    public String getLinkNoneFormat() {
+        return linkNoneFormat;
+    }
+    
+    public void setLinkNoneFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        if (s == null) s = "%fromGate%\n\n<none>";
+        linkNoneFormat = s;
+    }
+
+    public String getLinkUnselectedFormat() {
+        return linkUnselectedFormat;
+    }
+    
+    public void setLinkUnselectedFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        if (s == null) s = "%fromGate%\n\n<unselected>";
+        linkUnselectedFormat = s;
+    }
+
+    public String getLinkOfflineFormat() {
+        return linkOfflineFormat;
+    }
+    
+    public void setLinkOfflineFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        if (s == null) s = "%fromGate%\n\n<offline>";
+        linkOfflineFormat = s;
+    }
+
+    public String getLinkLocalFormat() {
+        return linkLocalFormat;
+    }
+    
+    public void setLinkLocalFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        if (s == null) s = "%fromGate%\n%toGate%";
+        linkLocalFormat = s;
+    }
+
+    public String getLinkWorldFormat() {
+        return linkWorldFormat;
+    }
+    
+    public void setLinkWorldFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        if (s == null) s = "%fromGate%\n%toWorld%\n%toGate%";
+        linkWorldFormat = s;
+    }
+
+    public String getLinkServerFormat() {
+        return linkServerFormat;
+    }
+    
+    public void setLinkServerFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        if (s == null) s = "%fromGate%\n%toServer%\n%toWorld%\n%toGate%";
+        linkServerFormat = s;
+    }
+        
     public boolean getMultiLink() {
         return multiLink;
     }
@@ -1530,29 +1645,50 @@ public class LocalGate extends Gate implements OptionsListener {
         file = new File(gatesFolder, fileName);
     }
 
-    public void updateScreens() {
-        List<String> lines = new ArrayList<String>();
-        lines.add(name);
-
+    final public void updateScreens() {
+        String format;
+        Gate toGate = null;
+        
         if (outgoing == null) {
-            lines.add("");
             if (! isLinked())
-                lines.add("<none>");
+                format = getLinkNoneFormat();
             else
-                lines.add("<unselected>");
+                format = getLinkUnselectedFormat();
         } else {
-            Gate gate = Gates.get(null, outgoing);
-            if (gate == null) {
-                lines.add("");
-                lines.add("<offline>");
-            } else {
-                if (! gate.isSameServer())
-                    lines.add(gate.getServerName());
-                if (! gate.isSameWorld(world))
-                    lines.add(gate.getWorldName());
-                lines.add(gate.getName());
+            toGate = Gates.get(outgoing);
+            if (toGate == null)
+                format = getLinkOfflineFormat();
+            else {
+                if (! toGate.isSameServer())
+                    format = getLinkServerFormat();
+                else if (! toGate.isSameWorld(world))
+                    format = getLinkWorldFormat();
+                else
+                    format = getLinkLocalFormat();
             }
         }
+        List<String> lines = new ArrayList<String>();
+        
+        if ((format != null) && (! format.equals("-"))) {
+            format = format.replace("%fromGate%", this.getName());
+            format = format.replace("%fromWorld%", this.getWorldName());
+            if (toGate != null) {
+                format = format.replace("%toGate%", toGate.getName());
+                format = format.replace("%toWorld%", toGate.getWorldName());
+                format = format.replace("%toServer%", (toGate.getServerName() == null) ? "local" : toGate.getServerName());
+            } else if (outgoing != null) {
+                String[] parts = outgoing.split("\\.");
+                format = format.replace("%toGate%", parts[parts.length - 1]);
+                if (parts.length > 1)
+                    format = format.replace("%toWorld%", parts[parts.length - 2]);
+                if (parts.length > 2)
+                    format = format.replace("%toServer%", parts[parts.length - 3]);
+                else
+                    format = format.replace("%toServer%", "local");
+            }
+            lines.addAll(Arrays.asList(NEWLINE_PATTERN.split(format)));
+        }
+        
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isScreen()) continue;
             Block block = gb.getLocation().getBlock();

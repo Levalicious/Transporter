@@ -15,6 +15,8 @@
  */
 package org.bennedum.transporter;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -35,6 +37,100 @@ import org.bukkit.event.player.PlayerTeleportEvent;
  */
 public final class PlayerListenerImpl implements Listener {
 
+    // Logic map for player interaction
+    private static final Map<String,String> ACTIONS = new HashMap<String,String>();
+    
+    // Keys are strings composed of zeros and ones. Each position corresponds to
+    // a boolean test:
+    // 0: Is the gate currently open?
+    // 1: Does the player have trp.gate.open permission?
+    // 2: Does the player have trp.gate.close permission?
+    // 3: Does the player have trp.gate.changeLink permission?
+    // 4: Is the gate on its last link?
+    // 5: Is the gate block a trigger?
+    // 6: Is the gate block a switch?
+    
+    // Values are a comma separated list of actions to perform:
+    // NOTPERMITTED: issue a 'not permitted' message to the player
+    // OPEN: open the gate
+    // CLOSE: close the gate
+    // CHANGELINK: change the gate's link
+    
+    static {
+        // gate is closed
+        ACTIONS.put("0010011", "NOTPERMITTED");
+        ACTIONS.put("0010101", "NOTPERMITTED");
+        ACTIONS.put("0010110", "NOTPERMITTED");
+        ACTIONS.put("0010111", "NOTPERMITTED");
+        ACTIONS.put("0011001", "CHANGELINK");
+        ACTIONS.put("0011010", "NOTPERMITTED");
+        ACTIONS.put("0011011", "CHANGELINK");
+        ACTIONS.put("0011101", "CHANGELINK");
+        ACTIONS.put("0011110", "NOTPERMITTED");
+        ACTIONS.put("0011111", "NOTPERMITTED");
+        ACTIONS.put("0100001", "NOTPERMITTED");
+        ACTIONS.put("0100010", "OPEN");
+        ACTIONS.put("0100011", "OPEN");
+        ACTIONS.put("0100101", "NOTPERMITTED");
+        ACTIONS.put("0100110", "OPEN");
+        ACTIONS.put("0100111", "OPEN");
+        ACTIONS.put("0101001", "CHANGELINK");
+        ACTIONS.put("0101010", "OPEN");
+        ACTIONS.put("0101011", "CHANGELINK");
+        ACTIONS.put("0101101", "OPEN");
+        ACTIONS.put("0101110", "OPEN");
+        ACTIONS.put("0101111", "OPEN");
+        ACTIONS.put("0110001", "NOTPERMITTED");
+        ACTIONS.put("0110010", "OPEN");
+        ACTIONS.put("0110011", "OPEN");
+        ACTIONS.put("0110101", "NOTPERMITTED");
+        ACTIONS.put("0110110", "OPEN");
+        ACTIONS.put("0110111", "OPEN");
+        ACTIONS.put("0111001", "CHANGELINK");
+        ACTIONS.put("0111010", "OPEN");
+        ACTIONS.put("0111011", "OPEN");
+        ACTIONS.put("0111101", "CHANGELINK");
+        ACTIONS.put("0111110", "OPEN");
+        ACTIONS.put("0111111", "OPEN");
+
+        // gate is open
+        ACTIONS.put("1010011", "CLOSE");
+        ACTIONS.put("1010101", "NOTPERMITTED");
+        ACTIONS.put("1010110", "CLOSE");
+        ACTIONS.put("1010111", "CLOSE");
+        ACTIONS.put("1011001", "CHANGELINK");
+        ACTIONS.put("1011010", "CLOSE");
+        ACTIONS.put("1011011", "CHANGELINK");
+        ACTIONS.put("1011101", "CHANGELINK");
+        ACTIONS.put("1011110", "CLOSE");
+        ACTIONS.put("1011111", "CLOSE,CHANGELINK");
+        ACTIONS.put("1100001", "NOTPERMITTED");
+        ACTIONS.put("1100010", "NOTPERMITTED");
+        ACTIONS.put("1100011", "NOTPERMITTED");
+        ACTIONS.put("1100101", "NOTPERMITTED");
+        ACTIONS.put("1100110", "NOTPERMITTED");
+        ACTIONS.put("1100111", "NOTPERMITTED");
+        ACTIONS.put("1101001", "CHANGELINK");
+        ACTIONS.put("1101010", "NOTPERMITTED");
+        ACTIONS.put("1101011", "CHANGELINK");
+        ACTIONS.put("1101101", "CHANGELINK");
+        ACTIONS.put("1101110", "NOTPERMITTED");
+        ACTIONS.put("1101111", "CHANGELINK");
+        ACTIONS.put("1110001", "NOTPERMITTED");
+        ACTIONS.put("1110010", "CLOSE");
+        ACTIONS.put("1110011", "CLOSE");
+        ACTIONS.put("1110101", "NOTPERMITTED");
+        ACTIONS.put("1110110", "CLOSE");
+        ACTIONS.put("1110111", "CLOSE");
+        ACTIONS.put("1111001", "CHANGELINK");
+        ACTIONS.put("1111010", "CLOSE");
+        ACTIONS.put("1111011", "CHANGELINK");
+        ACTIONS.put("1111101", "CHANGELINK");
+        ACTIONS.put("1111110", "CLOSE");
+        ACTIONS.put("1111111", "CLOSE,CHANGELINK");
+ 
+    }
+    
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
@@ -43,61 +139,59 @@ public final class PlayerListenerImpl implements Listener {
         Context ctx = new Context(event.getPlayer());
 
         LocalGate triggerGate = Gates.findGateForTrigger(location);
-        LocalGate switchGate = null;
-
-        if (triggerGate != null) {
-            Global.setSelectedGate(event.getPlayer(), triggerGate);
-
-            if (triggerGate.isClosed() &&
-                Permissions.has(ctx.getPlayer(), "trp.gate.open." + triggerGate.getFullName())) {
-                if (triggerGate.hasValidDestination()) {
+        LocalGate switchGate = Gates.findGateForSwitch(location);
+        if ((triggerGate == null) && (switchGate == null)) return;
+        if ((triggerGate != null) && (switchGate != null) && (triggerGate != switchGate)) switchGate = null;
+        
+        LocalGate testGate = (triggerGate == null) ? switchGate : triggerGate;
+        Player player = event.getPlayer();
+        
+        String key =
+                (testGate.isOpen() ? "1" : "0") +
+                (Permissions.has(player, "trp.gate.open." + testGate.getFullName()) ? "1" : "0") +
+                (Permissions.has(player, "trp.gate.close." + testGate.getFullName()) ? "1" : "0") +
+                (Permissions.has(player, "trp.gate.changeLink." + testGate.getFullName()) ? "1" : "0") +
+                (testGate.isLastLink() ? "1" : "0") +
+                ((triggerGate != null) ? "1" : "0") +
+                ((switchGate != null) ? "1" : "0");
+        String value = ACTIONS.get(key);
+        if (value == null) {
+            Utils.severe("Action key '%s' doesn't map to any actions!", key);
+            return;
+        }
+        String[] actions = value.split(",");
+        
+        for (String action : actions) {
+            
+            if (action.equals("NOTPERMIITED")) {
+                ctx.sendLog("not permitted");
+                return;
+            }
+            
+            if (action.equals("OPEN")) {
+                if (testGate.hasValidDestination())
                     try {
-                        triggerGate.open();
-                        ctx.sendLog("opened gate '%s'", triggerGate.getName());
-                        return;
+                        testGate.open();
+                        ctx.sendLog("opened gate '%s'", testGate.getName());
                     } catch (GateException ge) {
                         ctx.warnLog(ge.getMessage());
                     }
-                }
-            } else {
-
-                switchGate = Gates.findGateForSwitch(location);
-                if (switchGate == triggerGate) {
-                    // the trigger is the same block as the switch, so do something special
-                    if (triggerGate.isLastLink() &&
-                        Permissions.has(ctx.getPlayer(), "trp.gate.close." + triggerGate.getFullName())) {
-                        triggerGate.close();
-                        ctx.sendLog("closed gate '%s'", triggerGate.getName());
-                        if (Permissions.has(ctx.getPlayer(), "trp.gate.changeLink." + triggerGate.getFullName())) {
-                            try {
-                                triggerGate.nextLink();
-                            } catch (GateException ge) {
-                                ctx.warnLog(ge.getMessage());
-                            }
-                        }
-                        return;
-                    }
-
-                } else if (Permissions.has(ctx.getPlayer(), "trp.gate.close." + triggerGate.getFullName())) {
-                    triggerGate.close();
-                    ctx.sendLog("closed gate '%s'", triggerGate.getName());
-                    return;
+            }
+            
+            if (action.equals("CLOSE")) {
+                testGate.close();
+                ctx.sendLog("closed gate '%s'", testGate.getName());
+            }
+            
+            if (action.equals("CHANGELINK")) {
+                try {
+                    testGate.nextLink();
+                } catch (GateException ge) {
+                    ctx.warnLog(ge.getMessage());
                 }
             }
         }
-
-        if (switchGate == null)
-            switchGate = Gates.findGateForSwitch(location);
-
-        if (switchGate != null) {
-            Global.setSelectedGate(event.getPlayer(), switchGate);
-            try {
-                Permissions.require(ctx.getPlayer(), "trp.gate.changeLink." + switchGate.getFullName());
-                switchGate.nextLink();
-            } catch (TransporterException te) {
-                ctx.warnLog(te.getMessage());
-            }
-        }
+                
     }
 
     @EventHandler(priority = EventPriority.NORMAL)

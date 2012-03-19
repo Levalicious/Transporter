@@ -29,11 +29,13 @@ public class WorldListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldLoad(WorldLoadEvent event) {
+        Utils.debug("world '%s' loaded", event.getWorld().getName());
         Gates.loadGatesForWorld(new Context(), event.getWorld());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldUnload(WorldUnloadEvent event) {
+        Utils.debug("world '%s' unloaded", event.getWorld().getName());
         Gates.remove(event.getWorld());
     }
 
