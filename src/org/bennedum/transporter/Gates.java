@@ -79,7 +79,9 @@ public final class Gates {
                     ctx.warnLog("unable to load gate '%s' for world '%s': %s", gate.getName(), world.getName(), ge.getMessage());
                 }
             } catch (TransporterException ge) {
-                ctx.warnLog("'%s' contains an invalid gate: %s", gateFile.getPath(), ge.getMessage());
+                ctx.warnLog("'%s' contains an invalid gate file for world '%s': %s", gateFile.getPath(), world.getName(), ge.getMessage());
+            } catch (Throwable t) {
+                Utils.severe(t, "there was a problem loading the gate file '%s' for world '%s':", gateFile.getPath(), world.getName());
             }
         }
         return loadedCount;

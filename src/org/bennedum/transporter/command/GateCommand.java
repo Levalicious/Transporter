@@ -18,10 +18,13 @@ package org.bennedum.transporter.command;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Economy;
+import org.bennedum.transporter.EconomyException;
 import org.bennedum.transporter.Gate;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
@@ -33,6 +36,7 @@ import org.bennedum.transporter.ReservationException;
 import org.bennedum.transporter.Server;
 import org.bennedum.transporter.Servers;
 import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.Utils;
 import org.bukkit.command.Command;
 
 /**
@@ -239,12 +243,16 @@ public class GateCommand extends TrpCommandProcessor {
 
                 ctx.sendLog("added link from '%s' to '%s'", fromGate.getName(ctx), toGate.getName(ctx));
 
-                if (fromGate.isSameWorld(toGate) && Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkLocalCost()))
-                    ctx.sendLog("debited %s for on-world linking", Economy.format(fromGate.getLinkLocalCost()));
-                else if (toGate.isSameServer() && Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkWorldCost()))
-                    ctx.sendLog("debited %s for off-world linking", Economy.format(fromGate.getLinkWorldCost()));
-                else if (Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkServerCost()))
-                    ctx.sendLog("debited %s for off-server linking", Economy.format(fromGate.getLinkServerCost()));
+                try {
+                    if (fromGate.isSameWorld(toGate) && Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkLocalCost()))
+                        ctx.sendLog("debited %s for on-world linking", Economy.format(fromGate.getLinkLocalCost()));
+                    else if (toGate.isSameServer() && Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkWorldCost()))
+                        ctx.sendLog("debited %s for off-world linking", Economy.format(fromGate.getLinkWorldCost()));
+                    else if (Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkServerCost()))
+                        ctx.sendLog("debited %s for off-server linking", Economy.format(fromGate.getLinkServerCost()));
+                } catch (EconomyException ee) {
+                    Utils.warning("unable to debit linking costs for %s: %s", ctx.getPlayer().getName(), ee.getMessage());
+                }
 
                 if (reverse && (ctx.getSender() != null)) {
                     if (toGate.isSameServer())
@@ -321,10 +329,24 @@ public class GateCommand extends TrpCommandProcessor {
             if (args.isEmpty())
                 throw new CommandException("do what with a ban?");
             subCmd = args.remove(0).toLowerCase();
+            
+            LocalGate gate;
+            
+            if ("list".startsWith(subCmd)) {
+                gate = getGate(ctx, args);
+                Permissions.require(ctx.getPlayer(), "trp.gate.ban.list." + gate.getFullName());
+                List<String> items = new ArrayList<String>(gate.getBannedItems());
+                Collections.sort(items);
+                ctx.send("%s items", items.size());
+                for (String item : items)
+                    ctx.send("  %s", item);
+                return;
+            }
+            
             if (args.isEmpty())
                 throw new CommandException("item required");
             String item = args.remove(0);
-            LocalGate gate = getGate(ctx, args);
+            gate = getGate(ctx, args);
 
             if ("add".startsWith(subCmd)) {
                 Permissions.require(ctx.getPlayer(), "trp.gate.ban.add." + gate.getFullName());
@@ -353,10 +375,24 @@ public class GateCommand extends TrpCommandProcessor {
             if (args.isEmpty())
                 throw new CommandException("do what with an allow?");
             subCmd = args.remove(0).toLowerCase();
+
+            LocalGate gate;
+            
+            if ("list".startsWith(subCmd)) {
+                gate = getGate(ctx, args);
+                Permissions.require(ctx.getPlayer(), "trp.gate.allow.list." + gate.getFullName());
+                List<String> items = new ArrayList<String>(gate.getAllowedItems());
+                Collections.sort(items);
+                ctx.send("%s items", items.size());
+                for (String item : items)
+                    ctx.send("  %s", item);
+                return;
+            }
+            
             if (args.isEmpty())
                 throw new CommandException("item required");
             String item = args.remove(0);
-            LocalGate gate = getGate(ctx, args);
+            gate = getGate(ctx, args);
 
             if ("add".startsWith(subCmd)) {
                 Permissions.require(ctx.getPlayer(), "trp.gate.allow.add." + gate.getFullName());
@@ -385,6 +421,21 @@ public class GateCommand extends TrpCommandProcessor {
             if (args.isEmpty())
                 throw new CommandException("do what with a replace?");
             subCmd = args.remove(0).toLowerCase();
+            
+            LocalGate gate;
+            
+            if ("list".startsWith(subCmd)) {
+                gate = getGate(ctx, args);
+                Permissions.require(ctx.getPlayer(), "trp.gate.replace.list." + gate.getFullName());
+                Map<String,String> items = new HashMap<String,String>(gate.getReplaceItems());
+                List<String> keys = new ArrayList<String>(items.keySet());
+                Collections.sort(keys);
+                ctx.send("%s items", items.size());
+                for (String key : keys)
+                    ctx.send("  %s => %s", key, items.get(key));
+                return;
+            }
+            
             if (args.isEmpty())
                 throw new CommandException("item required");
             String oldItem = args.remove(0);
@@ -393,7 +444,7 @@ public class GateCommand extends TrpCommandProcessor {
                 if (args.isEmpty())
                     throw new CommandException("new item required");
                 String newItem = args.remove(0);
-                LocalGate gate = getGate(ctx, args);
+                gate = getGate(ctx, args);
                 Permissions.require(ctx.getPlayer(), "trp.gate.replace.add." + gate.getFullName());
                 if (gate.addReplaceItem(oldItem, newItem))
                     ctx.send("added replace item to '%s'", gate.getName(ctx));
@@ -403,7 +454,7 @@ public class GateCommand extends TrpCommandProcessor {
             }
 
             if ("remove".startsWith(subCmd)) {
-                LocalGate gate = getGate(ctx, args);
+                gate = getGate(ctx, args);
                 Permissions.require(ctx.getPlayer(), "trp.gate.replace.remove." + gate.getFullName());
                 if (oldItem.equals("*")) {
                     gate.removeAllReplaceItems();

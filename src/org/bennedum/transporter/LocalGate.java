@@ -1422,6 +1422,10 @@ public class LocalGate extends Gate implements OptionsListener {
         }
     }
 
+    public Set<String> getBannedItems() {
+        return bannedItems;
+    }
+    
     public boolean addBannedItem(String item) throws GateException {
         try {
             if (! Inventory.appendItemList(bannedItems, item)) return false;
@@ -1452,6 +1456,10 @@ public class LocalGate extends Gate implements OptionsListener {
         saveSafe();
     }
 
+    public Set<String> getAllowedItems() {
+        return allowedItems;
+    }
+    
     public boolean addAllowedItem(String item) throws GateException {
         try {
             if (! Inventory.appendItemList(allowedItems, item)) return false;
@@ -1482,6 +1490,10 @@ public class LocalGate extends Gate implements OptionsListener {
         saveSafe();
     }
 
+    public Map<String,String> getReplaceItems() {
+        return replaceItems;
+    }
+    
     public boolean addReplaceItem(String fromItem, String toItem) throws GateException {
         try {
             if (! Inventory.appendItemMap(replaceItems, fromItem, toItem)) return false;

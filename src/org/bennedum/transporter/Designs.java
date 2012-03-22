@@ -92,6 +92,7 @@ public final class Designs {
                 if (Economy.deductFunds(ctx.getPlayer(), design.getCreateCost()))
                     ctx.sendLog("debited %s for gate creation", Economy.format(design.getCreateCost()));
             } catch (EconomyException e) {
+                Utils.warning("unable to debit gate creation costs for %s: %s", ctx.getPlayer().getName(), e.getMessage());
                 Gates.destroy(gate, false);
                 throw e;
             }

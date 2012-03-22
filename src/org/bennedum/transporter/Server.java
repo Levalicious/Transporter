@@ -120,7 +120,7 @@ public final class Server implements OptionsListener {
     private boolean fastReconnect = false;
     private boolean connected = false;
     private String remoteVersion = null;
-    private Map<String,Set<Pattern>> remotePublicAddressMap = null;
+    private List<AddressMatch> remotePublicAddressMatches = null;
     private String remotePublicAddress = null;
     private String remotePrivateAddress = null;
     private String remoteCluster = null;
@@ -321,17 +321,16 @@ public final class Server implements OptionsListener {
             }
         }
 
-        if (remotePublicAddressMap == null) {
+        if (remotePublicAddressMatches == null) {
             String[] parts = pluginAddress.split(":");
             return parts[0] + ":" + DEFAULT_MC_PORT;
         }
 
-        for (String address : remotePublicAddressMap.keySet()) {
-            Set<Pattern> patterns = remotePublicAddressMap.get(address);
-            for (Pattern pattern : patterns)
+        for (AddressMatch match : remotePublicAddressMatches) {
+            for (Pattern pattern : match.patterns)
                 if (pattern.matcher(clientAddrStr).matches()) {
-                    Utils.debug("client address %s matched pattern %s, so using %s", clientAddrStr, pattern.pattern(), address);
-                    return address;
+                    Utils.debug("client address %s matched pattern %s, so using %s", clientAddrStr, pattern.pattern(), match.connectTo);
+                    return match.connectTo;
                 }
         }
         return null;
@@ -1418,7 +1417,7 @@ public final class Server implements OptionsListener {
         if (addrStr == null)
             throw new IllegalArgumentException("publicAddress is required");
 
-        remotePublicAddressMap = new HashMap<String,Set<Pattern>>();
+        remotePublicAddressMatches = new ArrayList<AddressMatch>();
         StringBuilder sb = new StringBuilder();
 
         String patternMaps[] = addrStr.split("\\s+");
@@ -1451,7 +1450,10 @@ public final class Server implements OptionsListener {
             if (address.equals("*"))
                 address = pluginAddress.split(":")[0];
 
-            remotePublicAddressMap.put(address + ":" + port, patterns);
+            AddressMatch match = new AddressMatch();
+            match.connectTo = address + ":" + port;
+            match.patterns = patterns;
+            remotePublicAddressMatches.add(match);
             sb.append(address).append(":").append(port);
             if (items.length > 1)
                 for (int i = 1; i < items.length; i++)
@@ -1472,4 +1474,9 @@ public final class Server implements OptionsListener {
         return buf.toString();
     }
 
+    private class AddressMatch {
+        String connectTo;
+        Set<Pattern> patterns;
+    }
+    
 }

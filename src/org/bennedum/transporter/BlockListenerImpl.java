@@ -118,14 +118,14 @@ public class BlockListenerImpl implements Listener {
                 if (gate.hasValidDestination()) {
                     try {
                         gate.open();
-                        Utils.info("gate '%s' opened via redstone", gate.getName());
+                        Utils.debug("gate '%s' opened via redstone", gate.getName());
                     } catch (GateException ge) {
                         Utils.warning(ge.getMessage());
                     }
                 }
             } else if (gate.isOpen() && (event.getNewCurrent() <= 0)) {
                 gate.close();
-                Utils.info("gate '%s' closed via redstone", gate.getName());
+                Utils.debug("gate '%s' closed via redstone", gate.getName());
             }
             return;
         }

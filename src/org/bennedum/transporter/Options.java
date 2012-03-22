@@ -65,10 +65,14 @@ public final class Options {
     }
 
     private String resolveOption(String option) throws OptionsException {
-        String matched = null;
+        // look for literal match
         for (String opt : names) {
             if (opt.toLowerCase().equals(option.toLowerCase()))
                 return opt;
+        }
+        // look for starting match
+        String matched = null;
+        for (String opt : names) {
             if (opt.toLowerCase().startsWith(option.toLowerCase())) {
                 if (matched != null)
                     throw new OptionsException("option is ambiguous");

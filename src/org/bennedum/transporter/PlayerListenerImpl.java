@@ -164,7 +164,7 @@ public final class PlayerListenerImpl implements Listener {
         for (String action : actions) {
             
             if (action.equals("NOTPERMIITED")) {
-                ctx.sendLog("not permitted");
+                ctx.send("not permitted");
                 return;
             }
             
@@ -172,7 +172,8 @@ public final class PlayerListenerImpl implements Listener {
                 if (testGate.hasValidDestination())
                     try {
                         testGate.open();
-                        ctx.sendLog("opened gate '%s'", testGate.getName());
+                        ctx.send("opened gate '%s'", testGate.getName());
+                        Utils.debug("player '%s' open gate '%s'", player.getName(), testGate.getName());
                     } catch (GateException ge) {
                         ctx.warnLog(ge.getMessage());
                     }
@@ -180,12 +181,14 @@ public final class PlayerListenerImpl implements Listener {
             
             if (action.equals("CLOSE")) {
                 testGate.close();
-                ctx.sendLog("closed gate '%s'", testGate.getName());
+                ctx.send("closed gate '%s'", testGate.getName());
+                Utils.debug("player '%s' closed gate '%s'", player.getName(), testGate.getName());
             }
             
             if (action.equals("CHANGELINK")) {
                 try {
                     testGate.nextLink();
+                    Utils.debug("player '%s' changed link for gate '%s'", player.getName(), testGate.getName());
                 } catch (GateException ge) {
                     ctx.warnLog(ge.getMessage());
                 }

@@ -135,21 +135,22 @@ public final class Economy {
                 throw new EconomyException("insufficient funds");
             EconomyResponse r = vaultPlugin.withdrawPlayer(accountName, amount);
             if (r.transactionSuccess()) return true;
-            Utils.warning("Error while withdrawing %s from %s: %s", amount, accountName, r.errorMessage);
-            return false;
+            throw new EconomyException("economy error: %s", r.errorMessage);
         }
         if (registerAvailable()) {
             Method.MethodAccount account = registerPlugin.getAccount(accountName);
             if (! account.hasEnough(amount))
                 throw new EconomyException("insufficient funds");
-            return account.subtract(amount);
+            if (account.subtract(amount)) return true;
+            throw new EconomyException("economy error");
         }
         /*
         if (boseconomyAvailable()) {
             double balance = boseconomyPlugin.getPlayerMoneyDouble(accountName);
             if (balance < amount)
                 throw new EconomyException("insufficient funds");
-            return boseconomyPlugin.addPlayerMoney(accountName, -amount, false);
+            if (boseconomyPlugin.addPlayerMoney(accountName, -amount, false)) return true;
+            throw new EconomyException("economy error");
         }
         */
         

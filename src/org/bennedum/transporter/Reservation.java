@@ -844,8 +844,8 @@ public final class Reservation {
                 cost += toGate.getReceiveCost(fromGateLocal);
             if (cost > 0)
                 try {
-                    Economy.deductFunds(player, cost);
-                    ctx.send("debited %s for travel costs", Economy.format(cost));
+                    if (Economy.deductFunds(player, cost))
+                        ctx.send("debited %s for travel costs", Economy.format(cost));
                 } catch (EconomyException e) {
                     // too late to do anything useful
                     Utils.warning("unable to debit travel costs for %s: %s", getTraveler(), e.getMessage());
@@ -892,8 +892,8 @@ public final class Reservation {
                 double cost = toGateLocal.getReceiveCost(fromGate);
                 if (cost > 0)
                     try {
-                        Economy.deductFunds(player, cost);
-                        ctx.sendLog("debited %s for travel costs", Economy.format(cost));
+                        if (Economy.deductFunds(player, cost))
+                            ctx.sendLog("debited %s for travel costs", Economy.format(cost));
                     } catch (EconomyException e) {
                         // too late to do anything useful
                         Utils.warning("unable to debit travel costs for %s: %s", getTraveler(), e.getMessage());
@@ -901,16 +901,6 @@ public final class Reservation {
             }
 //        } else {
 //            Utils.debug("%s arrived at '%s'", getTraveler(), toGateLocal.getFullName());
-        }
-
-        // filter inventory
-        boolean invFiltered = toGateLocal.filterInventory(inventory);
-        boolean armorFiltered = toGateLocal.filterInventory(armor);
-        if (invFiltered || armorFiltered) {
-            if (player == null)
-                Utils.debug("some inventory items where filtered by the arrival gate");
-            else
-                (new Context(player)).send("some inventory items where filtered by the arrival gate");
         }
     }
 
@@ -971,6 +961,19 @@ public final class Reservation {
             if (player == null)
                 throw new ReservationException("player '%s' not found", playerName);
         }
+        
+        if (toGateLocal != null) {
+            // filter inventory
+            boolean invFiltered = toGateLocal.filterInventory(inventory);
+            boolean armorFiltered = toGateLocal.filterInventory(armor);
+            if (invFiltered || armorFiltered) {
+                if (player == null)
+                    Utils.debug("some inventory items where filtered by the arrival gate");
+                else
+                    (new Context(player)).send("some inventory items where filtered by the arrival gate");
+            }
+        }
+        
         if (entity == null) {
             switch (entityType) {
                 case PLAYER:

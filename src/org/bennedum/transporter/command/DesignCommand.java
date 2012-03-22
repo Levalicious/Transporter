@@ -24,11 +24,13 @@ import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Design;
 import org.bennedum.transporter.Designs;
 import org.bennedum.transporter.Economy;
+import org.bennedum.transporter.EconomyException;
 import org.bennedum.transporter.Global;
 import org.bennedum.transporter.Inventory;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.SavedBlock;
 import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.Utils;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
@@ -122,8 +124,13 @@ public class DesignCommand extends TrpCommandProcessor {
 
             List<SavedBlock> blocks = design.build(player.getLocation());
 
-            if (Economy.deductFunds(ctx.getPlayer(), design.getBuildCost()))
-                ctx.sendLog("debited %s for gate construction", design.getBuildCost());
+            try {
+                if (Economy.deductFunds(ctx.getPlayer(), design.getBuildCost()))
+                    ctx.sendLog("debited %s for gate construction", design.getBuildCost());
+            } catch (EconomyException ee) {
+                Utils.warning("unable to debit gate construction costs for %s: %s", ctx.getPlayer().getName(), ee.getMessage());
+            }
+            
             if (design.mustBuildFromInventory())
                 if (Inventory.deductBlocks(ctx.getPlayer(), design.getInventoryBlocks()))
                     ctx.sendLog("debited inventory");

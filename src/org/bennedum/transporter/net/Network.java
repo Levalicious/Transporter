@@ -197,7 +197,7 @@ public final class Network {
             if (key == null)
                 throw new NetworkException("key is not set");
         } catch (Exception e) {
-            ctx.warn("network manager cannot be started: %s", e.getMessage());
+            ctx.warn("network manager cannot be started (server-to-server is disabled): %s", e.getMessage());
             return;
         }
 
