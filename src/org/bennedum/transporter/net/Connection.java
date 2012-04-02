@@ -194,11 +194,10 @@ public final class Connection {
             if (readBuffer.length >= (recLen + 4)) {
                 try {
                     byte[] messageData = Arrays.copyOfRange(readBuffer, 4, recLen + 4);
-                    byte[] cipherData = null;
+                    byte[] clearData = messageData;
                     if ((flags & ENCRYPTED_FLAG) == ENCRYPTED_FLAG) {
                         Cipher cipher = new Cipher(CIPHER_PAD_SIZE);
                         cipher.initDecrypt(Network.getCachedKey().getBytes("UTF-8"));
-                        cipherData = messageData;
                         messageData = cipher.doFinal(messageData);
                     }
                     String encoded = new String(messageData, "UTF-8");
@@ -210,19 +209,19 @@ public final class Connection {
                         Utils.severe("Got a StringIndexOutOfBounds, dumping debug state!!!");
                         Utils.severe("flags=%s", flags);
                         Utils.severe("recLen bytes: %s %s %s",
-                            (0x00ff0000 & ((int)readBuffer[1] << 16)),
-                            (0x0000ff00 & ((int)readBuffer[2] << 8)),
-                            (0x000000ff & (int)readBuffer[3])
+                            (0x00ff0000 & ((long)readBuffer[1] << 16)),
+                            (0x0000ff00 & ((long)readBuffer[2] << 8)),
+                            (0x000000ff & (long)readBuffer[3])
                         );
                         Utils.severe("recLen=%s", recLen);
                         Utils.severe("recLenNew=%s", recLenNew);
                         Utils.severe("readBuffer.length=%s", readBuffer.length);
-                        Utils.severe("cipherData.length=%s", (cipherData == null) ? "-" : cipherData.length);
+                        Utils.severe("clearData.length=%s", clearData.length);
                         Utils.severe("messageData.length=%s", messageData.length);
                         Utils.severe("encoded.length=%s", encoded.length());
                         Utils.severe("encoded=%s", encoded);
-                        Utils.severe("first 16 bytes of cipherData: %s", Utils.byteArrayToString(cipherData, 0, 16));
-                        Utils.severe("last 16 bytes of cipherData: %s", Utils.byteArrayToString(cipherData, cipherData.length - 16, 16));
+                        Utils.severe("first 16 bytes of clearData: %s", Utils.byteArrayToString(clearData, 0, 16));
+                        Utils.severe("last 16 bytes of clearData: %s", Utils.byteArrayToString(clearData, clearData.length - 16, 16));
                         Utils.severe("first 16 bytes of messageData: %s", Utils.byteArrayToString(messageData, 0, 16));
                         Utils.severe("last 16 bytes of messageData: %s", Utils.byteArrayToString(messageData, messageData.length - 16, 16));
                         Utils.severe("first 16 bytes of readBuffer: %s", Utils.byteArrayToString(readBuffer, 0, 16));
@@ -308,6 +307,7 @@ public final class Connection {
         try {
             String encoded = message.encode();
             byte[] messageData = encoded.getBytes("UTF-8");
+            byte[] clearData = messageData;
             if (encrypt) {
                 Cipher cipher = new Cipher(CIPHER_PAD_SIZE);
                 cipher.initEncrypt(server.getKey().getBytes("UTF-8"));
@@ -319,6 +319,33 @@ public final class Connection {
             data[1] = (byte)(0x00ff & (messageData.length >> 16));
             data[2] = (byte)(0x00ff & (messageData.length >> 8));
             data[3] = (byte)(0x00ff & messageData.length);
+            
+            int recLen =
+                    (0x00ff0000 & ((int)data[1] << 16)) +
+                    (0x0000ff00 & ((int)data[2] << 8)) +
+                    (0x000000ff & (int)data[3]);
+            if (recLen != messageData.length) {
+                Utils.severe("Encoded message link mismatched, dumping debug state!!!");
+                Utils.severe("encoded=%s", encoded);
+                Utils.severe("encoded.length=%s", encoded.length());
+                Utils.severe("encrypt=%s", encrypt);
+                Utils.severe("clearData.length=%s", clearData.length);
+                Utils.severe("messageData.length=%s", messageData.length);
+                Utils.severe("data.length=%s", data.length);
+                Utils.severe("recLen=%s", recLen);
+                Utils.severe("recLen bytes: %s %s %s",
+                    (0x00ff0000 & ((int)data[1] << 16)),
+                    (0x0000ff00 & ((int)data[2] << 8)),
+                    (0x000000ff & (int)data[3])
+                );
+                Utils.severe("first 16 bytes of clearData: %s", Utils.byteArrayToString(clearData, 0, 16));
+                Utils.severe("last 16 bytes of clearData: %s", Utils.byteArrayToString(clearData, clearData.length - 16, 16));
+                Utils.severe("first 16 bytes of messageData: %s", Utils.byteArrayToString(messageData, 0, 16));
+                Utils.severe("last 16 bytes of messageData: %s", Utils.byteArrayToString(messageData, messageData.length - 16, 16));
+                Utils.severe("first 16 bytes of data: %s", Utils.byteArrayToString(data, 0, 16));
+                Utils.severe("last 16 bytes of data: %s", Utils.byteArrayToString(data, data.length - 16, 16));
+                (new Exception("Invalid message encoding!!!")).printStackTrace();
+            }
             writeBuffers.add(data);
             lastMessageSentTime = System.currentTimeMillis();
         } catch (UnsupportedEncodingException e) {

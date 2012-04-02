@@ -114,8 +114,14 @@ public class BlockListenerImpl implements Listener {
     public void onBlockRedstone(BlockRedstoneEvent event) {
         LocalGate gate = Gates.findGateForTrigger(event.getBlock().getLocation());
         if (gate != null) {
-            if (gate.isClosed() && (event.getNewCurrent() > 0)) {
-                if (gate.hasValidDestination()) {
+            DesignBlockDetail block = gate.getTriggerBlocks().get(event.getBlock().getLocation()).block.getDetail();
+            if (gate.isClosed() && (block.getTriggerOpenMode() != RedstoneMode.NONE) && gate.hasValidDestination()) {
+                boolean openIt = false;
+                switch (block.getTriggerOpenMode()) {
+                    case HIGH: openIt = (event.getNewCurrent() > 0) && (event.getOldCurrent() == 0); break;
+                    case LOW: openIt = (event.getNewCurrent() == 0) && (event.getOldCurrent() > 0); break;
+                }
+                if (openIt) {
                     try {
                         gate.open();
                         Utils.debug("gate '%s' opened via redstone", gate.getName());
@@ -123,16 +129,31 @@ public class BlockListenerImpl implements Listener {
                         Utils.warning(ge.getMessage());
                     }
                 }
-            } else if (gate.isOpen() && (event.getNewCurrent() <= 0)) {
-                gate.close();
-                Utils.debug("gate '%s' closed via redstone", gate.getName());
+            }
+            
+            else if (gate.isOpen() && (block.getTriggerOpenMode() != RedstoneMode.NONE)) {
+                boolean closeIt = false;
+                switch (block.getTriggerOpenMode()) {
+                    case HIGH: closeIt = (event.getNewCurrent() > 0) && (event.getOldCurrent() == 0); break;
+                    case LOW: closeIt = (event.getNewCurrent() == 0) && (event.getOldCurrent() > 0); break;
+                }
+                if (closeIt) {
+                    gate.close();
+                    Utils.debug("gate '%s' closed via redstone", gate.getName());
+                }
             }
             return;
         }
         
         gate = Gates.findGateForSwitch(event.getBlock().getLocation());
         if (gate != null) {
-            if ((event.getNewCurrent() > 0) && (event.getOldCurrent() == 0)) {
+            DesignBlockDetail block = gate.getSwitchBlocks().get(event.getBlock().getLocation()).block.getDetail();
+            boolean nextLink = false;
+            switch (block.getSwitchMode()) {
+                case HIGH: nextLink = (event.getNewCurrent() > 0) && (event.getOldCurrent() == 0); break;
+                case LOW: nextLink = (event.getNewCurrent() == 0) && (event.getOldCurrent() > 0); break;
+            }
+            if (nextLink) {
                 try {
                     gate.nextLink();
                 } catch (GateException ge) {

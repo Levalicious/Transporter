@@ -66,6 +66,7 @@ public final class Config {
         OPTIONS.add("usePermissionsEx");
         OPTIONS.add("dynmapMarkerSetLabel");
         OPTIONS.add("exportedGatesFile");
+        OPTIONS.add("worldLoadDelay");
         OPTIONS.add("httpProxyHost");
         OPTIONS.add("httpProxyType");
         OPTIONS.add("httpProxyPort");
@@ -425,7 +426,15 @@ public final class Config {
         setPropertyDirect("global.exportedGatesFile", s);
     }
 
-
+    public static int getWorldLoadDelay() {
+        return config.getInt("global.worldLoadDelay", 5000);
+    }
+    
+    public static void setWorldLoadDelay(int i) {
+        if (i < 0) i = 0;
+        setPropertyDirect("global.worldLoadDelay", i);
+    }
+    
     public static String getHttpProxyHost() {
         return config.getString("global.httpProxy.host", null);
     }

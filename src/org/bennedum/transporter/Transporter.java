@@ -41,6 +41,8 @@ public class Transporter extends JavaPlugin {
     private WorldListenerImpl worldListener = new WorldListenerImpl();
     private EntityListenerImpl entityListener = new EntityListenerImpl();
 
+    private TransporterAPI api = null;
+    
     @Override
     public void onEnable() {
         Global.mainThread = Thread.currentThread();
@@ -92,20 +94,25 @@ public class Transporter extends JavaPlugin {
         pm.registerEvents(worldListener, this);
         pm.registerEvents(entityListener, this);
 
-        Global.started = true;
-
-        ctx.sendLog("ready");
-
-        // Setup delayed start tasks
-        // It would be better if bukkit someday offered an event that indicated
-        // all the plugins were done loading and the server was started
-        Utils.fireDelayed(new Runnable() {
+        Runnable loadWorlds = new Runnable() {
             @Override
             public void run() {
                 Worlds.autoLoad(ctx);
                 Markers.update();
             }
-        }, 5000);
+        };
+        
+        if (Config.getWorldLoadDelay() == 0)
+            loadWorlds.run();
+        else
+            // Setup delayed start tasks
+            // It would be better if bukkit someday offered an event that indicated
+            // all the plugins were done loading and the server was started
+            Utils.fireDelayed(loadWorlds, Config.getWorldLoadDelay());
+        
+        Global.started = true;
+
+        ctx.sendLog("ready");
 
     }
 
@@ -178,4 +185,10 @@ public class Transporter extends JavaPlugin {
         }
     }
 
+    public TransporterAPI getAPI() {
+        if (api == null)
+            api = new TransporterAPI();
+        return api;
+    }
+    
 }

@@ -638,6 +638,12 @@ public class Utils {
         return b.toString();
     }
 
+    /*
+    public static byte intToUnsignedByte(int in, int byteNum) {
+        return (byte)(0x00ff & (in >> (byteNum * 8)));
+    }
+    */
+    
     public static int unsignedByteToInt(byte in) {
         int out = (int)in;
         if (out < 0) out += 256;

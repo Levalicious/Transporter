@@ -1627,10 +1627,10 @@ public class LocalGate extends Gate implements OptionsListener {
         return map;
     }
 
-    private GateMap getLightningBlocks() {
+    public GateMap getLightningBlocks() {
         GateMap map = new GateMap();
         for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isLightning()) continue;
+            if (gb.getDetail().getLightningMode() == LightningMode.NONE) continue;
             map.put(this, gb);
         }
         return map;

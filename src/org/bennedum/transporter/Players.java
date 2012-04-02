@@ -17,8 +17,10 @@ package org.bennedum.transporter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -36,16 +38,26 @@ public final class Players {
         }
     }
 
-    public static List<PlayerProxy> getLocalPlayers() {
-        List<PlayerProxy> locPlayers = new ArrayList<PlayerProxy>();
+    public static Set<PlayerProxy> getLocalPlayers() {
+        Set<PlayerProxy> locPlayers = new HashSet<PlayerProxy>();
         synchronized (players) {
             for (PlayerProxy player : players.values())
-               if (player.getServerName() == null)
+                if (player.isLocal())
                    locPlayers.add(player);
         }
         return locPlayers;
     }
 
+    public static Set<PlayerProxy> getRemotePlayers() {
+        Set<PlayerProxy> remPlayers = new HashSet<PlayerProxy>();
+        synchronized (players) {
+            for (PlayerProxy player : players.values())
+                if (! player.isLocal())
+                   remPlayers.add(player);
+        }
+        return remPlayers;
+    }
+    
     public static void onTeleport(Player player, Location to) {
         PlayerProxy proxy;
         synchronized (players) {
@@ -141,7 +153,6 @@ public final class Players {
     private static PlayerProxy remove(String name) {
         synchronized (players) {
             PlayerProxy p = players.remove(name);
-            if (p != null) p.destroy();
             return p;
         }
     }

@@ -832,8 +832,18 @@ public final class Reservation {
     private void completeLocalDepartureGate() {
         if (fromGateLocal == null) return;
 
-        // TODO: trigger lightning
-
+        // Handle lightning strike...
+        
+        GateMap lightningBlocks = fromGateLocal.getLightningBlocks();
+        for (GateMap.Entry entry : lightningBlocks.values()) {
+            LightningMode m = entry.block.getDetail().getLightningMode();
+            if (! ((m == LightningMode.SEND) || (m == LightningMode.BOTH)))
+                lightningBlocks.remove(entry.block.getLocation());
+        }
+        GateBlock b = lightningBlocks.randomBlock();
+        if (b != null)
+            b.getLocation().getWorld().strikeLightning(b.getLocation());
+        
         if (player != null) {
 
             Context ctx = new Context(player);
@@ -857,8 +867,18 @@ public final class Reservation {
     private void completeLocalArrivalGate() {
         if (toGateLocal == null) return;
 
-        // TODO: trigger lightning
-
+        // Handle lightning strike...
+        
+        GateMap lightningBlocks = toGateLocal.getLightningBlocks();
+        for (GateMap.Entry entry : lightningBlocks.values()) {
+            LightningMode m = entry.block.getDetail().getLightningMode();
+            if (! ((m == LightningMode.RECEIVE) || (m == LightningMode.BOTH)))
+                lightningBlocks.remove(entry.block.getLocation());
+        }
+        GateBlock b = lightningBlocks.randomBlock();
+        if (b != null)
+            b.getLocation().getWorld().strikeLightning(b.getLocation());
+        
         if (player != null) {
 
             Context ctx = new Context(player);
@@ -899,8 +919,8 @@ public final class Reservation {
                         Utils.warning("unable to debit travel costs for %s: %s", getTraveler(), e.getMessage());
                     }
             }
-//        } else {
-//            Utils.debug("%s arrived at '%s'", getTraveler(), toGateLocal.getFullName());
+        } else {
+            Utils.debug("%s arrived at '%s'", getTraveler(), toGateLocal.getFullName());
         }
     }
 
@@ -1002,15 +1022,22 @@ public final class Reservation {
             }
         }
         if (player != null) {
+            if (health < 0) health = 0;
             player.setHealth(health);
+            if (remainingAir < 0) remainingAir = 0;
             player.setRemainingAir(remainingAir);
+            if (foodLevel < 0) foodLevel = 0;
             player.setFoodLevel(foodLevel);
+            if (exhaustion < 0) exhaustion = 0;
             player.setExhaustion(exhaustion);
+            if (saturation < 0) saturation = 0;
             player.setSaturation(saturation);
             if ((toGateLocal != null) && toGateLocal.getReceiveGameMode())
                 player.setGameMode(Utils.valueOf(GameMode.class, gameMode));
-            if ((toGateLocal != null) && toGateLocal.getReceiveXP())
+            if ((toGateLocal != null) && toGateLocal.getReceiveXP()) {
+                if (xp < 0) xp = 0;
                 player.setExp(xp);
+            }
         }
         switch (entityType) {
             case PLAYER:

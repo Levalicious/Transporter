@@ -17,8 +17,10 @@ package org.bennedum.transporter;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.bennedum.transporter.GateMap.Entry;
 import org.bukkit.Location;
 
@@ -55,6 +57,19 @@ public final class GateMap {
         }
     }
 
+    public GateBlock remove(Location location) {
+        List<Entry> entries = buckets[hashLocation(location)];
+        if (entries == null) return null;
+        for (int i = 0; i < entries.size(); i++) {
+            Entry entry = entries.get(i);
+            if (entry.isLocation(location)) {
+                entries.remove(entry);
+                return entry.block;
+            }
+        }
+        return null;
+    }
+    
     public Entry get(Location location) {
         List<Entry> entries = buckets[hashLocation(location)];
         if (entries == null) return null;
@@ -116,7 +131,13 @@ public final class GateMap {
         return c;
     }
 
-
+    public Set<GateBlock> getBlocks() {
+        Set<GateBlock> blocks = new HashSet<GateBlock>();
+        for (Entry e : values())
+            blocks.add(e.block);
+        return blocks;
+    }
+    
     public static class Entry {
         public LocalGate gate;
         public GateBlock block;

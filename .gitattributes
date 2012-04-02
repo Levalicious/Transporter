@@ -28,6 +28,7 @@ src/org/bennedum/transporter/Gates.java -text
 src/org/bennedum/transporter/Global.java -text
 src/org/bennedum/transporter/Inventory.java -text
 src/org/bennedum/transporter/InventoryException.java -text
+src/org/bennedum/transporter/LightningMode.java -text
 src/org/bennedum/transporter/LocalGate.java -text
 src/org/bennedum/transporter/Markers.java -text
 src/org/bennedum/transporter/Options.java -text
@@ -39,6 +40,7 @@ src/org/bennedum/transporter/Pins.java -text
 src/org/bennedum/transporter/PlayerListenerImpl.java -text
 src/org/bennedum/transporter/PlayerProxy.java -text
 src/org/bennedum/transporter/Players.java -text
+src/org/bennedum/transporter/RedstoneMode.java -text
 src/org/bennedum/transporter/RemoteGate.java -text
 src/org/bennedum/transporter/Reservation.java -text
 src/org/bennedum/transporter/ReservationException.java -text
@@ -50,6 +52,7 @@ src/org/bennedum/transporter/Servers.java -text
 src/org/bennedum/transporter/SpawnDirection.java -text
 src/org/bennedum/transporter/TODO -text
 src/org/bennedum/transporter/Transporter.java -text
+src/org/bennedum/transporter/TransporterAPI.java -text
 src/org/bennedum/transporter/TransporterException.java -text
 src/org/bennedum/transporter/Utils.java -text
 src/org/bennedum/transporter/VehicleListenerImpl.java -text
@@ -105,6 +108,9 @@ src/resources/client/1326382442000/manifest -text
 src/resources/client/1330677677000/Transporter.class -text
 src/resources/client/1330677677000/du.class -text
 src/resources/client/1330677677000/manifest -text
+src/resources/client/1332432053000/Transporter.class -text
+src/resources/client/1332432053000/dw.class -text
+src/resources/client/1332432053000/manifest -text
 src/resources/client/bandaid.png -text
 src/resources/client/magnifier.png -text
 src/resources/client/src/Transporter.src -text

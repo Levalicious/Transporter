@@ -60,6 +60,57 @@ public final class Patcher extends javax.swing.JFrame {
 
     /** Creates new form Patcher */
     public Patcher() {
+
+        /*
+        try {
+            String textOut = "";
+            for (int l = 1; l < 30000; l++) {
+                if ((l % 1000) == 0)
+                    System.out.println(l);
+                textOut += "A";
+                byte[] plainOut = textOut.getBytes("UTF-8");
+                Cipher cipher = new Cipher(256);
+                cipher.initEncrypt("tab".getBytes("UTF-8"));
+                byte[] cipherOut = cipher.doFinal(plainOut);
+                
+                cipher = new Cipher(256);
+                cipher.initDecrypt("tab".getBytes("UTF-8"));
+                byte[] plainIn = cipher.doFinal(cipherOut);
+                String textIn = new String(plainIn, "UTF-8");
+                
+                if (textOut.hashCode() != textIn.hashCode()) {
+                    System.out.println("out.length=" + textOut.length());
+                    System.out.println("out.hash=" + textOut.hashCode());
+                    System.out.println("in.length=" + textIn.length());
+                    System.out.println("in.hash=" + textIn.hashCode());
+                    System.exit(1);
+                }
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.exit(1);
+        */
+        
+        /*
+        for (int in = 0; in < 1000000; in++) {
+            byte[] data = new byte[4];
+            data[1] = (byte)(0x00ff & (in >> 16));
+            data[2] = (byte)(0x00ff & (in >> 8));
+            data[3] = (byte)(0x00ff & in);
+            
+            int out =
+                    (0x00ff0000 & ((int)data[1] << 16)) +
+                    (0x0000ff00 & ((int)data[2] << 8)) +
+                    (0x000000ff & (int)data[3]);
+                    
+            if (in != out) {
+                System.out.println("MISMATCH @ in=" + in);
+            }
+        }
+        System.exit(1);
+        */
         
         /*
         for (int i = 1; i < 20000; i++) {
@@ -87,7 +138,7 @@ public final class Patcher extends javax.swing.JFrame {
         
         System.exit(1);
         */
-        
+
         /*
         try {
             for (int x = 1; x < 1000; x++) {
@@ -95,7 +146,8 @@ public final class Patcher extends javax.swing.JFrame {
 
                 Message messageOut = new Message();
                 for (int i = 0; i < x; i++)
-                    messageOut.put("key" + i, "value" + i);
+//                    messageOut.put("key" + i, "value" + i);
+                    messageOut.put("key" + i, null);
 
                 String encodedOut = messageOut.encode();
                 System.out.println("encodedOut.length=" + encodedOut.length());
@@ -110,9 +162,9 @@ public final class Patcher extends javax.swing.JFrame {
 
                 byte[] streamOut = new byte[cipherOut.length + 4];
                 System.arraycopy(cipherOut, 0, streamOut, 4, cipherOut.length);
-                streamOut[1] = (byte)(0x00ff & (cipherOut.length >> 16));
-                streamOut[2] = (byte)(0x00ff & (cipherOut.length >> 8));
-                streamOut[3] = (byte)(0x00ff & cipherOut.length);
+                streamOut[1] = (byte)(0x000000ff & (cipherOut.length >> 16));
+                streamOut[2] = (byte)(0x000000ff & (cipherOut.length >> 8));
+                streamOut[3] = (byte)(0x000000ff & cipherOut.length);
                 System.out.println("streamOut.length=" + streamOut.length);
 
                 // decode
@@ -148,7 +200,7 @@ public final class Patcher extends javax.swing.JFrame {
         }
         System.exit(1);
         */
-
+        
         /*
         try {
             BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(new File("C:\\messages.txt"))));

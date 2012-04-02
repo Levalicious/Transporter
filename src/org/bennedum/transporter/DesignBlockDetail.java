@@ -35,8 +35,11 @@ public final class DesignBlockDetail {
     private boolean isSwitch = false;
     private boolean isInsert = false;
     private SpawnDirection spawn = null;
-    private boolean isLightning = false;
-
+    private LightningMode lightningMode = LightningMode.NONE;
+    private RedstoneMode triggerOpenMode = RedstoneMode.HIGH;
+    private RedstoneMode triggerCloseMode = RedstoneMode.LOW;
+    private RedstoneMode switchMode = RedstoneMode.HIGH;
+    
     public DesignBlockDetail(DesignBlockDetail src, BlockFace direction) {
         if (src.buildBlock != null)
             buildBlock = new BuildableBlock(src.buildBlock, direction);
@@ -49,7 +52,10 @@ public final class DesignBlockDetail {
         isInsert = src.isInsert;
         if (src.spawn != null)
             spawn = src.spawn.rotate(direction);
-        isLightning = src.isLightning;
+        lightningMode = src.lightningMode;
+        triggerOpenMode = src.triggerOpenMode;
+        triggerCloseMode = src.triggerCloseMode;
+        switchMode = src.switchMode;
     }
 
     public DesignBlockDetail(String blockType) throws BlockException {
@@ -94,10 +100,37 @@ public final class DesignBlockDetail {
             }
         }
 
-        isLightning = node.getBoolean("lightning", false);
+        str = node.getString("lightningMode", "NONE");
+        try {
+            lightningMode = Utils.valueOf(LightningMode.class, str);
+        } catch (IllegalArgumentException iae) {
+            throw new BlockException("invalid or ambiguous lightningMode '%s'", str);
+        }
         
+        str = node.getString("triggerOpenMode", "HIGH");
+        try {
+            triggerOpenMode = Utils.valueOf(RedstoneMode.class, str);
+        } catch (IllegalArgumentException iae) {
+            throw new BlockException("invalid or ambiguous triggerOpenMode '%s'", str);
+        }
+        
+        str = node.getString("triggerCloseMode", "LOW");
+        try {
+            triggerCloseMode = Utils.valueOf(RedstoneMode.class, str);
+        } catch (IllegalArgumentException iae) {
+            throw new BlockException("invalid or ambiguous triggerCloseMode '%s'", str);
+        }
+        
+        str = node.getString("switchMode", "HIGH");
+        try {
+            switchMode = Utils.valueOf(RedstoneMode.class, str);
+        } catch (IllegalArgumentException iae) {
+            throw new BlockException("invalid or ambiguous switchMode '%s'", str);
+        }
+
         if (isScreen && ((buildBlock == null) || (! buildBlock.isSign())))
             throw new BlockException("screen blocks must be wall signs or sign posts");
+        
     }
 
     public Map<String,Object> encode() {
@@ -110,7 +143,10 @@ public final class DesignBlockDetail {
         if (isSwitch) node.put("switch", isSwitch);
         if (isInsert) node.put("insert", isInsert);
         if (spawn != null) node.put("spawn", spawn.toString());
-        if (isLightning) node.put("lightning", isLightning);
+        if (lightningMode != LightningMode.NONE) node.put("lightningMode", lightningMode.toString());
+        if (triggerOpenMode != RedstoneMode.HIGH) node.put("triggerOpenMode", triggerOpenMode.toString());
+        if (triggerCloseMode != RedstoneMode.LOW) node.put("triggerCloseMode", triggerCloseMode.toString());
+        if (switchMode != RedstoneMode.HIGH) node.put("switchMode", switchMode.toString());
         return node;
     }
 
@@ -150,8 +186,20 @@ public final class DesignBlockDetail {
         return spawn;
     }
 
-    public boolean isLightning() {
-        return isLightning;
+    public RedstoneMode getTriggerOpenMode() {
+        return triggerOpenMode;
+    }
+    
+    public RedstoneMode getTriggerCloseMode() {
+        return triggerCloseMode;
+    }
+    
+    public RedstoneMode getSwitchMode() {
+        return switchMode;
+    }
+    
+    public LightningMode getLightningMode() {
+        return lightningMode;
     }
 
     public boolean isInventory() {
@@ -180,8 +228,11 @@ public final class DesignBlockDetail {
                 (isTrigger ? 1000 : 0) +
                 (isSwitch ? 10000 : 0) +
                 (isInsert ? 100000 : 0) +
-                (isLightning ? 1000000 : 0) +
-                ((spawn != null) ? spawn.hashCode() : 0);
+                lightningMode.hashCode() +
+                ((spawn != null) ? spawn.hashCode() : 0) +
+                triggerOpenMode.hashCode() +
+                triggerCloseMode.hashCode() +
+                switchMode.hashCode();
     }
 
     @Override
@@ -206,7 +257,10 @@ public final class DesignBlockDetail {
         if (isSwitch != other.isSwitch) return false;
         if (isInsert != other.isInsert) return false;
         if (spawn != other.spawn) return false;
-        if (isLightning != other.isLightning) return false;
+        if (lightningMode != other.lightningMode) return false;
+        if (triggerOpenMode != other.triggerOpenMode) return false;
+        if (triggerCloseMode != other.triggerCloseMode) return false;
+        if (switchMode != other.switchMode) return false;
 
         return true;
     }
@@ -220,7 +274,10 @@ public final class DesignBlockDetail {
         buf.append("swt=").append(isSwitch).append(",");
         buf.append("ins=").append(isInsert).append(",");
         buf.append("spw=").append(spawn).append(",");
-        buf.append("lng=").append(isLightning).append(",");
+        buf.append("lng=").append(lightningMode).append(",");
+        buf.append("trgOpnMod=").append(triggerOpenMode).append(",");
+        buf.append("trgClsMod=").append(triggerOpenMode).append(",");
+        buf.append("swtMod=").append(switchMode).append(",");
         buf.append(buildBlock).append(",");
         buf.append(openBlock);
         buf.append("]");
