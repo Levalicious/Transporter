@@ -59,7 +59,7 @@ public final class Chat {
             }
         }
         for (Server server : servers.keySet()) {
-            server.doSendChat(player, player.getWorld().getName(), message, servers.get(server));
+            server.doSendChat(player, message, servers.get(server));
         }
     }
 

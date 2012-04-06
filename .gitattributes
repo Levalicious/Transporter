@@ -43,6 +43,9 @@ src/org/bennedum/transporter/PlayerProxy.java -text
 src/org/bennedum/transporter/Players.java -text
 src/org/bennedum/transporter/RedstoneMode.java -text
 src/org/bennedum/transporter/RemoteGate.java -text
+src/org/bennedum/transporter/RemoteGateImpl.java -text
+src/org/bennedum/transporter/RemotePlayerImpl.java -text
+src/org/bennedum/transporter/RemoteWorldImpl.java -text
 src/org/bennedum/transporter/Reservation.java -text
 src/org/bennedum/transporter/ReservationException.java -text
 src/org/bennedum/transporter/SavedBlock.java -text
@@ -61,6 +64,13 @@ src/org/bennedum/transporter/WorldException.java -text
 src/org/bennedum/transporter/WorldListenerImpl.java -text
 src/org/bennedum/transporter/WorldProxy.java -text
 src/org/bennedum/transporter/Worlds.java -text
+src/org/bennedum/transporter/api/Callback.java -text
+src/org/bennedum/transporter/api/RemoteException.java -text
+src/org/bennedum/transporter/api/RemoteGate.java -text
+src/org/bennedum/transporter/api/RemoteLocation.java -text
+src/org/bennedum/transporter/api/RemotePlayer.java -text
+src/org/bennedum/transporter/api/RemoteServer.java -text
+src/org/bennedum/transporter/api/RemoteWorld.java -text
 src/org/bennedum/transporter/client/Patcher.form -text
 src/org/bennedum/transporter/client/Patcher.java -text
 src/org/bennedum/transporter/command/CommandException.java -text

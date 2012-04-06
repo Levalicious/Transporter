@@ -113,6 +113,10 @@ public abstract class Gate {
         return getFullName();
     }
 
+    public String getLocalName() {
+        return getWorldName() + "." + getName();
+    }
+    
     @Override
     public String toString() {
         return "Gate[" + getFullName() + "]";

@@ -206,6 +206,7 @@ public final class Gates {
         rename(gate, newName);
     }
 
+    // TODO: redo this
     public static void rename(Gate gate, String newName) throws GateException {
         if (! Gate.isValidName(newName))
             throw new GateException("the gate name is invalid");

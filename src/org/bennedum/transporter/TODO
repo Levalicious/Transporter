@@ -15,3 +15,5 @@ Testing/TODO:
 * Test "portal" blocks with facing?
 
 Wiki Updates:
+* Removed server options "sendJoin", "receiveJoin"
+* Added server option "announcePlayers"

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.config.ConfigurationNode;
 
 /**
@@ -123,5 +124,11 @@ public final class Servers {
         return servers.size();
     }
 
-
+    public static RemoteServer getRemoteServer(String name) {
+        Server server = get(name);
+        if (server == null)
+            throw new IllegalArgumentException("server '" + name + "' does not exist");
+        return server;
+    }
+    
 }
