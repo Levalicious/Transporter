@@ -16,6 +16,7 @@ src/org/bennedum/transporter/Design.java -text
 src/org/bennedum/transporter/DesignBlock.java -text
 src/org/bennedum/transporter/DesignBlockDetail.java -text
 src/org/bennedum/transporter/DesignException.java -text
+src/org/bennedum/transporter/DesignMatch.java -text
 src/org/bennedum/transporter/Designs.java -text
 src/org/bennedum/transporter/Economy.java -text
 src/org/bennedum/transporter/EconomyException.java -text
@@ -111,6 +112,9 @@ src/resources/client/1330677677000/manifest -text
 src/resources/client/1332432053000/Transporter.class -text
 src/resources/client/1332432053000/dw.class -text
 src/resources/client/1332432053000/manifest -text
+src/resources/client/1333544508000/Transporter.class -text
+src/resources/client/1333544508000/dw.class -text
+src/resources/client/1333544508000/manifest -text
 src/resources/client/bandaid.png -text
 src/resources/client/magnifier.png -text
 src/resources/client/src/Transporter.src -text

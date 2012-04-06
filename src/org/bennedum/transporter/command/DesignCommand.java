@@ -25,10 +25,11 @@ import org.bennedum.transporter.Design;
 import org.bennedum.transporter.Designs;
 import org.bennedum.transporter.Economy;
 import org.bennedum.transporter.EconomyException;
+import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
 import org.bennedum.transporter.Inventory;
+import org.bennedum.transporter.LocalGate;
 import org.bennedum.transporter.Permissions;
-import org.bennedum.transporter.SavedBlock;
 import org.bennedum.transporter.TransporterException;
 import org.bennedum.transporter.Utils;
 import org.bukkit.World;
@@ -53,8 +54,10 @@ public class DesignCommand extends TrpCommandProcessor {
     public List<String> getUsage(Context ctx) {
         List<String> cmds = new ArrayList<String>();
         cmds.add(getPrefix(ctx) + GROUP + "list");
-        if (ctx.isPlayer())
-            cmds.add(getPrefix(ctx) + GROUP + "build <name>|undo");
+        if (ctx.isPlayer()) {
+            cmds.add(getPrefix(ctx) + GROUP + "build <designname>|undo");
+            cmds.add(getPrefix(ctx) + GROUP + "create <designname> <gatename> [<to> [rev]]");
+        }
         return cmds;
     }
 
@@ -93,36 +96,33 @@ public class DesignCommand extends TrpCommandProcessor {
 
             if (args.isEmpty())
                 throw new CommandException("design name required");
-            String designName = args.get(0);
+            String designName = args.remove(0);
             Player player = ctx.getPlayer();
-            World world = player.getWorld();
-
+            
             if (designName.toLowerCase().equals("undo")) {
                 Permissions.require(ctx.getPlayer(), "trp.design.build.undo");
-                List<SavedBlock> blocks = Global.removeBuildUndo(player);
-                if (blocks == null)
+                if (Designs.undoBuild(player.getName()))
+                    ctx.sendLog("build undone");
+                else
                     throw new CommandException("nothing to undo");
-                for (SavedBlock block : blocks)
-                    block.restore();
-                ctx.sendLog("build undone");
                 return;
             }
-
+            
             Design design = Designs.get(designName);
             if (design == null)
                 throw new CommandException("unknown design '%s'", designName);
             if (! design.isBuildable())
                 throw new CommandException("design '%s' is not buildable", design.getName());
+            World world = player.getWorld();
             if (! design.isBuildableInWorld(world))
                 throw new CommandException("gate type '%s' is not buildable in this world", design.getName());
 
             Permissions.require(ctx.getPlayer(), "trp.design.build." + design.getName());
-
             Economy.requireFunds(ctx.getPlayer(), design.getBuildCost());
             if (design.mustBuildFromInventory())
                 Inventory.requireBlocks(ctx.getPlayer(), design.getInventoryBlocks());
 
-            List<SavedBlock> blocks = design.build(player.getLocation());
+            design.build(player.getLocation(), player.getName());
 
             try {
                 if (Economy.deductFunds(ctx.getPlayer(), design.getBuildCost()))
@@ -135,8 +135,68 @@ public class DesignCommand extends TrpCommandProcessor {
                 if (Inventory.deductBlocks(ctx.getPlayer(), design.getInventoryBlocks()))
                     ctx.sendLog("debited inventory");
 
-            Global.setBuildUndo(player, blocks);
+            return;
+        }
+        
+        if ("create".startsWith(subCmd)) {
+            if (! ctx.isPlayer())
+                throw new CommandException("this command can only be used by a player");
+            
+            if (! Config.getAllowBuild())
+                throw new CommandException("building gates is not permitted");
 
+            if (args.isEmpty())
+                throw new CommandException("design name required");
+            String designName = args.remove(0);
+            if (args.isEmpty())
+                throw new CommandException("gate name required");
+            String gateName = args.remove(0);
+            String link = null;
+            if (args.size() > 0)
+                link = args.remove(0);
+            boolean rev = (args.size() > 0) && ("reverse".startsWith(args.get(args.size() - 1).toLowerCase()));
+            
+            Player player = ctx.getPlayer();
+            World world = player.getWorld();
+            Design design = Designs.get(designName);
+            if (design == null)
+                throw new CommandException("unknown design '%s'", designName);
+            if (! design.isBuildable())
+                throw new CommandException("design '%s' is not buildable", design.getName());
+            if (! design.isBuildableInWorld(world))
+                throw new CommandException("gate type '%s' is not buildable in this world", design.getName());
+
+            Permissions.require(ctx.getPlayer(), "trp.design.build." + design.getName());
+            Permissions.require(ctx.getPlayer(), "trp.create." + design.getName());
+            Economy.requireFunds(ctx.getPlayer(), design.getBuildCost() + design.getCreateCost());
+            if (design.mustBuildFromInventory())
+                Inventory.requireBlocks(ctx.getPlayer(), design.getInventoryBlocks());
+
+            LocalGate gate = design.create(player.getLocation(), player.getName(), gateName);
+            Gates.add(gate);
+            ctx.sendLog("created gate '%s'", gate.getName());
+            Global.setSelectedGate(ctx.getPlayer(), gate);
+
+            try {
+                if (Economy.deductFunds(ctx.getPlayer(), design.getBuildCost()))
+                    ctx.sendLog("debited %s for gate construction", Economy.format(design.getBuildCost()));
+            } catch (EconomyException ee) {
+                Utils.warning("unable to debit gate construction costs for %s: %s", ctx.getPlayer().getName(), ee.getMessage());
+            }
+            try {
+                if (Economy.deductFunds(ctx.getPlayer(), design.getCreateCost()))
+                    ctx.sendLog("debited %s for gate creation", Economy.format(design.getCreateCost()));
+            } catch (EconomyException ee) {
+                Utils.warning("unable to debit gate creation costs for %s: %s", ctx.getPlayer().getName(), ee.getMessage());
+            }
+            
+            if (design.mustBuildFromInventory())
+                if (Inventory.deductBlocks(ctx.getPlayer(), design.getInventoryBlocks()))
+                    ctx.sendLog("debited inventory");
+            
+            if (link == null) return;
+            ctx.getPlayer().performCommand("trp gate link add \"" + link + "\"" + (rev ? " rev" : ""));
+            
             return;
         }
 

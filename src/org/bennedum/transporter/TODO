@@ -1,9 +1,17 @@
 
+* Deposit accounts for the money collected when building/creating/linking/using gates.
+* Add "org.bukkit.material.Openable" material data type to BuildableBlock and DesignBlockDetail
+* Add gate option for teleporting to a random, bounded area?
+* API:
+    * Player private messaging (also between servers).
+    * Execute commands on remote servers.
+    * Get time in remote world.
+
 * Implement gate permissions when Permissions plugin supports adding a gate to a group.
-* Implement new gate design: Jail
-* add back call to gate's to do lightning/effects
 
 Testing/TODO:
+* Test minecart teleportation
+* Test stairs with facing option
+* Test "portal" blocks with facing?
 
 Wiki Updates:
-

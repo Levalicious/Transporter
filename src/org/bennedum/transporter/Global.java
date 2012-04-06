@@ -52,7 +52,6 @@ public final class Global {
     public static final List<CommandProcessor> commands = new ArrayList<CommandProcessor>();
 
     private static Map<Integer,LocalGate> selectedGates = new HashMap<Integer,LocalGate>();
-    private static Map<String,List<SavedBlock>> buildUndos = new HashMap<String,List<SavedBlock>>();
 
     static {
         commands.add(new HelpCommand());
@@ -81,18 +80,6 @@ public final class Global {
         for (Integer playerId : new ArrayList<Integer>(selectedGates.keySet()))
             if (selectedGates.get(playerId) == gate)
                 selectedGates.remove(playerId);
-    }
-
-    public static void setBuildUndo(Player player, List<SavedBlock> savedBlocks) {
-        buildUndos.put(player.getName(), savedBlocks);
-    }
-
-    public static List<SavedBlock> removeBuildUndo(Player player) {
-        return buildUndos.remove(player.getName());
-    }
-
-    public static List<SavedBlock> getBuildUndo(Player player) {
-        return buildUndos.get(player.getName());
     }
 
 }

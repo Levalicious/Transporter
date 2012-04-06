@@ -364,10 +364,17 @@ public final class Reservation {
         fromWorld = fromGate.getWorld();
         fromWorldName = fromGate.getWorldName();
 
+        if (fromGate.getSendNextLink())
+            try {
+                fromGate.nextLink();
+            } catch (GateException ge) {
+                throw new ReservationException(ge.getMessage());
+            }
+        
         try {
             toGate = fromGateLocal.getDestinationGate();
-        } catch (GateException e) {
-            throw new ReservationException(e.getMessage());
+        } catch (GateException ge) {
+            throw new ReservationException(ge.getMessage());
         }
 
         toGateName = toGate.getFullName();
@@ -834,15 +841,7 @@ public final class Reservation {
 
         // Handle lightning strike...
         
-        GateMap lightningBlocks = fromGateLocal.getLightningBlocks();
-        for (GateMap.Entry entry : lightningBlocks.values()) {
-            LightningMode m = entry.block.getDetail().getLightningMode();
-            if (! ((m == LightningMode.SEND) || (m == LightningMode.BOTH)))
-                lightningBlocks.remove(entry.block.getLocation());
-        }
-        GateBlock b = lightningBlocks.randomBlock();
-        if (b != null)
-            b.getLocation().getWorld().strikeLightning(b.getLocation());
+        fromGateLocal.onSend(entity);
         
         if (player != null) {
 
@@ -869,15 +868,7 @@ public final class Reservation {
 
         // Handle lightning strike...
         
-        GateMap lightningBlocks = toGateLocal.getLightningBlocks();
-        for (GateMap.Entry entry : lightningBlocks.values()) {
-            LightningMode m = entry.block.getDetail().getLightningMode();
-            if (! ((m == LightningMode.RECEIVE) || (m == LightningMode.BOTH)))
-                lightningBlocks.remove(entry.block.getLocation());
-        }
-        GateBlock b = lightningBlocks.randomBlock();
-        if (b != null)
-            b.getLocation().getWorld().strikeLightning(b.getLocation());
+        toGateLocal.onReceive(entity);
         
         if (player != null) {
 

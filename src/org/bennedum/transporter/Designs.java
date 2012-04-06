@@ -29,6 +29,7 @@ import org.bukkit.Location;
 public final class Designs {
 
     private static final Map<String,Design> designs = new HashMap<String,Design>();
+    private static Map<String,List<SavedBlock>> buildUndos = new HashMap<String,List<SavedBlock>>();
 
     public static void load(Context ctx) {
         designs.clear();
@@ -81,25 +82,27 @@ public final class Designs {
         return designs.size();
     }
 
-    public static LocalGate create(Context ctx, Location location, String gateName) throws TransporterException {
+    public static boolean undoBuild(String playerName) {
+        List<SavedBlock> blocks = buildUndos.remove(playerName);
+        if (blocks == null) return false;
+        for (SavedBlock block : blocks)
+            block.restore();
+        return true;
+    }
+    
+    // Attempts to match the blocks around the given location with a design.
+    // The location should be the location of a design's screen.
+    public static DesignMatch matchScreen(Location location) {
         for (Design design : designs.values()) {
-            LocalGate gate = design.create(location, gateName, ctx.getPlayer().getName());
-            if (gate == null) continue;
-
-            Permissions.require(ctx.getPlayer(), "trp.create." + gate.getDesignName());
-            Gates.add(gate);
-            try {
-                if (Economy.deductFunds(ctx.getPlayer(), design.getCreateCost()))
-                    ctx.sendLog("debited %s for gate creation", Economy.format(design.getCreateCost()));
-            } catch (EconomyException e) {
-                Utils.warning("unable to debit gate creation costs for %s: %s", ctx.getPlayer().getName(), e.getMessage());
-                Gates.destroy(gate, false);
-                throw e;
-            }
-            gate.save();
-            return gate;
+            DesignMatch match = design.matchScreen(location);
+            if (match != null) return match;
         }
         return null;
+    }
+    
+    static void setBuildUndo(String playerName, List<SavedBlock> savedBlocks) {
+        if (playerName == null) return;
+        buildUndos.put(playerName, savedBlocks);
     }
 
 }

@@ -15,7 +15,6 @@
  */
 package org.bennedum.transporter;
 
-import java.util.List;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -77,23 +76,26 @@ public class BlockListenerImpl implements Listener {
             else
                 link += "." + line;
         }
+        if (gateName == null) return;
         try {
-            if (gateName == null) return;
-            gate = Designs.create(ctx, block.getLocation(), gateName);
-            if (gate == null) return;
+            DesignMatch match = Designs.matchScreen(block.getLocation());
+            if (match == null) return;
+            
+            Permissions.require(ctx.getPlayer(), "trp.create." + match.design.getName());
+            Economy.requireFunds(ctx.getPlayer(), match.design.getCreateCost());
+            
+            gate = match.design.create(match, ctx.getPlayer().getName(), gateName);
+            Gates.add(gate);
             ctx.sendLog("created gate '%s'", gate.getName());
-            Global.setSelectedGate(event.getPlayer(), gate);
-
-            List<SavedBlock> undoBlocks = Global.getBuildUndo(event.getPlayer());
-            if (undoBlocks != null) {
-                for (SavedBlock undoBlock : undoBlocks) {
-                    if (gate.isOccupyingLocation(undoBlock.getLocation())) {
-                        Global.removeBuildUndo(event.getPlayer());
-                        break;
-                    }
-                }
+            Global.setSelectedGate(ctx.getPlayer(), gate);
+            
+            try {
+                if (Economy.deductFunds(ctx.getPlayer(), match.design.getCreateCost()))
+                    ctx.sendLog("debited %s for gate creation", Economy.format(match.design.getCreateCost()));
+            } catch (EconomyException e) {
+                Utils.warning("unable to debit gate creation costs for %s: %s", ctx.getPlayer().getName(), e.getMessage());
             }
-
+    
             if (link == null) return;
             ctx.getPlayer().performCommand("trp gate link add \"" + link + "\"");
         } catch (TransporterException te) {

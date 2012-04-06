@@ -75,6 +75,8 @@ public class Design {
     private boolean receiveGameMode;
     private String allowGameModes;
     private boolean receiveXP;
+    private boolean randomNextLink;
+    private boolean sendNextLink;
     private String teleportFormat;
     private String noLinksFormat;
     private String noLinkSelectedFormat;
@@ -144,6 +146,8 @@ public class Design {
         receiveGameMode = conf.getBoolean("receiveGameMode", false);
         allowGameModes = conf.getString("allowGameModes", "*");
         receiveXP = conf.getBoolean("receiveXP", false);
+        randomNextLink = conf.getBoolean("randomNextLink", false);
+        sendNextLink = conf.getBoolean("sendNextLink", false);
         teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
@@ -287,8 +291,8 @@ public class Design {
             throw new DesignException("must be less than 255 blocks high");
         if (sizeZ > 255)
             throw new DesignException("must be less than 255 blocks deep");
-        if ((sizeX * sizeY * sizeZ) < 4)
-            throw new DesignException("volume of gate must be at least 4 cubic meters");
+//        if ((sizeX * sizeY * sizeZ) < 4)
+//            throw new DesignException("volume of gate must be at least 4 cubic meters");
 
         int screenCount = 0,
             triggerCount = 0,
@@ -306,78 +310,22 @@ public class Design {
             if (d.isSpawn()) spawnCount++;
         }
 
-        if (screenCount == 0)
-            throw new DesignException("must have at least one screen block");
+//        if (screenCount == 0)
+//            throw new DesignException("must have at least one screen block");
         if (insertCount != 1)
             throw new DesignException("must have exactly one insert block");
-        if (triggerCount == 0)
-            throw new DesignException("must have at least one trigger block");
+//        if (triggerCount == 0)
+//            throw new DesignException("must have at least one trigger block");
         if (portalCount == 0)
             throw new DesignException("must have at least one portal block");
-        if (multiLink && (switchCount == 0))
-            throw new DesignException("must have at least one switch block because multiLink is true");
+//        if (multiLink && (switchCount == 0))
+//            throw new DesignException("must have at least one switch block because multiLink is true");
         if (spawnCount == 0)
             throw new DesignException("must have at least one spawn block");
     }
 
     public void dump(Context ctx) {
         Utils.debug("Design:");
-        Utils.debug("  name = " + name);
-        Utils.debug("  duration = " + duration);
-        Utils.debug("  buildable = " + buildable);
-
-        String pats = "";
-        for (Pattern p : buildWorlds) {
-            if (pats.length() > 0) pats += ", ";
-            pats += p.toString();
-        }
-        Utils.debug("  buildWorlds = " + pats);
-
-        Utils.debug("  linkLocal = " + linkLocal);
-        Utils.debug("  linkWorld = " + linkWorld);
-        Utils.debug("  linkServer = " + linkServer);
-        
-        Utils.debug("  linkNoneFormat = " + linkNoneFormat);
-        Utils.debug("  linkUnselectedFormat = " + linkUnselectedFormat);
-        Utils.debug("  linkOfflineFormat = " + linkOfflineFormat);
-        Utils.debug("  linkLocalFormat = " + linkLocalFormat);
-        Utils.debug("  linkWorldFormat = " + linkWorldFormat);
-        Utils.debug("  linkServerFormat = " + linkServerFormat);
-        
-        Utils.debug("  multiLink = " + multiLink);
-        Utils.debug("  restoreOnClose = " + restoreOnClose);
-        Utils.debug("  requirePin = " + requirePin);
-        Utils.debug("  requireValidPin = " + requireValidPin);
-        Utils.debug("  invalidPinDamage = " + invalidPinDamage);
-        Utils.debug("  sendChat = " + sendChat);
-        Utils.debug("  sendChatDistance = " + sendChatDistance);
-        Utils.debug("  receiveChat = " + receiveChat);
-        Utils.debug("  receiveChatDistance = " + receiveChatDistance);
-        Utils.debug("  sendInventory = " + sendInventory);
-        Utils.debug("  receiveInventory = " + receiveInventory);
-        Utils.debug("  deleteInventory = " + deleteInventory);
-        Utils.debug("  receiveGameMode = " + receiveGameMode);
-        Utils.debug("  allowGameModes = " + allowGameModes);
-        Utils.debug("  receiveXP = " + receiveXP);
-        Utils.debug("  teleportFormat = " + teleportFormat);
-        Utils.debug("  noLinksFormat = " + noLinksFormat);
-        Utils.debug("  noLinkSelectedFormat = " + noLinkSelectedFormat);
-        Utils.debug("  invalidLinkFormat = " + invalidLinkFormat);
-        Utils.debug("  unknownLinkFormat = " + unknownLinkFormat);
-        Utils.debug("  markerFormat = " + markerFormat);
-
-        Utils.debug("  buildCost = " + buildCost);
-        Utils.debug("  createCost = " + createCost);
-        Utils.debug("  linkLocalCost = " + linkLocalCost);
-        Utils.debug("  linkWorldCost = " + linkWorldCost);
-        Utils.debug("  linkServerCost = " + linkServerCost);
-        Utils.debug("  sendLocalCost = " + sendLocalCost);
-        Utils.debug("  sendWorldCost = " + sendWorldCost);
-        Utils.debug("  sendServerCost = " + sendServerCost);
-        Utils.debug("  receiveLocalCost = " + receiveLocalCost);
-        Utils.debug("  receiveWorldCost = " + receiveWorldCost);
-        Utils.debug("  receiveServerCost = " + receiveServerCost);
-
         Utils.debug("  Blocks:");
         for (DesignBlock db : blocks) {
             Utils.debug("    %s", db);
@@ -516,6 +464,14 @@ public class Design {
         return receiveXP;
     }
 
+    public boolean getRandomNextLink() {
+        return randomNextLink;
+    }
+
+    public boolean getSendNextLink() {
+        return sendNextLink;
+    }
+
     public String getTeleportFormat() {
         return teleportFormat;
     }
@@ -618,7 +574,22 @@ public class Design {
         return ib;
     }
 
-    public List<SavedBlock> build(Location location) throws DesignException {
+    // Builds a gate at the specified location.
+    // Location must include a yaw that indicates the gate's direction.
+    public DesignMatch build(Location location, String playerName) throws DesignException {
+        
+        // must be in a buildable world
+        World world = location.getWorld();
+        String worldName = world.getName();
+        boolean matched = false;
+        for (Pattern pattern : buildWorlds)
+            if (pattern.matcher(worldName).matches()) {
+                matched = true;
+                break;
+            }
+        if (! matched)
+            throw new DesignException("unable to build in this world");
+        
         DesignBlock insertBlock = getInsertBlock();
 
         BlockFace direction;
@@ -666,13 +637,13 @@ public class Design {
             savedBlocks.add(new SavedBlock(gb.getLocation()));
             gb.getDetail().getBuildBlock().build(gb.getLocation());
         }
-        return savedBlocks;
+        Designs.setBuildUndo(playerName, savedBlocks);
+        return new DesignMatch(this, gateBlocks, world, direction);
     }
 
-    // Returns a new gate if a match is found, otherwise null.
-    // The location must contain a sign block that matches one the design's screens.
-    public LocalGate create(Location location, String gateName, String playerName) throws GateException {
-
+    // Attempts to match the blocks around the given location with this design.
+    // The location should be the location of one of the design's screen.
+    public DesignMatch matchScreen(Location location) {
         Utils.debug("checking design '%s'", name);
 
         // must be in a buildable world
@@ -738,11 +709,22 @@ public class Design {
         }
         Utils.debug("matched design!");
 
-        // create the gate
-        LocalGate gate = new LocalGate(world, gateName, playerName, this, gateBlocks, direction);
+        return new DesignMatch(this, gateBlocks, world, direction);
+    }
+    
+    // Returns a new gate if a match in the surrounding blocks is found, otherwise null.
+    public LocalGate create(DesignMatch match, String playerName, String gateName) throws GateException {
+        LocalGate gate = new LocalGate(match.world, gateName, playerName, this, match.gateBlocks, match.direction);
         return gate;
     }
 
+    // Builds a gate at the specified location, creates it, and returns it.
+    // The location must contain a yaw that indicates the gate direction.
+    public LocalGate create(Location location, String playerName, String gateName) throws TransporterException {
+        DesignMatch match = build(location, playerName);
+        return create(match, playerName, gateName);
+    }
+    
     private List<GateBlock> generateGateBlocks(Location location, BlockFace direction) {
         List<GateBlock> gateBlocks = new ArrayList<GateBlock>();
         Map<DesignBlockDetail,DesignBlockDetail> cache = new HashMap<DesignBlockDetail,DesignBlockDetail>();

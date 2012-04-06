@@ -145,6 +145,7 @@ public final class PlayerListenerImpl implements Listener {
         
         LocalGate testGate = (triggerGate == null) ? switchGate : triggerGate;
         Player player = event.getPlayer();
+        Global.setSelectedGate(player, testGate);
         
         String key =
                 (testGate.isOpen() ? "1" : "0") +

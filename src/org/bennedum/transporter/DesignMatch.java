@@ -15,14 +15,26 @@
  */
 package org.bennedum.transporter;
 
+import java.util.List;
+import org.bukkit.World;
+import org.bukkit.block.BlockFace;
+
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public enum LightningMode {
+public final class DesignMatch {
     
-    NONE,
-    NORMAL,
-    SAFE;
+    public Design design;
+    public List<GateBlock> gateBlocks;
+    public World world;
+    public BlockFace direction;
+    
+    public DesignMatch(Design design, List<GateBlock> gateBlocks, World world, BlockFace direction) {
+        this.design = design;
+        this.gateBlocks = gateBlocks;
+        this.world = world;
+        this.direction = direction;
+    }
     
 }

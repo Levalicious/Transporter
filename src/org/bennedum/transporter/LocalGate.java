@@ -18,6 +18,7 @@ package org.bennedum.transporter;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,7 +48,7 @@ public class LocalGate extends Gate implements OptionsListener {
 
     public static final Set<String> OPTIONS = new HashSet<String>();
     private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\\\n");
-
+    
     static {
         OPTIONS.add("duration");
         OPTIONS.add("linkLocal");
@@ -76,6 +77,8 @@ public class LocalGate extends Gate implements OptionsListener {
         OPTIONS.add("receiveGameMode");
         OPTIONS.add("allowGameModes");
         OPTIONS.add("receiveXP");
+        OPTIONS.add("randomNextLink");
+        OPTIONS.add("sendNextLink");
         OPTIONS.add("teleportFormat");
         OPTIONS.add("noLinksFormat");
         OPTIONS.add("noLinkSelectedFormat");
@@ -137,6 +140,8 @@ public class LocalGate extends Gate implements OptionsListener {
     private boolean receiveGameMode;
     private String allowGameModes;
     private boolean receiveXP;
+    private boolean randomNextLink;
+    private boolean sendNextLink;
     private String teleportFormat;
     private String noLinksFormat;
     private String noLinkSelectedFormat;
@@ -205,6 +210,8 @@ public class LocalGate extends Gate implements OptionsListener {
         receiveGameMode = design.getReceiveGameMode();
         allowGameModes = design.getAllowGameModes();
         receiveXP = design.getReceiveXP();
+        randomNextLink = design.getRandomNextLink();
+        sendNextLink = design.getSendNextLink();
         teleportFormat = design.getTeleportFormat();
         noLinksFormat = design.getNoLinksFormat();
         noLinkSelectedFormat = design.getNoLinkSelectedFormat();
@@ -317,6 +324,8 @@ public class LocalGate extends Gate implements OptionsListener {
         receiveGameMode = conf.getBoolean("receiveGameMode", false);
         allowGameModes = conf.getString("allowGameModes", "*");
         receiveXP = conf.getBoolean("receiveXP", false);
+        randomNextLink = conf.getBoolean("randomNextLink", false);
+        sendNextLink = conf.getBoolean("sendNextLink", false);
         teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
@@ -424,6 +433,8 @@ public class LocalGate extends Gate implements OptionsListener {
         conf.setProperty("receiveGameMode", receiveGameMode);
         conf.setProperty("allowGameModes", allowGameModes);
         conf.setProperty("receiveXP", receiveXP);
+        conf.setProperty("randomNextLink", randomNextLink);
+        conf.setProperty("sendNextLink", sendNextLink);
         conf.setProperty("teleportFormat", teleportFormat);
         conf.setProperty("noLinksFormat", noLinksFormat);
         conf.setProperty("noLinkSelectedFormat", noLinkSelectedFormat);
@@ -809,6 +820,22 @@ public class LocalGate extends Gate implements OptionsListener {
         receiveXP = b;
     }
     
+    public boolean getRandomNextLink() {
+        return randomNextLink;
+    }
+
+    public void setRandomNextLink(boolean b) {
+        randomNextLink = b;
+    }
+    
+    public boolean getSendNextLink() {
+        return sendNextLink;
+    }
+
+    public void setSendNextLink(boolean b) {
+        sendNextLink = b;
+    }
+    
     public String getTeleportFormat() {
         return teleportFormat;
     }
@@ -1192,14 +1219,31 @@ public class LocalGate extends Gate implements OptionsListener {
     }
 
     public void onSend(Entity entity) {
-        // nop
+        GateMap map = getSendLightningBlocks();
+        GateBlock block = map.randomBlock();
+        if (block == null) return;
+        switch (block.getDetail().getSendLightningMode()) {
+            case NORMAL:
+                world.strikeLightning(block.getLocation());
+                break;
+            case SAFE:
+                world.strikeLightningEffect(block.getLocation());
+                break;
+        }
     }
 
     public void onReceive(Entity entity) {
-        GateMap map = getLightningBlocks();
+        GateMap map = getReceiveLightningBlocks();
         GateBlock block = map.randomBlock();
         if (block == null) return;
-        world.strikeLightningEffect(block.getLocation());
+        switch (block.getDetail().getReceiveLightningMode()) {
+            case NORMAL:
+                world.strikeLightning(block.getLocation());
+                break;
+            case SAFE:
+                world.strikeLightningEffect(block.getLocation());
+                break;
+        }
     }
 
     public boolean isOpen() {
@@ -1333,6 +1377,17 @@ public class LocalGate extends Gate implements OptionsListener {
                     outgoing = links.get(0);
                     dirty = true;
                 }
+                
+            } else if (randomNextLink) {
+                List<String> candidateLinks = new ArrayList<String>(links);
+                candidateLinks.remove(outgoing);
+                if (candidateLinks.size() > 1)
+                    Collections.shuffle(candidateLinks);
+                if (! candidateLinks.isEmpty()) {
+                    outgoing = candidateLinks.get(0);
+                    dirty = true;
+                }
+                
             } else {
                 int i = links.indexOf(outgoing) + 1;
                 if (i >= links.size()) i = 0;
@@ -1627,10 +1682,19 @@ public class LocalGate extends Gate implements OptionsListener {
         return map;
     }
 
-    public GateMap getLightningBlocks() {
+    public GateMap getSendLightningBlocks() {
         GateMap map = new GateMap();
         for (GateBlock gb : blocks) {
-            if (gb.getDetail().getLightningMode() == LightningMode.NONE) continue;
+            if (gb.getDetail().getSendLightningMode() == LightningMode.NONE) continue;
+            map.put(this, gb);
+        }
+        return map;
+    }
+
+    public GateMap getReceiveLightningBlocks() {
+        GateMap map = new GateMap();
+        for (GateBlock gb : blocks) {
+            if (gb.getDetail().getReceiveLightningMode() == LightningMode.NONE) continue;
             map.put(this, gb);
         }
         return map;
@@ -1658,6 +1722,9 @@ public class LocalGate extends Gate implements OptionsListener {
     }
 
     final public void updateScreens() {
+        GateMap screens = getScreenBlocks();
+        if (screens.size() == 0) return;
+        
         String format;
         Gate toGate = null;
         
@@ -1701,8 +1768,7 @@ public class LocalGate extends Gate implements OptionsListener {
             lines.addAll(Arrays.asList(NEWLINE_PATTERN.split(format)));
         }
         
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isScreen()) continue;
+        for (GateBlock gb : screens.getBlocks()) {
             Block block = gb.getLocation().getBlock();
             BlockState sign = block.getState();
             if (! (sign instanceof Sign)) continue;

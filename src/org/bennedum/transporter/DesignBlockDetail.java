@@ -35,7 +35,8 @@ public final class DesignBlockDetail {
     private boolean isSwitch = false;
     private boolean isInsert = false;
     private SpawnDirection spawn = null;
-    private LightningMode lightningMode = LightningMode.NONE;
+    private LightningMode sendLightningMode = LightningMode.NONE;
+    private LightningMode receiveLightningMode = LightningMode.NONE;
     private RedstoneMode triggerOpenMode = RedstoneMode.HIGH;
     private RedstoneMode triggerCloseMode = RedstoneMode.LOW;
     private RedstoneMode switchMode = RedstoneMode.HIGH;
@@ -52,7 +53,8 @@ public final class DesignBlockDetail {
         isInsert = src.isInsert;
         if (src.spawn != null)
             spawn = src.spawn.rotate(direction);
-        lightningMode = src.lightningMode;
+        sendLightningMode = src.sendLightningMode;
+        receiveLightningMode = src.receiveLightningMode;
         triggerOpenMode = src.triggerOpenMode;
         triggerCloseMode = src.triggerCloseMode;
         switchMode = src.switchMode;
@@ -100,11 +102,34 @@ public final class DesignBlockDetail {
             }
         }
 
-        str = node.getString("lightningMode", "NONE");
+        str = node.getString("sendLightningMode", "NONE");
         try {
-            lightningMode = Utils.valueOf(LightningMode.class, str);
+            sendLightningMode = Utils.valueOf(LightningMode.class, str);
         } catch (IllegalArgumentException iae) {
-            throw new BlockException("invalid or ambiguous lightningMode '%s'", str);
+            throw new BlockException("invalid or ambiguous sendLightningMode '%s'", str);
+        }
+        
+        str = node.getString("receiveLightningMode", "NONE");
+        try {
+            receiveLightningMode = Utils.valueOf(LightningMode.class, str);
+        } catch (IllegalArgumentException iae) {
+            throw new BlockException("invalid or ambiguous receiveLightningMode '%s'", str);
+        }
+
+        // backwards compatibility in v7.8, remove someday
+        str = node.getString("lightningMode");
+        if (str != null) {
+            str = str.toUpperCase();
+            if (! str.equals("NONE"))
+                Utils.warning("Outdated 'lightningMode' block option found! Please update to use new lightning mode options!");
+            if (str.equals("SEND"))
+                sendLightningMode = LightningMode.NORMAL;
+            else if (str.equals("RECEIVE"))
+                receiveLightningMode = LightningMode.NORMAL;
+            else if (str.equals("BOTH")) {
+                sendLightningMode = LightningMode.NORMAL;
+                receiveLightningMode = LightningMode.NORMAL;
+            }
         }
         
         str = node.getString("triggerOpenMode", "HIGH");
@@ -143,7 +168,8 @@ public final class DesignBlockDetail {
         if (isSwitch) node.put("switch", isSwitch);
         if (isInsert) node.put("insert", isInsert);
         if (spawn != null) node.put("spawn", spawn.toString());
-        if (lightningMode != LightningMode.NONE) node.put("lightningMode", lightningMode.toString());
+        if (sendLightningMode != LightningMode.NONE) node.put("sendLightningMode", sendLightningMode.toString());
+        if (receiveLightningMode != LightningMode.NONE) node.put("receiveLightningMode", receiveLightningMode.toString());
         if (triggerOpenMode != RedstoneMode.HIGH) node.put("triggerOpenMode", triggerOpenMode.toString());
         if (triggerCloseMode != RedstoneMode.LOW) node.put("triggerCloseMode", triggerCloseMode.toString());
         if (switchMode != RedstoneMode.HIGH) node.put("switchMode", switchMode.toString());
@@ -198,8 +224,12 @@ public final class DesignBlockDetail {
         return switchMode;
     }
     
-    public LightningMode getLightningMode() {
-        return lightningMode;
+    public LightningMode getSendLightningMode() {
+        return sendLightningMode;
+    }
+
+    public LightningMode getReceiveLightningMode() {
+        return receiveLightningMode;
     }
 
     public boolean isInventory() {
@@ -228,7 +258,8 @@ public final class DesignBlockDetail {
                 (isTrigger ? 1000 : 0) +
                 (isSwitch ? 10000 : 0) +
                 (isInsert ? 100000 : 0) +
-                lightningMode.hashCode() +
+                sendLightningMode.hashCode() +
+                receiveLightningMode.hashCode() +
                 ((spawn != null) ? spawn.hashCode() : 0) +
                 triggerOpenMode.hashCode() +
                 triggerCloseMode.hashCode() +
@@ -257,7 +288,8 @@ public final class DesignBlockDetail {
         if (isSwitch != other.isSwitch) return false;
         if (isInsert != other.isInsert) return false;
         if (spawn != other.spawn) return false;
-        if (lightningMode != other.lightningMode) return false;
+        if (sendLightningMode != other.sendLightningMode) return false;
+        if (receiveLightningMode != other.receiveLightningMode) return false;
         if (triggerOpenMode != other.triggerOpenMode) return false;
         if (triggerCloseMode != other.triggerCloseMode) return false;
         if (switchMode != other.switchMode) return false;
@@ -274,7 +306,8 @@ public final class DesignBlockDetail {
         buf.append("swt=").append(isSwitch).append(",");
         buf.append("ins=").append(isInsert).append(",");
         buf.append("spw=").append(spawn).append(",");
-        buf.append("lng=").append(lightningMode).append(",");
+        buf.append("slng=").append(sendLightningMode).append(",");
+        buf.append("rlng=").append(receiveLightningMode).append(",");
         buf.append("trgOpnMod=").append(triggerOpenMode).append(",");
         buf.append("trgClsMod=").append(triggerOpenMode).append(",");
         buf.append("swtMod=").append(switchMode).append(",");
