@@ -21,22 +21,19 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Economy;
-import org.bennedum.transporter.EconomyException;
-import org.bennedum.transporter.Gate;
+import org.bennedum.transporter.EndpointImpl;
+import org.bennedum.transporter.Endpoints;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
-import org.bennedum.transporter.LocalGate;
+import org.bennedum.transporter.LocalEndpointImpl;
+import org.bennedum.transporter.LocalGateImpl;
 import org.bennedum.transporter.Permissions;
-import org.bennedum.transporter.RemoteGate;
-import org.bennedum.transporter.Reservation;
-import org.bennedum.transporter.ReservationException;
+import org.bennedum.transporter.RemoteEndpointImpl;
+import org.bennedum.transporter.RemoteGateImpl;
 import org.bennedum.transporter.Server;
-import org.bennedum.transporter.Servers;
 import org.bennedum.transporter.TransporterException;
-import org.bennedum.transporter.Utils;
 import org.bukkit.command.Command;
 
 /**
@@ -75,8 +72,6 @@ public class GateCommand extends TrpCommandProcessor {
         cmds.add(getPrefix(ctx) + GROUP + "allow remove <item>|* [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "replace add <old> <new> [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "replace remove <olditem>|* [<gate>]");
-        if (ctx.isPlayer())
-            cmds.add(getPrefix(ctx) + GROUP + "go [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "get <option>|* [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "set <option> <value> [<gate>]");
         return cmds;
@@ -91,33 +86,48 @@ public class GateCommand extends TrpCommandProcessor {
 
         if ("list".startsWith(subCmd)) {
             Permissions.require(ctx.getPlayer(), "trp.gate.list");
-            if (Gates.getAll().isEmpty())
-                ctx.send("there are no gates");
+
+            List<LocalGateImpl> localGates = new ArrayList<LocalGateImpl>(Endpoints.getLocalGates());
+            if (localGates.isEmpty())
+                ctx.send("there are no local gates");
             else {
-                List<Gate> gates = Gates.getAll();
-                Collections.sort(gates, new Comparator<Gate>() {
+                Collections.sort(localGates, new Comparator<LocalGateImpl>() {
                     @Override
-                    public int compare(Gate a, Gate b) {
+                    public int compare(LocalGateImpl a, LocalGateImpl b) {
+                        return a.getLocalName().compareToIgnoreCase(b.getLocalName());
+                    }
+                });
+                ctx.send("%d local gates:", localGates.size());
+                for (LocalGateImpl gate : localGates)
+                    ctx.send("  %s", gate.getLocalName());
+            }
+            List<RemoteGateImpl> remoteGates = new ArrayList<RemoteGateImpl>(Endpoints.getRemoteGates());
+            if (remoteGates.isEmpty())
+                ctx.send("there are no remote gates");
+            else {
+                Collections.sort(remoteGates, new Comparator<RemoteGateImpl>() {
+                    @Override
+                    public int compare(RemoteGateImpl a, RemoteGateImpl b) {
                         return a.getFullName().compareToIgnoreCase(b.getFullName());
                     }
                 });
-                ctx.send("%d gates:", gates.size());
-                for (Gate gate : gates)
+                ctx.send("%d remote gates:", remoteGates.size());
+                for (RemoteGateImpl gate : remoteGates)
                     ctx.send("  %s", gate.getFullName());
             }
             return;
         }
 
         if ("select".startsWith(subCmd)) {
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             Permissions.require(ctx.getPlayer(), "trp.gate.select." + gate.getFullName());
-            Global.setSelectedGate(ctx.getPlayer(), gate);
+            Gates.setSelectedGate(ctx.getPlayer(), gate);
             ctx.send("selected gate '%s'", gate.getFullName());
             return;
         }
 
         if ("info".startsWith(subCmd)) {
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             Permissions.require(ctx.getPlayer(), "trp.gate.info." + gate.getFullName());
             ctx.send("Full name: %s", gate.getFullName());
             ctx.send("Design: %s", gate.getDesignName());
@@ -144,7 +154,7 @@ public class GateCommand extends TrpCommandProcessor {
         }
 
         if ("open".startsWith(subCmd)) {
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             if (gate.isOpen())
                 ctx.warn("gate '%s' is already open", gate.getName(ctx));
             else {
@@ -156,7 +166,7 @@ public class GateCommand extends TrpCommandProcessor {
         }
 
         if ("close".startsWith(subCmd)) {
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             if (gate.isOpen()) {
                 Permissions.require(ctx.getPlayer(), "trp.gate.close." + gate.getFullName());
                 gate.close();
@@ -167,7 +177,7 @@ public class GateCommand extends TrpCommandProcessor {
         }
 
         if ("rebuild".startsWith(subCmd)) {
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             Permissions.require(ctx.getPlayer(), "trp.gate.rebuild." + gate.getFullName());
             gate.rebuild();
             ctx.sendLog("rebuilt gate '%s'", gate.getName(ctx));
@@ -180,9 +190,9 @@ public class GateCommand extends TrpCommandProcessor {
                 unbuild = true;
                 args.remove(args.size() - 1);
             }
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             Permissions.require(ctx.getPlayer(), "trp.gate.destroy." + gate.getFullName());
-            Gates.destroy(gate, unbuild);
+            Endpoints.destroy(gate, unbuild);
             ctx.sendLog("destroyed gate '%s'", gate.getName(ctx));
             return;
         }
@@ -191,10 +201,10 @@ public class GateCommand extends TrpCommandProcessor {
             if (args.isEmpty())
                 throw new CommandException("new name required");
             String newName = args.remove(0);
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             String oldName = gate.getName(ctx);
             Permissions.require(ctx.getPlayer(), "trp.gate.rename");
-            Gates.rename(gate, newName);
+            Endpoints.rename(gate, newName);
             ctx.sendLog("renamed gate '%s' to '%s'", oldName, gate.getName(ctx));
             return;
         }
@@ -205,95 +215,53 @@ public class GateCommand extends TrpCommandProcessor {
             subCmd = args.remove(0).toLowerCase();
             
             if ("next".startsWith(subCmd)) {
-                LocalGate fromGate = getGate(ctx, args);
+                LocalGateImpl fromGate = getGate(ctx, args);
                 fromGate.nextLink();
                 return;
             }
             
             if (args.isEmpty())
-                throw new CommandException("to gate required");
+                throw new CommandException("destination endpoint required");
             boolean reverse = false;
             if ("reverse".startsWith(args.get(args.size() - 1).toLowerCase())) {
                 reverse = true;
                 args.remove(args.size() - 1);
             }
             if (args.isEmpty())
-                throw new CommandException("to gate required");
+                throw new CommandException("destination endpoint required");
 
-            String toGateName = args.remove(args.size() - 1);
-            LocalGate fromGate = getGate(ctx, args);
-            Gate toGate = Gates.get(ctx, toGateName);
-            if ((toGate == null) && (! "remove".startsWith(subCmd)))
-                throw new CommandException("unknown 'to' gate '%s'", toGateName);
+            String toEpName = args.remove(args.size() - 1);
+            LocalGateImpl fromGate = getGate(ctx, args);
+            
+            EndpointImpl toEp = Endpoints.find(ctx, toEpName);
 
             if ("add".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.link.add." + fromGate.getFullName());
-
-                if (fromGate.isLinked() && (! fromGate.getMultiLink()))
-                    throw new CommandException("gate '%s' cannot accept multiple links", fromGate.getName(ctx));
-
-                if (fromGate.isSameWorld(toGate) && (! Config.getAllowLinkLocal()))
-                    throw new CommandException("linking to on-world gates is not permitted");
-                else if (toGate.isSameServer() && (! Config.getAllowLinkWorld()))
-                    throw new CommandException("linking to off-world gates is not permitted");
-                else if ((! toGate.isSameServer()) && (! Config.getAllowLinkServer()))
-                    throw new CommandException("linking to remote server gates is not permitted");
-
-                if (fromGate.isSameWorld(toGate))
-                    Economy.requireFunds(ctx.getPlayer(), fromGate.getLinkLocalCost());
-                else if (toGate.isSameServer())
-                    Economy.requireFunds(ctx.getPlayer(), fromGate.getLinkWorldCost());
-                else
-                    Economy.requireFunds(ctx.getPlayer(), fromGate.getLinkServerCost());
-
-                if (! fromGate.addLink(toGate.getFullName()))
-                    throw new CommandException("gate '%s' already links to '%s'", fromGate.getName(ctx), toGate.getName(ctx));
-
-                ctx.sendLog("added link from '%s' to '%s'", fromGate.getName(ctx), toGate.getName(ctx));
-
-                try {
-                    if (fromGate.isSameWorld(toGate) && Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkLocalCost()))
-                        ctx.sendLog("debited %s for on-world linking", Economy.format(fromGate.getLinkLocalCost()));
-                    else if (toGate.isSameServer() && Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkWorldCost()))
-                        ctx.sendLog("debited %s for off-world linking", Economy.format(fromGate.getLinkWorldCost()));
-                    else if (Economy.deductFunds(ctx.getPlayer(), fromGate.getLinkServerCost()))
-                        ctx.sendLog("debited %s for off-server linking", Economy.format(fromGate.getLinkServerCost()));
-                } catch (EconomyException ee) {
-                    Utils.warning("unable to debit linking costs for %s: %s", ctx.getPlayer().getName(), ee.getMessage());
-                }
-
-                if (reverse && (ctx.getSender() != null)) {
-                    if (toGate.isSameServer())
-                        Global.plugin.getServer().dispatchCommand(ctx.getSender(), "trp gate link add \"" + toGate.getFullName() + "\" \"" + fromGate.getFullName() + "\"");
+                fromGate.addLink(ctx, toEpName);
+                if (reverse && (ctx.getSender() != null) && (toEp != null)) {
+                    if (toEp.isSameServer())
+                        Global.plugin.getServer().dispatchCommand(ctx.getSender(), "trp gate link add \"" + toEp.getFullName() + "\" \"" + fromGate.getFullName() + "\"");
                     else {
-                        Server server = Servers.get(toGate.getServerName());
-                        if (server == null)
-                            ctx.send("unable to add reverse link from unknown or offline server");
+                        Server server = (Server)((RemoteEndpointImpl)toEp).getRemoteServer();
+                        if (! server.isConnected())
+                            ctx.send("unable to add reverse link from offline server");
                         else
-                            server.doAddLink(ctx.getPlayer(), (LocalGate)fromGate, (RemoteGate)toGate);
+                            server.sendLinkAdd(ctx.getPlayer(), (LocalEndpointImpl)fromGate, (RemoteEndpointImpl)toEp);
                     }
                 }
                 return;
             }
 
             if ("remove".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.link.remove." + fromGate.getFullName());
-                if (toGate != null) toGateName = toGate.getFullName();
-
-                if (! fromGate.removeLink(toGateName))
-                    throw new CommandException("gate '%s' does not have a link to '%s'", fromGate.getName(ctx), toGate.getName(ctx));
-
-                ctx.sendLog("removed link from '%s' to '%s'", fromGate.getName(ctx), toGateName);
-
-                if (reverse && (ctx.getSender() != null) && (toGate != null)) {
-                    if (toGate.isSameServer())
-                        Global.plugin.getServer().dispatchCommand(ctx.getSender(), "trp gate link remove \"" + fromGate.getFullName() + "\" \"" + toGate.getFullName() + "\"");
+                fromGate.removeLink(ctx, toEpName);
+                if (reverse && (ctx.getSender() != null) && (toEp != null)) {
+                    if (toEp.isSameServer())
+                        Global.plugin.getServer().dispatchCommand(ctx.getSender(), "trp gate link remove \"" + fromGate.getFullName() + "\" \"" + toEp.getFullName() + "\"");
                     else {
-                        Server server = Servers.get(toGate.getServerName());
-                        if (server == null)
-                            ctx.send("unable to remove reverse link from unknown or offline server");
+                        Server server = (Server)((RemoteEndpointImpl)toEp).getRemoteServer();
+                        if (! server.isConnected())
+                            ctx.send("unable to remove reverse link from offline server");
                         else
-                            server.doRemoveLink(ctx.getPlayer(), (LocalGate)fromGate, (RemoteGate)toGate);
+                            server.sendLinkRemove(ctx.getPlayer(), (LocalEndpointImpl)fromGate, (RemoteEndpointImpl)toEp);
                     }
                 }
                 return;
@@ -308,7 +276,7 @@ public class GateCommand extends TrpCommandProcessor {
             if (args.isEmpty())
                 throw new CommandException("pin required");
             String pin = args.remove(0);
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
 
             if ("add".startsWith(subCmd)) {
                 Permissions.require(ctx.getPlayer(), "trp.gate.pin.add." + gate.getFullName());
@@ -338,7 +306,7 @@ public class GateCommand extends TrpCommandProcessor {
                 throw new CommandException("do what with a ban?");
             subCmd = args.remove(0).toLowerCase();
             
-            LocalGate gate;
+            LocalGateImpl gate;
             
             if ("list".startsWith(subCmd)) {
                 gate = getGate(ctx, args);
@@ -384,7 +352,7 @@ public class GateCommand extends TrpCommandProcessor {
                 throw new CommandException("do what with an allow?");
             subCmd = args.remove(0).toLowerCase();
 
-            LocalGate gate;
+            LocalGateImpl gate;
             
             if ("list".startsWith(subCmd)) {
                 gate = getGate(ctx, args);
@@ -430,7 +398,7 @@ public class GateCommand extends TrpCommandProcessor {
                 throw new CommandException("do what with a replace?");
             subCmd = args.remove(0).toLowerCase();
             
-            LocalGate gate;
+            LocalGateImpl gate;
             
             if ("list".startsWith(subCmd)) {
                 gate = getGate(ctx, args);
@@ -483,7 +451,7 @@ public class GateCommand extends TrpCommandProcessor {
             if (args.isEmpty())
                 throw new CommandException("option value required");
             String value = args.remove(0);
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             gate.setOption(ctx, option, value);
             return;
         }
@@ -492,52 +460,28 @@ public class GateCommand extends TrpCommandProcessor {
             if (args.isEmpty())
                 throw new CommandException("option name required");
             String option = args.remove(0);
-            LocalGate gate = getGate(ctx, args);
+            LocalGateImpl gate = getGate(ctx, args);
             gate.getOptions(ctx, option);
-            return;
-        }
-
-        if ("go".startsWith(subCmd)) {
-            if (! ctx.isPlayer())
-                throw new CommandException("this command can only be used by a player");
-            Gate gate = null;
-            if (! args.isEmpty()) {
-                String name = args.remove(0);
-                gate = Gates.get(ctx, name);
-                if (gate == null)
-                    throw new CommandException("unknown gate '%s'", name);
-            } else
-                gate = Global.getSelectedGate(ctx.getPlayer());
-            if (gate == null)
-                throw new CommandException("gate name required");
-
-            Permissions.require(ctx.getPlayer(), "trp.gate.go." + gate.getFullName());
-            try {
-                Reservation r = new Reservation(ctx.getPlayer(), gate);
-                r.depart();
-            } catch (ReservationException e) {
-                ctx.warnLog(e.getMessage());
-            }
             return;
         }
 
         throw new CommandException("do what with a gate?");
     }
 
-    private LocalGate getGate(Context ctx, List<String> args) throws CommandException {
-        Gate gate = null;
+    private LocalGateImpl getGate(Context ctx, List<String> args) throws CommandException {
+        EndpointImpl ep;
         if (! args.isEmpty()) {
-            gate = Gates.get(ctx, args.get(0));
-            if (gate == null)
+            ep = Endpoints.find(ctx, args.get(0));
+            if ((ep == null) || (! (ep instanceof LocalGateImpl)))
                 throw new CommandException("unknown gate '%s'", args.get(0));
             args.remove(0);
         } else
-            gate = Global.getSelectedGate(ctx.getPlayer());
-        if (gate == null)
+            ep = Gates.getSelectedGate(ctx.getPlayer());
+        if (ep == null)
             throw new CommandException("gate name required");
-        if (! gate.isSameServer())
-            throw new CommandException("this command cannot be used on a remote gate");
-        return (LocalGate)gate;
+        if (! ep.isSameServer())
+            throw new CommandException("this command cannot be used on a remote endpoint");
+        return (LocalGateImpl)ep;
     }
 
 }

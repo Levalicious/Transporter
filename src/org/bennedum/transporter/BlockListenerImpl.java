@@ -29,7 +29,7 @@ public class BlockListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockDamage(BlockDamageEvent event) {
-        LocalGate gate = Gates.findGateForProtection(event.getBlock().getLocation());
+        LocalGateImpl gate = Gates.findGateForProtection(event.getBlock().getLocation());
         if (gate != null) {
             event.setCancelled(true);
             gate.updateScreens();
@@ -38,7 +38,7 @@ public class BlockListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockBreak(BlockBreakEvent event) {
-        LocalGate gate = Gates.findGateForProtection(event.getBlock().getLocation());
+        LocalGateImpl gate = Gates.findGateForProtection(event.getBlock().getLocation());
         if (gate != null) {
             event.setCancelled(true);
             gate.updateScreens();
@@ -49,7 +49,7 @@ public class BlockListenerImpl implements Listener {
             Context ctx = new Context(event.getPlayer());
             try {
                 Permissions.require(ctx.getPlayer(), "trp.gate.destroy." + gate.getFullName());
-                Gates.destroy(gate, false);
+                Endpoints.destroy(gate, false);
                 ctx.sendLog("destroyed gate '%s'", gate.getName());
             } catch (PermissionsException pe) {
                 ctx.warn(pe.getMessage());
@@ -62,7 +62,7 @@ public class BlockListenerImpl implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onSignChange(SignChangeEvent event) {
         Block block = event.getBlock();
-        LocalGate gate = Gates.findGateForScreen(block.getLocation());
+        LocalGateImpl gate = Gates.findGateForScreen(block.getLocation());
         if (gate != null) return;
         Context ctx = new Context(event.getPlayer());
         String gateName = null;
@@ -87,7 +87,7 @@ public class BlockListenerImpl implements Listener {
             gate = match.design.create(match, ctx.getPlayer().getName(), gateName);
             Gates.add(gate);
             ctx.sendLog("created gate '%s'", gate.getName());
-            Global.setSelectedGate(ctx.getPlayer(), gate);
+            Gates.setSelectedGate(ctx.getPlayer(), gate);
             
             try {
                 if (Economy.deductFunds(ctx.getPlayer(), match.design.getCreateCost()))
@@ -106,7 +106,7 @@ public class BlockListenerImpl implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockFromTo(BlockFromToEvent event) {
         // This prevents liquid portals from flowing out
-        LocalGate gate = Gates.findGateForPortal(event.getBlock().getLocation());
+        LocalGateImpl gate = Gates.findGateForPortal(event.getBlock().getLocation());
         if (gate != null) {
             event.setCancelled(true);
         }
@@ -114,7 +114,7 @@ public class BlockListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockRedstone(BlockRedstoneEvent event) {
-        LocalGate gate = Gates.findGateForTrigger(event.getBlock().getLocation());
+        LocalGateImpl gate = Gates.findGateForTrigger(event.getBlock().getLocation());
         if (gate != null) {
             DesignBlockDetail block = gate.getTriggerBlocks().get(event.getBlock().getLocation()).block.getDetail();
             if (gate.isClosed() && (block.getTriggerOpenMode() != RedstoneMode.NONE) && gate.hasValidDestination()) {
@@ -127,8 +127,8 @@ public class BlockListenerImpl implements Listener {
                     try {
                         gate.open();
                         Utils.debug("gate '%s' opened via redstone", gate.getName());
-                    } catch (GateException ge) {
-                        Utils.warning(ge.getMessage());
+                    } catch (EndpointException ee) {
+                        Utils.warning(ee.getMessage());
                     }
                 }
             }
@@ -158,8 +158,8 @@ public class BlockListenerImpl implements Listener {
             if (nextLink) {
                 try {
                     gate.nextLink();
-                } catch (GateException ge) {
-                    Utils.warning(ge.getMessage());
+                } catch (TransporterException te) {
+                    Utils.warning(te.getMessage());
                 }
             }
         }

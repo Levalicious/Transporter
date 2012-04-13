@@ -138,14 +138,14 @@ public final class PlayerListenerImpl implements Listener {
         Location location = block.getLocation();
         Context ctx = new Context(event.getPlayer());
 
-        LocalGate triggerGate = Gates.findGateForTrigger(location);
-        LocalGate switchGate = Gates.findGateForSwitch(location);
+        LocalGateImpl triggerGate = Gates.findGateForTrigger(location);
+        LocalGateImpl switchGate = Gates.findGateForSwitch(location);
         if ((triggerGate == null) && (switchGate == null)) return;
         if ((triggerGate != null) && (switchGate != null) && (triggerGate != switchGate)) switchGate = null;
         
-        LocalGate testGate = (triggerGate == null) ? switchGate : triggerGate;
+        LocalGateImpl testGate = (triggerGate == null) ? switchGate : triggerGate;
         Player player = event.getPlayer();
-        Global.setSelectedGate(player, testGate);
+        Gates.setSelectedGate(player, testGate);
         
         String key =
                 (testGate.isOpen() ? "1" : "0") +
@@ -175,8 +175,8 @@ public final class PlayerListenerImpl implements Listener {
                         testGate.open();
                         ctx.send("opened gate '%s'", testGate.getName());
                         Utils.debug("player '%s' open gate '%s'", player.getName(), testGate.getName());
-                    } catch (GateException ge) {
-                        ctx.warnLog(ge.getMessage());
+                    } catch (EndpointException ee) {
+                        ctx.warnLog(ee.getMessage());
                     }
             }
             
@@ -190,8 +190,8 @@ public final class PlayerListenerImpl implements Listener {
                 try {
                     testGate.nextLink();
                     Utils.debug("player '%s' changed link for gate '%s'", player.getName(), testGate.getName());
-                } catch (GateException ge) {
-                    ctx.warnLog(ge.getMessage());
+                } catch (TransporterException te) {
+                    ctx.warnLog(te.getMessage());
                 }
             }
         }
@@ -201,7 +201,7 @@ public final class PlayerListenerImpl implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        LocalGate fromGate = Gates.findGateForPortal(event.getTo());
+        LocalGateImpl fromGate = Gates.findGateForPortal(event.getTo());
         if (fromGate == null) {
             Reservation.removeGateLock(player);
             return;
@@ -230,14 +230,18 @@ public final class PlayerListenerImpl implements Listener {
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         Player player = event.getPlayer();
         Location location = event.getTo();
-        Players.onTeleport(player, location);
+        if ((location == null) ||
+            (location.getWorld() == null)) return;
+        for (Server server : Servers.getAll())
+            server.sendPlayerChangedWorld(player);
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         Reservation r = Reservation.get(player);
-        Players.onJoin(player, r);
+        for (Server server : Servers.getAll())
+            server.sendPlayerJoined(player, r == null);
         if (r == null) {
             Reservation.addGateLock(player);
             return;
@@ -255,7 +259,8 @@ public final class PlayerListenerImpl implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         Reservation r = Reservation.get(player);
-        Players.onQuit(player, r);
+        for (Server server : Servers.getAll())
+            server.sendPlayerQuit(player, r == null);
         if (r != null)
             event.setQuitMessage(null);
     }
@@ -264,7 +269,8 @@ public final class PlayerListenerImpl implements Listener {
     public void onPlayerKick(PlayerKickEvent event) {
         Player player = event.getPlayer();
         Reservation r = Reservation.get(player);
-        Players.onKick(player, r);
+        for (Server server : Servers.getAll())
+            server.sendPlayerKicked(player, r == null);
         if (r != null)
             event.setLeaveMessage(null);
     }

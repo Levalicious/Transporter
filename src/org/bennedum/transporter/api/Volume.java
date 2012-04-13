@@ -19,14 +19,6 @@ package org.bennedum.transporter.api;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface RemoteWorld {
-    
-    public RemoteServer getRemoteServer();
-    
-    public String getName();
-    
-    public void getFullTime(Callback<Long> cb);
-    
-    public void getTime(Callback<Long> cb);
+public interface Volume extends Endpoint {
     
 }

@@ -49,7 +49,7 @@ public class ServerCommand extends TrpCommandProcessor {
         cmds.add(getPrefix(ctx) + GROUP + "disconnect <server>");
         cmds.add(getPrefix(ctx) + GROUP + "enable <server>");
         cmds.add(getPrefix(ctx) + GROUP + "disable <server>");
-        cmds.add(getPrefix(ctx) + GROUP + "ping <server> [<timeout>]");
+        cmds.add(getPrefix(ctx) + GROUP + "ping <server>");
         cmds.add(getPrefix(ctx) + GROUP + "refresh <server>");
         cmds.add(getPrefix(ctx) + GROUP + "remove <server>");
         cmds.add(getPrefix(ctx) + GROUP + "get <server> <option>|*");
@@ -219,20 +219,12 @@ public class ServerCommand extends TrpCommandProcessor {
             if (server == null)
                 throw new CommandException("unknown server '%s'", args.get(0));
             args.remove(0);
-            long timeout = 5000;
-            if (! args.isEmpty())
-                try {
-                    timeout = Long.parseLong(args.get(0));
-                } catch (IllegalArgumentException e) {
-                    ctx.send("'%s' is not a valid number of millis", args.get(0));
-                    return;
-                }
             Permissions.require(ctx.getPlayer(), "trp.server.ping");
             if (! server.isEnabled())
                 throw new CommandException("server '%s' is not enabled", server.getName());
             if (! server.isConnected())
                 throw new CommandException("server '%s' is not connected", server.getName());
-            server.doPing(ctx, timeout);
+            server.sendPing(ctx.getPlayer());
             ctx.send("pinging '%s'...", server.getName());
             return;
         }

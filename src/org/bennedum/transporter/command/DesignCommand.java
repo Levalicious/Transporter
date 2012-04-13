@@ -26,9 +26,8 @@ import org.bennedum.transporter.Designs;
 import org.bennedum.transporter.Economy;
 import org.bennedum.transporter.EconomyException;
 import org.bennedum.transporter.Gates;
-import org.bennedum.transporter.Global;
 import org.bennedum.transporter.Inventory;
-import org.bennedum.transporter.LocalGate;
+import org.bennedum.transporter.LocalGateImpl;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.TransporterException;
 import org.bennedum.transporter.Utils;
@@ -172,10 +171,10 @@ public class DesignCommand extends TrpCommandProcessor {
             if (design.mustBuildFromInventory())
                 Inventory.requireBlocks(ctx.getPlayer(), design.getInventoryBlocks());
 
-            LocalGate gate = design.create(player.getLocation(), player.getName(), gateName);
+            LocalGateImpl gate = design.create(player.getLocation(), player.getName(), gateName);
             Gates.add(gate);
             ctx.sendLog("created gate '%s'", gate.getName());
-            Global.setSelectedGate(ctx.getPlayer(), gate);
+            Gates.setSelectedGate(ctx.getPlayer(), gate);
 
             try {
                 if (Economy.deductFunds(ctx.getPlayer(), design.getBuildCost()))

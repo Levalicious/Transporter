@@ -62,10 +62,8 @@ public final class Inventory {
         item = normalizeItem(item);
         if (item == null)
             throw new InventoryException("invalid item");
-        synchronized (items) {
-            if (items.contains(item)) return false;
-            items.add(item);
-        }
+        if (items.contains(item)) return false;
+        items.add(item);
         return true;
     }
 
@@ -73,20 +71,16 @@ public final class Inventory {
         item = normalizeItem(item);
         if (item == null)
             throw new InventoryException("invalid item");
-        synchronized (items) {
-            if (! items.contains(item)) return false;
-            items.remove(item);
-        }
+        if (! items.contains(item)) return false;
+        items.remove(item);
         return true;
     }
     
     public static boolean itemListContains(Set<String> items, String item) {
         if (item.equals("*")) return true;
         String parts[] = item.split(":");
-        synchronized (items) {
-            return items.contains(parts[0]) ||
-                   items.contains(item);
-        }
+        return items.contains(parts[0]) ||
+               items.contains(item);
     }
     
     public static boolean appendItemMap(Map<String,String> items, String fromItem, String toItem) throws InventoryException {
@@ -96,10 +90,8 @@ public final class Inventory {
         toItem = Inventory.normalizeItem(toItem);
         if (toItem == null)
             throw new InventoryException("invalid to item");
-        synchronized (items) {
-            if (items.containsKey(fromItem)) return false;
-            items.put(fromItem, toItem);
-        }
+        if (items.containsKey(fromItem)) return false;
+        items.put(fromItem, toItem);
         return true;
     }
     
@@ -107,10 +99,8 @@ public final class Inventory {
         fromItem = Inventory.normalizeItem(fromItem);
         if (fromItem == null)
             throw new InventoryException("invalid from item");
-        synchronized (items) {
-            if (! items.containsKey(fromItem)) return false;
-            items.remove(fromItem);
-        }
+        if (! items.containsKey(fromItem)) return false;
+        items.remove(fromItem);
         return true;
     }
     
@@ -120,12 +110,10 @@ public final class Inventory {
         String newItem;
         String parts[] = item.split(":");
         if (replace != null) {
-            synchronized (replace) {
-                if (replace.containsKey(parts[0]))
-                    newItem = replace.get(parts[0]);
-                else
-                    newItem = replace.get(item);
-            }
+            if (replace.containsKey(parts[0]))
+                newItem = replace.get(parts[0]);
+            else
+                newItem = replace.get(item);
         } else
             newItem = item;
         

@@ -1,7 +1,7 @@
 
 * Deposit accounts for the money collected when building/creating/linking/using gates.
 * Add "org.bukkit.material.Openable" material data type to BuildableBlock and DesignBlockDetail
-* Add gate option for teleporting to a random, bounded area?
+* Add gate option for teleporting to a random, bounded area? (volumes)
 * API:
     * Player private messaging (also between servers).
     * Execute commands on remote servers.
@@ -13,7 +13,21 @@ Testing/TODO:
 * Test minecart teleportation
 * Test stairs with facing option
 * Test "portal" blocks with facing?
+* Test API
+* Add private message command
 
 Wiki Updates:
-* Removed server options "sendJoin", "receiveJoin"
-* Added server option "announcePlayers"
+* Removed server options "sendJoin", "receiveJoin".
+* Added server option "announcePlayers".
+* Removed server ping timeout parameter.
+* Totally new API.
+* *Format options have new substitution names for gate names.
+* Change trp reload gates command to trp reload endpoints.
+* Change trp.reload.gates permission to trp.reload.endpoints.
+* Change trp save gates command to trp save endpoints.
+* Change trp.save.gates permission to trp.save.endpoints.
+* Change trp.gate.use permission to trp.endpoint.use.
+* Change global useGatePermissions to useEndpointPermissions
+
+
+

@@ -21,8 +21,31 @@ package org.bennedum.transporter.api;
  */
 public abstract class Callback<T> {
     
-    abstract public void success(T t);
+    private long requestId;
+    private long requestTime;
     
-    public void failure(RemoteException e) {}
+    public Callback() {
+        requestTime = System.currentTimeMillis();
+    }
+    
+    public long getRequestId() {
+        return requestId;
+    }
+    
+    public void setRequestId(long rid) {
+        requestId = rid;
+    }
+    
+    public long getRequestTime() {
+        return requestTime;
+    }
+     
+    public long getAge() {
+        return System.currentTimeMillis() - requestTime;
+    }
+    
+    abstract public void onSuccess(T t);
+    
+    public void onFailure(RemoteException e) {}
     
 }

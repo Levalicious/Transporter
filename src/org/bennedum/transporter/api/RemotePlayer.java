@@ -25,11 +25,13 @@ public interface RemotePlayer {
     
     public String getDisplayName();
     
-    public RemoteWorld getWorld();
+    public RemoteWorld getRemoteWorld();
     
-    public RemoteServer getServer();
+    public RemoteServer getRemoteServer();
+
+    public void getRemoteWorld(Callback<RemoteWorld> cb);
     
-    public void getLocation(Callback<RemoteLocation> cb);
+    public void getRemoteLocation(Callback<RemoteLocation> cb);
     
     public void sendMessage(Callback<Void> cb, String msg);
     

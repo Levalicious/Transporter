@@ -69,8 +69,10 @@ public final class Markers {
             Map<String,Marker> currentMarkers = new HashMap<String,Marker>();
             for (Marker marker : markerSet.getMarkers())
                 currentMarkers.put(marker.getMarkerID(), marker);
-            for (Iterator<LocalGate> i = Gates.getLocalGates().iterator(); i.hasNext();) {
-                LocalGate gate = i.next();
+            
+            // gates
+            for (Iterator<LocalGateImpl> i = Endpoints.getLocalGates().iterator(); i.hasNext();) {
+                LocalGateImpl gate = i.next();
                 Vector center = gate.getCenter();
                 Marker marker = currentMarkers.remove(gate.getFullName());
 
@@ -99,7 +101,7 @@ public final class Markers {
                 }
 
                 if (marker == null) {
-                    marker = markerSet.createMarker(gate.getFullName(), format, gate.getWorldName(), center.getX(), center.getY(), center.getZ(), markerIcon, false);
+                    marker = markerSet.createMarker(gate.getFullName(), format, gate.getWorld().getName(), center.getX(), center.getY(), center.getZ(), markerIcon, false);
                     if (marker != null)
                         Utils.debug("marker for %s created", gate.getFullName());
                 } else {
@@ -107,6 +109,40 @@ public final class Markers {
                     marker.setLabel(format);
                 }
             }
+            
+            // volumes
+            for (Iterator<LocalVolumeImpl> i = Endpoints.getLocalVolumes().iterator(); i.hasNext();) {
+                LocalVolumeImpl vol = i.next();
+                Vector center = vol.getCenter();
+                Marker marker = currentMarkers.remove(vol.getFullName());
+
+                String format = vol.getMarkerFormat();
+                if (format == null) {
+                    if (marker != null)
+                        marker.deleteMarker();
+                    continue;
+                }
+
+                format = format.replace("\\n", "\n");
+                format = format.replace("%name%", vol.getName());
+                format = format.replace("%creator%", vol.getCreatorName());
+
+                if (format.trim().isEmpty()) {
+                    if (marker != null)
+                        marker.deleteMarker();
+                    continue;
+                }
+
+                if (marker == null) {
+                    marker = markerSet.createMarker(vol.getFullName(), format, vol.getWorld().getName(), center.getX(), center.getY(), center.getZ(), markerIcon, false);
+                    if (marker != null)
+                        Utils.debug("marker for %s created", vol.getFullName());
+                } else {
+                    Utils.debug("reusing marker for %s", vol.getFullName());
+                    marker.setLabel(format);
+                }
+            }
+            
             for (Marker marker : currentMarkers.values()) {
                 marker.deleteMarker();
                 Utils.debug("marker for %s created", marker.getMarkerID());
@@ -121,16 +157,20 @@ public final class Markers {
         File file = new File(fileName);
         if (! file.isAbsolute())
             file = new File(Global.plugin.getDataFolder(), fileName);
-        Utils.debug("exporting gates to %s", file.getAbsolutePath());
+        
+        Utils.debug("exporting endpoints to %s", file.getAbsolutePath());
         try {
             PrintStream out = new PrintStream(file);
             out.println("[");
-            for (Iterator<LocalGate> i = Gates.getLocalGates().iterator(); i.hasNext();) {
-                LocalGate gate = i.next();
+            
+            // gates
+            for (Iterator<LocalGateImpl> i = Endpoints.getLocalGates().iterator(); i.hasNext();) {
+                LocalGateImpl gate = i.next();
                 Vector center = gate.getCenter();
                 out.println("  {");
                 out.println("    \"name\": \"" + gate.getName() + "\",");
-                out.println("    \"world\": \"" + gate.getWorldName() + "\",");
+                out.println("    \"world\": \"" + gate.getWorld().getName() + "\",");
+                out.println("    \"type\": \"gate\",");
                 out.println("    \"links\": [");
                 for (Iterator<String> li = gate.getLinks().iterator(); li.hasNext();) {
                     out.print("      \"" + li.next() + "\"");
@@ -158,6 +198,23 @@ public final class Markers {
                 out.println("    \"creator\": \"" + gate.getCreatorName() + "\"");
                 out.println("  }" + (i.hasNext() ? "," : ""));
             }
+            
+            // volumes
+            for (Iterator<LocalVolumeImpl> i = Endpoints.getLocalVolumes().iterator(); i.hasNext();) {
+                LocalVolumeImpl vol = i.next();
+                Vector center = vol.getCenter();
+                out.println("  {");
+                out.println("    \"name\": \"" + vol.getName() + "\",");
+                out.println("    \"world\": \"" + vol.getWorld().getName() + "\",");
+                out.println("    \"type\": \"volume\",");
+                out.println("    \"x\": " + center.getX() + ",");
+                out.println("    \"y\": " + center.getY() + ",");
+                out.println("    \"z\": " + center.getZ() + ",");
+                out.println("    \"creator\": \"" + vol.getCreatorName() + "\"");
+                out.println("  }" + (i.hasNext() ? "," : ""));
+            }
+            
+            
             out.println("]");
             out.close();
         } catch (IOException ioe) {

@@ -16,8 +16,10 @@
 package org.bennedum.transporter;
 
 import org.bennedum.transporter.api.Callback;
+import org.bennedum.transporter.api.RemoteException;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
+import org.bennedum.transporter.net.Message;
 
 /**
  *
@@ -35,7 +37,7 @@ public final class RemoteWorldImpl implements RemoteWorld {
     }
     
     @Override
-    public RemoteServer getServer() {
+    public RemoteServer getRemoteServer() {
         return server;
     }
 
@@ -45,15 +47,35 @@ public final class RemoteWorldImpl implements RemoteWorld {
     }
 
     @Override
-    public void getFullTime(Callback<Long> cb) {
-        // TODO: implement this
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void getFullTime(final Callback<Long> cb) {
+        Message args = new Message();
+        args.put("world", name);
+        server.sendAPI(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                cb.onSuccess(m.getLong("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                cb.onFailure(re);
+            }
+        }, "world.getFullTime", args);
     }
 
     @Override
-    public void getTime(Callback<Long> cb) {
-        // TODO: implement this
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void getTime(final Callback<Long> cb) {
+        Message args = new Message();
+        args.put("world", name);
+        server.sendAPI(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                cb.onSuccess(m.getLong("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                cb.onFailure(re);
+            }
+        }, "world.getTime", args);
     }
     
 }

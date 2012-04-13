@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.bennedum.transporter.GateMap.Entry;
+import org.bennedum.transporter.api.LocalGate;
+import org.bennedum.transporter.command.CommandException;
 import org.bennedum.transporter.config.Configuration;
 import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.ChatColor;
@@ -44,7 +45,7 @@ import org.bukkit.util.Vector;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class LocalGate extends Gate implements OptionsListener {
+public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate, OptionsListener {
 
     public static final Set<String> OPTIONS = new HashSet<String>();
     private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\\\n");
@@ -100,12 +101,14 @@ public class LocalGate extends Gate implements OptionsListener {
         return pin.length() < 20;
     }
 
+    /*
     public static String getLocalLinkWorldName(String link) {
         String[] parts = link.split("\\.");
         if (parts.length > 2) return null;
         return parts[0];
     }
-
+*/
+    
     private File file;
     private World world;
     private Vector center;
@@ -176,7 +179,7 @@ public class LocalGate extends Gate implements OptionsListener {
     private boolean dirty = false;
     private Options options = new Options(this, OPTIONS, "trp.gate", this);
 
-    public LocalGate(World world, String gateName, String playerName, Design design, List<GateBlock> blocks, BlockFace direction) throws GateException {
+    public LocalGateImpl(World world, String gateName, String playerName, Design design, List<GateBlock> blocks, BlockFace direction) throws EndpointException {
         this.world = world;
         name = gateName;
         creatorName = playerName;
@@ -198,7 +201,7 @@ public class LocalGate extends Gate implements OptionsListener {
         requirePin = design.getRequirePin();
         requireValidPin = design.getRequireValidPin();
         invalidPinDamage = design.getInvalidPinDamage();
-        protect = false;
+        protect = design.getProtect();
         sendChat = design.getSendChat();
         sendChatDistance = design.getSendChatDistance();
         receiveChat = design.getReceiveChat();
@@ -242,13 +245,13 @@ public class LocalGate extends Gate implements OptionsListener {
         dirty = true;
     }
 
-    public LocalGate(World world, File file) throws GateException, BlockException {
+    public LocalGateImpl(World world, File file) throws EndpointException, BlockException {
         if (! file.exists())
-            throw new GateException("%s not found", file.getAbsolutePath());
+            throw new EndpointException("%s not found", file.getAbsolutePath());
         if (! file.isFile())
-            throw new GateException("%s is not a file", file.getAbsolutePath());
+            throw new EndpointException("%s is not a file", file.getAbsolutePath());
         if (! file.canRead())
-            throw new GateException("unable to read %s", file.getAbsoluteFile());
+            throw new EndpointException("unable to read %s", file.getAbsoluteFile());
         Configuration conf = new Configuration(file);
         conf.load();
 
@@ -260,19 +263,19 @@ public class LocalGate extends Gate implements OptionsListener {
         try {
             direction = Utils.valueOf(BlockFace.class, conf.getString("direction", "NORTH"));
         } catch (IllegalArgumentException iae) {
-            throw new GateException("invalid or ambiguous direction");
+            throw new EndpointException("invalid or ambiguous direction");
         }
         duration = conf.getInt("duration", -1);
         linkLocal = conf.getBoolean("linkLocal", true);
         linkWorld = conf.getBoolean("linkWorld", true);
         linkServer = conf.getBoolean("linkServer", true);
         
-        linkNoneFormat = conf.getString("linkNoneFormat", "%fromGate%\\n\\n<none>");
-        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromGate%\\n\\n<unselected>");
-        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromGate%\\n\\n<offline>");
-        linkLocalFormat = conf.getString("linkLocalFormat", "%fromGate%\\n%toGate%");
-        linkWorldFormat = conf.getString("linkWorldFormat", "%fromGate%\\n%toWorld%\\n%toGate%");
-        linkServerFormat = conf.getString("linkServerFormat", "%fromGate%\\n%toServer%\\n%toWorld%\\n%toGate%");
+        linkNoneFormat = conf.getString("linkNoneFormat", "%fromName%\\n\\n<none>");
+        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromName%\\n\\n<unselected>");
+        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromName%\\n\\n<offline>");
+        linkLocalFormat = conf.getString("linkLocalFormat", "%fromName%\\n%toName%");
+        linkWorldFormat = conf.getString("linkWorldFormat", "%fromName%\\n%toWorld%\\n%toName%");
+        linkServerFormat = conf.getString("linkServerFormat", "%fromName%\\n%toServer%\\n%toWorld%\\n%toName%");
         
         multiLink = conf.getBoolean("multiLink", true);
         restoreOnClose = conf.getBoolean("restoreOnClose", false);
@@ -283,7 +286,7 @@ public class LocalGate extends Gate implements OptionsListener {
         for (String item : items) {
             String i = Inventory.normalizeItem(item);
             if (i == null)
-                throw new GateException("invalid banned item '%s'", item);
+                throw new EndpointException("invalid banned item '%s'", item);
             bannedItems.add(i);
         }
 
@@ -291,7 +294,7 @@ public class LocalGate extends Gate implements OptionsListener {
         for (String item : items) {
             String i = Inventory.normalizeItem(item);
             if (i == null)
-                throw new GateException("invalid allowed item '%s'", item);
+                throw new EndpointException("invalid allowed item '%s'", item);
             allowedItems.add(i);
         }
 
@@ -300,11 +303,11 @@ public class LocalGate extends Gate implements OptionsListener {
             for (String oldItem : items) {
                 String oi = Inventory.normalizeItem(oldItem);
                 if (oi == null)
-                    throw new GateException("invalid replace item '%s'", oldItem);
+                    throw new EndpointException("invalid replace item '%s'", oldItem);
                 String newItem = conf.getString("replaceItems." + oldItem);
                 String ni = Inventory.normalizeItem(newItem);
                 if (ni == null)
-                    throw new GateException("invalid replace item '%s'", newItem);
+                    throw new EndpointException("invalid replace item '%s'", newItem);
                 replaceItems.put(oi, ni);
             }
         }
@@ -326,11 +329,11 @@ public class LocalGate extends Gate implements OptionsListener {
         receiveXP = conf.getBoolean("receiveXP", false);
         randomNextLink = conf.getBoolean("randomNextLink", false);
         sendNextLink = conf.getBoolean("sendNextLink", false);
-        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
+        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toNameCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
         invalidLinkFormat = conf.getString("invalidLinkFormat", "invalid link selected");
-        unknownLinkFormat = conf.getString("unknownLinkFormat", "unknown or offline destination gate");
+        unknownLinkFormat = conf.getString("unknownLinkFormat", "unknown or offline destination endpoint");
         markerFormat = conf.getString("markerFormat", "%name%");
 
         incoming.addAll(conf.getStringList("incoming", new ArrayList<String>()));
@@ -349,7 +352,7 @@ public class LocalGate extends Gate implements OptionsListener {
 
         List<ConfigurationNode> nodes = conf.getNodeList("blocks");
         if (nodes == null)
-            throw new GateException("missing blocks");
+            throw new EndpointException("missing blocks");
         blocks = new ArrayList<GateBlock>();
         for (ConfigurationNode node : nodes) {
             GateBlock block = new GateBlock(node);
@@ -380,7 +383,312 @@ public class LocalGate extends Gate implements OptionsListener {
         validate();
     }
 
-    public synchronized void save() {
+    // Endpoint interface
+    
+    @Override
+    public String getLocalName() {
+        return world.getName() + "." + getName();
+    }
+    
+    @Override
+    public String getFullName() {
+        return getLocalName();
+    }
+    
+    // EndpointImpl overrides
+    
+    @Override
+    public String getName(Context ctx) {
+        if ((ctx != null) && ctx.isPlayer()) return getName();
+        return getLocalName();
+    }
+    
+    @Override
+    public String getGlobalName() {
+        return "local." + getLocalName();
+    }
+    
+    @Override
+    public boolean isSameServer() {
+        return true;
+    }
+
+    @Override
+    protected void attach(EndpointImpl originEndpoint) {
+        if (originEndpoint != null) {
+            String epName = originEndpoint.getFullName();
+            if (incoming.contains(epName)) return;
+            incoming.add(epName);
+            dirty = true;
+        }
+        openPortal();
+
+        // try to attach to our destination
+        if ((outgoing == null) || (! hasLink(outgoing))) {
+            if (! isLinked())
+                outgoing = null;
+            else
+                outgoing = getLinks().get(0);
+            updateScreens();
+        }
+        if (outgoing != null) {
+            EndpointImpl ep = Endpoints.get(outgoing);
+            if (ep != null)
+                ep.attach(this);
+        }
+        save();
+    }
+
+    @Override
+    protected void detach(EndpointImpl originEndpoint) {
+        String epName = originEndpoint.getFullName();
+        if (! incoming.contains(epName)) return;
+
+        incoming.remove(epName);
+        dirty = true;
+        closeIfAllowed();
+        save();
+    }
+
+    // LocalEndpointImpl overrides
+    
+    @Override
+    public void addLink(Context ctx, String toEpName) throws TransporterException {
+        Permissions.require(ctx.getPlayer(), "trp.gate.link.add." + getLocalName());
+
+        if (isLinked() && (! getMultiLink()))
+            throw new EndpointException("gate '%s' cannot accept multiple links", getName(ctx));
+
+        EndpointImpl toEp = Endpoints.find(toEpName);
+        if (toEp == null)
+            throw new EndpointException("endpoint '%s' cannot be found", toEpName);
+        
+        if (toEp.isSameServer()) {
+            LocalEndpointImpl toEpLocal = (LocalEndpointImpl)toEp;
+            if (isSameWorld(toEpLocal.getWorld()) && (! Config.getAllowLinkLocal()))
+                throw new CommandException("linking to on-world endpoints is not permitted");
+            else if (! Config.getAllowLinkWorld())
+                throw new CommandException("linking to off-world endpoints is not permitted");
+            if (isSameWorld(toEpLocal.getWorld()))
+                Economy.requireFunds(ctx.getPlayer(), getLinkLocalCost());
+            else 
+                Economy.requireFunds(ctx.getPlayer(), getLinkWorldCost());
+
+        } else {
+            if (! Config.getAllowLinkServer())
+                throw new CommandException("linking to remote endpoints is not permitted");
+            Economy.requireFunds(ctx.getPlayer(), getLinkServerCost());
+        }
+
+        if (! addLink(toEp.getFullName()))
+            throw new EndpointException("gate '%s' already links to '%s'", getName(ctx), toEp.getName(ctx));
+
+        ctx.sendLog("added link from '%s' to '%s'", getName(ctx), toEp.getName(ctx));
+
+        try {
+            if (toEp.isSameServer()) {
+                LocalEndpointImpl toEpLocal = (LocalEndpointImpl)toEp;
+                if (isSameWorld(toEpLocal.getWorld()) && Economy.deductFunds(ctx.getPlayer(), getLinkLocalCost()))
+                    ctx.sendLog("debited %s for on-world linking", Economy.format(getLinkLocalCost()));
+                else if (Economy.deductFunds(ctx.getPlayer(), getLinkWorldCost()))
+                    ctx.sendLog("debited %s for off-world linking", Economy.format(getLinkWorldCost()));
+            } else {
+                if (Economy.deductFunds(ctx.getPlayer(), getLinkServerCost()))
+                    ctx.sendLog("debited %s for off-server linking", Economy.format(getLinkServerCost()));
+            }
+        } catch (EconomyException ee) {
+            Utils.warning("unable to debit linking costs for %s: %s", ctx.getPlayer().getName(), ee.getMessage());
+        }
+    }
+
+    @Override
+    public void removeLink(Context ctx, String toEpName) throws TransporterException {
+        Permissions.require(ctx.getPlayer(), "trp.gate.link.remove." + getFullName());
+
+        EndpointImpl toEp = Endpoints.find(toEpName);
+        if (toEp != null) toEpName = toEp.getFullName();
+
+        if (! removeLink(toEpName))
+            throw new EndpointException("gate '%s' does not have a link to '%s'", getName(ctx), toEpName);
+
+        ctx.sendLog("removed link from '%s' to '%s'", getName(ctx), toEpName);
+    }
+    
+    @Override
+    public void nextLink() throws TransporterException {
+        // trivial case of single link to prevent needless detach/attach
+        if ((links.size() == 1) && links.contains(outgoing)) {
+            //updateScreens();
+            return;
+        }
+
+        // detach from the current gate
+        if (portalOpen && (outgoing != null)) {
+            EndpointImpl ep = Endpoints.get(outgoing);
+            if (ep != null)
+                ep.detach(this);
+        }
+
+        // select next link
+        if ((outgoing == null) || (! links.contains(outgoing))) {
+            if (! links.isEmpty()) {
+                outgoing = links.get(0);
+                dirty = true;
+            }
+
+        } else if (randomNextLink) {
+            List<String> candidateLinks = new ArrayList<String>(links);
+            candidateLinks.remove(outgoing);
+            if (candidateLinks.size() > 1)
+                Collections.shuffle(candidateLinks);
+            if (! candidateLinks.isEmpty()) {
+                outgoing = candidateLinks.get(0);
+                dirty = true;
+            }
+
+        } else {
+            int i = links.indexOf(outgoing) + 1;
+            if (i >= links.size()) i = 0;
+            outgoing = links.get(i);
+            dirty = true;
+        }
+
+        updateScreens();
+
+        // attach to the next gate
+        if (portalOpen && (outgoing != null)) {
+            EndpointImpl ep = Endpoints.get(outgoing);
+            if (ep != null)
+                ep.attach(this);
+        }
+        save();
+        getDestinationEndpoint();
+    }
+
+    @Override
+    public void onRenameComplete() {
+        file.delete();
+        generateFile();
+        save();
+        updateScreens();
+    }
+    
+    @Override
+    public void onEndpointAdded(EndpointImpl ep) {
+        if (ep == this) return;
+        if ((outgoing != null) && outgoing.equals(ep.getFullName()))
+            updateScreens();
+    }
+
+    @Override
+    public void onEndpointRemoved(EndpointImpl ep) {
+        if (ep == this) return;
+        String epName = ep.getFullName();
+        if (epName.equals(outgoing)) {
+            outgoing = null;
+            dirty = true;
+            updateScreens();
+        }
+        closeIfAllowed();
+        save();
+    }
+
+    @Override
+    public void onEndpointDestroyed(EndpointImpl ep) {
+        if (ep == this) return;
+        String epName = ep.getFullName();
+        if (removeLink(epName))
+            dirty = true;
+        if (epName.equals(outgoing)) {
+            outgoing = null;
+            dirty = true;
+            updateScreens();
+        }
+        if (incoming.contains(epName)) {
+            incoming.remove(epName);
+            dirty = true;
+        }
+        closeIfAllowed();
+        save();
+    }
+    
+    @Override
+    public void onEndpointRenamed(EndpointImpl ep, String oldFullName) {
+        if (ep == this) return;
+        String newName = ep.getFullName();
+        if (links.contains(oldFullName)) {
+            links.set(links.indexOf(oldFullName), newName);
+            dirty = true;
+        }
+        if (oldFullName.equals(outgoing)) {
+            outgoing = newName;
+            dirty = true;
+            updateScreens();
+        }
+        if (incoming.contains(oldFullName)) {
+            incoming.remove(oldFullName);
+            incoming.add(newName);
+            dirty = true;
+        }
+        save();
+    }
+    
+    @Override
+    public void onSend(Entity entity) {
+        GateMap map = getSendLightningBlocks();
+        GateBlock block = map.randomBlock();
+        if (block == null) return;
+        switch (block.getDetail().getSendLightningMode()) {
+            case NORMAL:
+                world.strikeLightning(block.getLocation());
+                break;
+            case SAFE:
+                world.strikeLightningEffect(block.getLocation());
+                break;
+        }
+    }
+
+    @Override
+    public void onReceive(Entity entity) {
+        GateMap map = getReceiveLightningBlocks();
+        GateBlock block = map.randomBlock();
+        if (block == null) return;
+        switch (block.getDetail().getReceiveLightningMode()) {
+            case NORMAL:
+                world.strikeLightning(block.getLocation());
+                break;
+            case SAFE:
+                world.strikeLightningEffect(block.getLocation());
+                break;
+        }
+    }
+
+    @Override
+    public void onDestroy(boolean unbuild) {
+        close();
+        file.delete();
+        if (unbuild) {
+            for (GateBlock gb : blocks) {
+                if (! gb.getDetail().isBuildable()) continue;
+                Block b = gb.getLocation().getBlock();
+                b.setTypeIdAndData(0, (byte)0, false);
+            }
+        }
+    }
+
+
+    @Override
+    public boolean isSameWorld(World world) {
+        return this.world == world;
+    }
+    
+    @Override
+    public World getWorld() {
+        return world;
+    }
+    
+    @Override
+    public void save() {
         if (! dirty) return;
         dirty = false;
 
@@ -403,21 +711,11 @@ public class LocalGate extends Gate implements OptionsListener {
         
         conf.setProperty("multiLink", multiLink);
         conf.setProperty("restoreOnClose", restoreOnClose);
-        synchronized (links) {
-            conf.setProperty("links", links);
-        }
-        synchronized (pins) {
-            conf.setProperty("pins", new ArrayList<String>(pins));
-        }
-        synchronized (bannedItems) {
-            conf.setProperty("bannedItems", new ArrayList<String>(bannedItems));
-        }
-        synchronized (allowedItems) {
-            conf.setProperty("allowedItems", new ArrayList<String>(allowedItems));
-        }
-        synchronized (replaceItems) {
-            conf.setProperty("replaceItems", replaceItems);
-        }
+        conf.setProperty("links", links);
+        conf.setProperty("pins", new ArrayList<String>(pins));
+        conf.setProperty("bannedItems", new ArrayList<String>(bannedItems));
+        conf.setProperty("allowedItems", new ArrayList<String>(allowedItems));
+        conf.setProperty("replaceItems", replaceItems);
         conf.setProperty("requirePin", requirePin);
         conf.setProperty("requireValidPin", requireValidPin);
         conf.setProperty("invalidPinDamage", invalidPinDamage);
@@ -474,34 +772,14 @@ public class LocalGate extends Gate implements OptionsListener {
         conf.save();
     }
 
-    public void saveSafe() {
-        Utils.fire(new Runnable() {
-            @Override
-            public void run() {
-                save();
-            }
-        });
-    }
-
-    // called from the gate collection when a gate loaded from a file
+    // End interfaces and implementations
+    
+    // called when the gate is loaded from a file
     public void initialize() {
         if (portalOpen)
             Gates.addPortalBlocks(getPortalBlocks());
         if (protect)
             Gates.addProtectBlocks(getBuildBlocks());
-    }
-
-    // called from the gate collection when a gate is destroyed
-    public void destroy(boolean unbuild) {
-        close();
-        file.delete();
-        if (unbuild) {
-            for (GateBlock gb : blocks) {
-                if (! gb.getDetail().isBuildable()) continue;
-                Block b = gb.getLocation().getBlock();
-                b.setTypeIdAndData(0, (byte)0, false);
-            }
-        }
     }
 
     private void calculateCenter() {
@@ -517,23 +795,19 @@ public class LocalGate extends Gate implements OptionsListener {
         center = new Vector(cx, cy, cz);
     }
 
-    private void validate() throws GateException {
+    private void validate() throws EndpointException {
         if (name == null)
-            throw new GateException("name is required");
+            throw new EndpointException("name is required");
         if (! isValidName(name))
-            throw new GateException("name is not valid");
+            throw new EndpointException("name is not valid");
         if (creatorName == null)
-            throw new GateException("creatorName is required");
+            throw new EndpointException("creatorName is required");
         if (designName == null)
-            throw new GateException("designName is required");
+            throw new EndpointException("designName is required");
         if (! Design.isValidName(designName))
-            throw new GateException("designName is not valid");
+            throw new EndpointException("designName is not valid");
         if (blocks.isEmpty())
-            throw new GateException("must have at least one block");
-    }
-
-    public World getWorld() {
-        return world;
+            throw new EndpointException("must have at least one block");
     }
 
     public Vector getCenter() {
@@ -544,10 +818,19 @@ public class LocalGate extends Gate implements OptionsListener {
         return creatorName;
     }
 
+    public String getDesignName() {
+        return designName;
+    }
+    
     public BlockFace getDirection() {
         return direction;
     }
 
+    @Override
+    public String toString() {
+        return "LocalGate[" + getLocalName() + "]";
+    }
+    
     /* Begin options */
 
     public int getDuration() {
@@ -845,7 +1128,7 @@ public class LocalGate extends Gate implements OptionsListener {
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = ChatColor.GOLD + "teleported to '%toGateCtx%'";
+        if (s == null) s = ChatColor.GOLD + "teleported to '%toNameCtx%'";
         teleportFormat = s;
     }
 
@@ -1032,218 +1315,18 @@ public class LocalGate extends Gate implements OptionsListener {
 
     /* End options */
 
-    /* Gate interface */
-
-    @Override
-    public String getWorldName() {
-        return world.getName();
+    public double getSendCost(EndpointImpl toEp) {
+        if (toEp == null) return 0;
+        if (! toEp.isSameServer()) return sendServerCost;
+        if (((LocalEndpointImpl)toEp).isSameWorld(world)) return sendLocalCost;
+        return sendWorldCost;
     }
 
-    @Override
-    public String getServerName() {
-        return null;
-    }
-
-    @Override
-    public String getDesignName() {
-        return designName;
-    }
-
-    @Override
-    public double getSendCost(Gate toGate) {
-        if (toGate == null) return 0;
-        if (toGate.isSameWorld(this)) return sendLocalCost;
-        if (toGate.isSameServer()) return sendWorldCost;
-        return sendServerCost;
-    }
-
-    @Override
-    public double getReceiveCost(Gate fromGate) {
-        if (fromGate == null) return 0;
-        if (fromGate.isSameWorld(this)) return receiveLocalCost;
-        if (fromGate.isSameServer()) return receiveWorldCost;
-        return receiveServerCost;
-    }
-
-
-    @Override
-    public void onRenameComplete() {
-        file.delete();
-        generateFile();
-        saveSafe();
-        updateScreens();
-    }
-
-    @Override
-    protected void attach(Gate fromGate) {
-        if (fromGate != null) {
-            String gateName = fromGate.getFullName();
-            if (incoming.contains(gateName)) return;
-            incoming.add(gateName);
-            dirty = true;
-        }
-        openPortal();
-
-        // try to attach to our destination
-        if ((outgoing == null) || (! hasLink(outgoing))) {
-            if (! isLinked())
-                outgoing = null;
-            else
-                outgoing = getLinks().get(0);
-            updateScreens();
-        }
-        if (outgoing != null) {
-            Gate gate = Gates.get(outgoing);
-            if (gate != null)
-                gate.attach(this);
-        }
-        saveSafe();
-    }
-
-    @Override
-    protected void detach(Gate fromGate) {
-        String gateName = fromGate.getFullName();
-        if (! incoming.contains(gateName)) return;
-
-        incoming.remove(gateName);
-        dirty = true;
-        closeIfAllowed();
-        saveSafe();
-    }
-
-    @Override
-    public void dump(Context ctx) {
-        Utils.debug("LocalGate:");
-        Utils.debug("  name = %s", name);
-        Utils.debug("  creatorName = %s", creatorName);
-        Utils.debug("  designName = %s", designName);
-        Utils.debug("  world = %s", world.getName());
-        Utils.debug("  links: %d", links.size());
-        for (String link : links)
-            Utils.debug("    %s %s", link, (link.equals(outgoing)) ? "*": "");
-        Utils.debug("  incoming: %s", incoming.size());
-        for (String link : incoming)
-            Utils.debug("    %s", link);
-        Utils.debug("  portalOpen = %s", portalOpen);
-        Utils.debug("  Portal blocks: ");
-        for (Entry e : getPortalBlocks().values())
-            Utils.debug("    " + e.block);
-    }
-
-    /* End interface */
-
-    public void onGateAdded(Gate gate) {
-        if (gate == this) return;
-        if ((outgoing != null) && outgoing.equals(gate.getFullName()))
-            updateScreens();
-    }
-
-    public void onGateRenamed(Gate gate, String oldName) {
-        if (gate == this) return;
-        String newName = gate.getFullName();
-        synchronized (links) {
-            if (links.contains(oldName)) {
-                links.set(links.indexOf(oldName), newName);
-                dirty = true;
-            }
-        }
-        if (oldName.equals(outgoing)) {
-            outgoing = newName;
-            dirty = true;
-            updateScreens();
-        }
-        if (incoming.contains(oldName)) {
-            incoming.remove(oldName);
-            incoming.add(newName);
-            dirty = true;
-        }
-        saveSafe();
-    }
-
-    public void onGateDestroyed(LocalGate gate) {
-        if (gate == this) return;
-        String gateName = gate.getFullName();
-        if (removeLink(gateName))
-            dirty = true;
-        if (gateName.equals(outgoing)) {
-            outgoing = null;
-            dirty = true;
-            updateScreens();
-        }
-        if (incoming.contains(gateName)) {
-            incoming.remove(gateName);
-            dirty = true;
-        }
-        closeIfAllowed();
-        saveSafe();
-    }
-
-    public void onGateDestroyed(RemoteGate gate) {
-        String gateName = gate.getFullName();
-        if (removeLink(gateName))
-            dirty = true;
-        if (gateName.equals(outgoing)) {
-            outgoing = null;
-            dirty = true;
-            updateScreens();
-        }
-        if (incoming.contains(gateName)) {
-            incoming.remove(gateName);
-            dirty = true;
-        }
-        closeIfAllowed();
-        saveSafe();
-    }
-
-    public void onGateRemoved(LocalGate gate) {
-        if (gate == this) return;
-        String gateName = gate.getFullName();
-        if (gateName.equals(outgoing)) {
-            outgoing = null;
-            dirty = true;
-            updateScreens();
-        }
-        closeIfAllowed();
-        saveSafe();
-    }
-
-    public void onGateRemoved(RemoteGate gate) {
-        String gateName = gate.getFullName();
-        if (gateName.equals(outgoing)) {
-            outgoing = null;
-            dirty = true;
-            updateScreens();
-        }
-        closeIfAllowed();
-        saveSafe();
-    }
-
-    public void onSend(Entity entity) {
-        GateMap map = getSendLightningBlocks();
-        GateBlock block = map.randomBlock();
-        if (block == null) return;
-        switch (block.getDetail().getSendLightningMode()) {
-            case NORMAL:
-                world.strikeLightning(block.getLocation());
-                break;
-            case SAFE:
-                world.strikeLightningEffect(block.getLocation());
-                break;
-        }
-    }
-
-    public void onReceive(Entity entity) {
-        GateMap map = getReceiveLightningBlocks();
-        GateBlock block = map.randomBlock();
-        if (block == null) return;
-        switch (block.getDetail().getReceiveLightningMode()) {
-            case NORMAL:
-                world.strikeLightning(block.getLocation());
-                break;
-            case SAFE:
-                world.strikeLightningEffect(block.getLocation());
-                break;
-        }
+    public double getReceiveCost(EndpointImpl fromEp) {
+        if (fromEp == null) return 0;
+        if (! fromEp.isSameServer()) return receiveServerCost;
+        if (((LocalEndpointImpl)fromEp).isSameWorld(world)) return receiveLocalCost;
+        return receiveWorldCost;
     }
 
     public boolean isOpen() {
@@ -1254,28 +1337,28 @@ public class LocalGate extends Gate implements OptionsListener {
         return ! portalOpen;
     }
 
-    public void open() throws GateException {
+    public void open() throws EndpointException {
         if (portalOpen) return;
 
         // try to get our destination
         if ((outgoing == null) || (! hasLink(outgoing))) {
             if (! isLinked())
-                throw new GateException("this gate has no links");
+                throw new EndpointException("this gate has no links");
             outgoing = getLinks().get(0);
             dirty = true;
             //updateScreens();
         }
-        Gate gate = Gates.get(outgoing);
-        if (gate == null)
-            throw new GateException("unknown or offline gate '%s'", outgoing);
+        EndpointImpl ep = Endpoints.get(outgoing);
+        if (ep == null)
+            throw new EndpointException("unknown or offline endpoint '%s'", outgoing);
 
         openPortal();
-        gate.attach(this);
+        ep.attach(this);
         updateScreens();
-        saveSafe();
+        save();
 
         if (duration > 0) {
-            final LocalGate myself = this;
+            final LocalGateImpl myself = this;
             Utils.fireDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -1294,125 +1377,59 @@ public class LocalGate extends Gate implements OptionsListener {
 
         // try to detach from our destination
         if (outgoing != null) {
-            Gate gate = Gates.get(outgoing);
-            if (gate != null)
-                gate.detach(this);
+            EndpointImpl ep = Endpoints.get(outgoing);
+            if (ep != null)
+                ep.detach(this);
         }
-        saveSafe();
-    }
-
-    public boolean addLink(String link) {
-        synchronized (links) {
-            if (links.contains(link)) return false;
-            links.add(link);
-            if (links.size() == 1)
-                outgoing = link;
-        }
-        dirty = true;
-        updateScreens();
-        saveSafe();
-        return true;
-    }
-
-    public boolean removeLink(String link) {
-        synchronized (links) {
-            if (! links.contains(link)) return false;
-            links.remove(link);
-            if (link.equals(outgoing))
-                outgoing = null;
-        }
-        dirty = true;
-        updateScreens();
-        closeIfAllowed();
-        saveSafe();
-        return true;
+        save();
     }
 
     public List<String> getLinks() {
-        synchronized (links) {
-            return new ArrayList<String>(links);
-        }
-    }
-
-    public boolean hasLink(String link) {
-        synchronized (links) {
-            return links.contains(link);
-        }
+        return new ArrayList<String>(links);
     }
 
     public boolean isLinked() {
-        synchronized (links) {
-            return ! links.isEmpty();
-        }
+        return ! links.isEmpty();
+    }
+    
+    public boolean hasLink(String link) {
+        return links.contains(link);
     }
 
-    public boolean isLastLink() {
-        synchronized (links) {
-            if (outgoing == null)
-                return links.isEmpty();
-            return links.indexOf(outgoing) == (links.size() - 1);
-        }
-    }
-
-    public void nextLink() throws GateException {
-        synchronized (links) {
-            // trivial case of single link to prevent needless detach/attach
-            if ((links.size() == 1) && links.contains(outgoing)) {
-                //updateScreens();
-                return;
-            }
-        }
-
-        // detach from the current gate
-        if (portalOpen && (outgoing != null)) {
-            Gate gate = Gates.get(outgoing);
-            if (gate != null)
-                gate.detach(this);
-        }
-
-        synchronized (links) {
-            // select next link
-            if ((outgoing == null) || (! links.contains(outgoing))) {
-                if (! links.isEmpty()) {
-                    outgoing = links.get(0);
-                    dirty = true;
-                }
-                
-            } else if (randomNextLink) {
-                List<String> candidateLinks = new ArrayList<String>(links);
-                candidateLinks.remove(outgoing);
-                if (candidateLinks.size() > 1)
-                    Collections.shuffle(candidateLinks);
-                if (! candidateLinks.isEmpty()) {
-                    outgoing = candidateLinks.get(0);
-                    dirty = true;
-                }
-                
-            } else {
-                int i = links.indexOf(outgoing) + 1;
-                if (i >= links.size()) i = 0;
-                outgoing = links.get(i);
-                dirty = true;
-            }
-        }
-
+    protected boolean addLink(String link) {
+        if (links.contains(link)) return false;
+        links.add(link);
+        if (links.size() == 1)
+            outgoing = link;
+        dirty = true;
         updateScreens();
+        save();
+        return true;
+    }
 
-        // attach to the next gate
-        if (portalOpen && (outgoing != null)) {
-            Gate gate = Gates.get(outgoing);
-            if (gate != null)
-                gate.attach(this);
-        }
-        saveSafe();
-        getDestinationGate();
+    protected boolean removeLink(String link) {
+        if (! links.contains(link)) return false;
+        links.remove(link);
+        if (link.equals(outgoing))
+            outgoing = null;
+        dirty = true;
+        updateScreens();
+        closeIfAllowed();
+        save();
+        return true;
+    }
+    
+    public boolean isLastLink() {
+        if (outgoing == null)
+            return links.isEmpty();
+        return links.indexOf(outgoing) == (links.size() - 1);
     }
 
     public boolean hasValidDestination() {
         try {
-            getDestinationGate();
+            getDestinationEndpoint();
             return true;
-        } catch (GateException e) {
+        } catch (EndpointException e) {
             return false;
         }
     }
@@ -1421,18 +1438,18 @@ public class LocalGate extends Gate implements OptionsListener {
         return outgoing;
     }
 
-    public Gate getDestinationGate() throws GateException {
+    public EndpointImpl getDestinationEndpoint() throws EndpointException {
         if (outgoing == null) {
             if (! isLinked())
-                throw new GateException(getNoLinksFormat());
+                throw new EndpointException(getNoLinksFormat());
             else
-                throw new GateException(getNoLinkSelectedFormat());
+                throw new EndpointException(getNoLinkSelectedFormat());
         } else if (! hasLink(outgoing))
-            throw new GateException(getInvalidLinkFormat());
-        Gate gate = Gates.get(outgoing);
-        if (gate == null)
-            throw new GateException(getUnknownLinkFormat());
-        return gate;
+            throw new EndpointException(getInvalidLinkFormat());
+        EndpointImpl ep = Endpoints.get(outgoing);
+        if (ep == null)
+            throw new EndpointException(getUnknownLinkFormat());
+        return ep;
     }
 
     public void rebuild() {
@@ -1445,138 +1462,124 @@ public class LocalGate extends Gate implements OptionsListener {
         updateScreens();
     }
 
-    public boolean addPin(String pin) throws GateException {
+    public boolean addPin(String pin) throws EndpointException {
         if (! isValidPin(pin))
-            throw new GateException("invalid pin");
-        synchronized (pins) {
-            if (pins.contains(pin)) return false;
-            pins.add(pin);
-        }
+            throw new EndpointException("invalid pin");
+        if (pins.contains(pin)) return false;
+        pins.add(pin);
         return true;
     }
 
     public boolean removePin(String pin) {
-        synchronized (pins) {
-            if (pins.contains(pin)) return false;
-            pins.remove(pin);
-        }
-        saveSafe();
+        if (pins.contains(pin)) return false;
+        pins.remove(pin);
+        save();
         return true;
     }
 
     public void removeAllPins() {
-        synchronized (pins) {
-            pins.clear();
-        }
-        saveSafe();
+        pins.clear();
+        save();
     }
 
     public boolean hasPin(String pin) {
-        synchronized (pins) {
-            return pins.contains(pin);
-        }
+        return pins.contains(pin);
     }
 
     public Set<String> getBannedItems() {
         return bannedItems;
     }
     
-    public boolean addBannedItem(String item) throws GateException {
+    public boolean addBannedItem(String item) throws EndpointException {
         try {
             if (! Inventory.appendItemList(bannedItems, item)) return false;
         } catch (InventoryException e) {
-            throw new GateException(e.getMessage());
+            throw new EndpointException(e.getMessage());
         }
         dirty = true;
-        saveSafe();
+        save();
         return true;
     }
 
-    public boolean removeBannedItem(String item) throws GateException {
+    public boolean removeBannedItem(String item) throws EndpointException {
         try {
             if (! Inventory.removeItemList(bannedItems, item)) return false;
         } catch (InventoryException e) {
-            throw new GateException(e.getMessage());
+            throw new EndpointException(e.getMessage());
         }
         dirty = true;
-        saveSafe();
+        save();
         return true;
     }
 
     public void removeAllBannedItems() {
-        synchronized (bannedItems) {
-            bannedItems.clear();
-        }
+        bannedItems.clear();
         dirty = true;
-        saveSafe();
+        save();
     }
 
     public Set<String> getAllowedItems() {
         return allowedItems;
     }
     
-    public boolean addAllowedItem(String item) throws GateException {
+    public boolean addAllowedItem(String item) throws EndpointException {
         try {
             if (! Inventory.appendItemList(allowedItems, item)) return false;
         } catch (InventoryException e) {
-            throw new GateException(e.getMessage());
+            throw new EndpointException(e.getMessage());
         }
         dirty = true;
-        saveSafe();
+        save();
         return true;
     }
 
-    public boolean removeAllowedItem(String item) throws GateException {
+    public boolean removeAllowedItem(String item) throws EndpointException {
         try {
             if (! Inventory.removeItemList(allowedItems, item)) return false;
         } catch (InventoryException e) {
-            throw new GateException(e.getMessage());
+            throw new EndpointException(e.getMessage());
         }
         dirty = true;
-        saveSafe();
+        save();
         return true;
     }
 
     public void removeAllAllowedItems() {
-        synchronized (allowedItems) {
-            allowedItems.clear();
-        }
+        allowedItems.clear();
         dirty = true;
-        saveSafe();
+        save();
     }
 
     public Map<String,String> getReplaceItems() {
         return replaceItems;
     }
     
-    public boolean addReplaceItem(String fromItem, String toItem) throws GateException {
+    public boolean addReplaceItem(String fromItem, String toItem) throws EndpointException {
         try {
             if (! Inventory.appendItemMap(replaceItems, fromItem, toItem)) return false;
         } catch (InventoryException e) {
-            throw new GateException(e.getMessage());
+            throw new EndpointException(e.getMessage());
         }
         dirty = true;
-        saveSafe();
+        save();
         return true;
     }
 
-    public boolean removeReplaceItem(String item) throws GateException {
+    public boolean removeReplaceItem(String item) throws EndpointException {
         try {
             if (! Inventory.removeItemMap(replaceItems, item)) return false;
         } catch (InventoryException e) {
-            throw new GateException(e.getMessage());
+            throw new EndpointException(e.getMessage());
         }
         dirty = true;
-        saveSafe();
+        save();
         return true;
     }
 
     public void removeAllReplaceItems() {
-        synchronized (replaceItems) {
-            replaceItems.clear();
-        }
+        replaceItems.clear();
         dirty = true;
-        saveSafe();
+        save();
     }
 
     public boolean isAllowedGameMode(String mode) {
@@ -1726,7 +1729,7 @@ public class LocalGate extends Gate implements OptionsListener {
         if (screens.size() == 0) return;
         
         String format;
-        Gate toGate = null;
+        EndpointImpl toEp = null;
         
         if (outgoing == null) {
             if (! isLinked())
@@ -1734,13 +1737,13 @@ public class LocalGate extends Gate implements OptionsListener {
             else
                 format = getLinkUnselectedFormat();
         } else {
-            toGate = Gates.get(outgoing);
-            if (toGate == null)
+            toEp = Endpoints.get(outgoing);
+            if (toEp == null)
                 format = getLinkOfflineFormat();
             else {
-                if (! toGate.isSameServer())
+                if (! toEp.isSameServer())
                     format = getLinkServerFormat();
-                else if (! toGate.isSameWorld(world))
+                else if (! ((LocalEndpointImpl)toEp).isSameWorld(world))
                     format = getLinkWorldFormat();
                 else
                     format = getLinkLocalFormat();
@@ -1749,12 +1752,17 @@ public class LocalGate extends Gate implements OptionsListener {
         List<String> lines = new ArrayList<String>();
         
         if ((format != null) && (! format.equals("-"))) {
-            format = format.replace("%fromGate%", this.getName());
-            format = format.replace("%fromWorld%", this.getWorldName());
-            if (toGate != null) {
-                format = format.replace("%toGate%", toGate.getName());
-                format = format.replace("%toWorld%", toGate.getWorldName());
-                format = format.replace("%toServer%", (toGate.getServerName() == null) ? "local" : toGate.getServerName());
+            format = format.replace("%fromName%", this.getName());
+            format = format.replace("%fromWorld%", this.getWorld().getName());
+            if (toEp != null) {
+                format = format.replace("%toName%", toEp.getName());
+                if (toEp.isSameServer()) {
+                    format = format.replace("%toWorld%", ((LocalEndpointImpl)toEp).getWorld().getName());
+                    format = format.replace("%toServer%", "local");
+                } else {
+                    format = format.replace("%toWorld%", ((RemoteEndpointImpl)toEp).getRemoteWorld().getName());
+                    format = format.replace("%toServer%", ((RemoteEndpointImpl)toEp).getRemoteServer().getName());
+                }
             } else if (outgoing != null) {
                 String[] parts = outgoing.split("\\.");
                 format = format.replace("%toGate%", parts[parts.length - 1]);

@@ -37,6 +37,7 @@ import java.net.Proxy;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -381,7 +382,7 @@ public class Utils {
         }
         debug("starting debug submission");
 
-        File zipFile = null;
+        File zipFile;
         try {
             zipFile = File.createTempFile(Global.pluginName + "-", "-debug.zip");
         } catch (IOException e) {
@@ -506,40 +507,55 @@ public class Utils {
             }
             writer.println();
 
-            // list of gates...
-            List<Gate> gates = Gates.getAll();
-            Collections.sort(gates, new Comparator<Gate>() {
+            // local gates...
+            List<LocalGateImpl> gates = new ArrayList<LocalGateImpl>(Endpoints.getLocalGates());
+            Collections.sort(gates, new Comparator<LocalGateImpl>() {
                 @Override
-                public int compare(Gate a, Gate b) {
+                public int compare(LocalGateImpl a, LocalGateImpl b) {
                     return a.getFullName().compareToIgnoreCase(b.getFullName());
                 }
             });
+            
             writer.format("%d gates:\n", gates.size());
-            for (Gate gate : gates) {
+            for (LocalGateImpl gate : gates) {
                 writer.format("  %s\n", gate.getFullName());
-                writer.format("    design: %s\n", gate.getDesignName());
                 if (gate.isSameServer()) {
-                    LocalGate localGate = (LocalGate)gate;
-                    if (localGate.getLinkLocal())
+                    writer.format("    design: %s\n", gate.getDesignName());
+                    if (gate.getLinkLocal())
                         writer.format("local cost: %s/%s\n",
-                                localGate.getSendLocalCost(),
-                                localGate.getReceiveLocalCost());
-                    if (localGate.getLinkWorld())
+                                gate.getSendLocalCost(),
+                                gate.getReceiveLocalCost());
+                    if (gate.getLinkWorld())
                         writer.format("world cost: %s/%s\n",
-                                localGate.getSendWorldCost(),
-                                localGate.getReceiveWorldCost());
-                    if (localGate.getLinkServer())
+                                gate.getSendWorldCost(),
+                                gate.getReceiveWorldCost());
+                    if (gate.getLinkServer())
                         writer.format("server cost: %s/%s\n",
-                                localGate.getSendServerCost(),
-                                localGate.getReceiveServerCost());
-                    List<String> links = localGate.getLinks();
+                                gate.getSendServerCost(),
+                                gate.getReceiveServerCost());
+                    List<String> links = gate.getLinks();
                     writer.format("    links: %d\n", links.size());
                     for (String link : links)
-                        writer.format("     %s%s\n", link.equals(localGate.getDestinationLink()) ? "*": "", link);
+                        writer.format("     %s%s\n", link.equals(gate.getDestinationLink()) ? "*": "", link);
                 }
             }
             writer.println();
 
+            // local volumes...
+            List<LocalVolumeImpl> volumes = new ArrayList<LocalVolumeImpl>(Endpoints.getLocalVolumes());
+            Collections.sort(volumes, new Comparator<LocalVolumeImpl>() {
+                @Override
+                public int compare(LocalVolumeImpl a, LocalVolumeImpl b) {
+                    return a.getFullName().compareToIgnoreCase(b.getFullName());
+                }
+            });
+            
+            writer.format("%d volumes:\n", volumes.size());
+            for (LocalVolumeImpl volume : volumes) {
+                writer.format("  %s\n", volume.getFullName());
+            }
+            writer.println();
+            
             // list of interfaces/addresses
             writer.println("Network interfaces:");
             for (Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces(); e.hasMoreElements(); ) {

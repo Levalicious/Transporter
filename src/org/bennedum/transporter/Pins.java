@@ -38,15 +38,11 @@ public final class Pins {
     }
 
     public static void onConfigSave() {
-        synchronized (pins) {
-            Config.setPropertyDirect("pins", new HashMap<String,String>(pins));
-        }
+        Config.setPropertyDirect("pins", new HashMap<String,String>(pins));
     }
     
     public static void add(Player player, String pin) {
-        synchronized (pins) {
-            pins.put(player.getName(), pin);
-        }
+        pins.put(player.getName(), pin);
     }
 
     public static String get(Player player) {
@@ -55,9 +51,7 @@ public final class Pins {
     }
 
     public static String get(String playerName) {
-        synchronized (pins) {
-            return pins.get(playerName);
-        }
+        return pins.get(playerName);
     }
     
 }

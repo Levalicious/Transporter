@@ -64,6 +64,7 @@ public class Design {
     private boolean requirePin;
     private boolean requireValidPin;
     private int invalidPinDamage;
+    private boolean protect;
     private boolean sendChat;
     private int sendChatDistance;
     private boolean receiveChat;
@@ -125,16 +126,17 @@ public class Design {
         linkWorld = conf.getBoolean("linkWorld", true);
         linkServer = conf.getBoolean("linkServer", true);
         linkNoneFormat = conf.getString("linkNoneFormat", "%fromGate%\\n\\n<none>");
-        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromGate%\\n\\n<unselected>");
-        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromGate%\\n\\n<offline>");
-        linkLocalFormat = conf.getString("linkLocalFormat", "%fromGate%\\n%toGate%");
-        linkWorldFormat = conf.getString("linkWorldFormat", "%fromGate%\\n%toWorld%\\n%toGate%");
-        linkServerFormat = conf.getString("linkServerFormat", "%fromGate%\\n%toServer%\\n%toWorld%\\n%toGate%");
+        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromName%\\n\\n<unselected>");
+        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromName%\\n\\n<offline>");
+        linkLocalFormat = conf.getString("linkLocalFormat", "%fromName%\\n%toName%");
+        linkWorldFormat = conf.getString("linkWorldFormat", "%fromName%\\n%toWorld%\\n%toName%");
+        linkServerFormat = conf.getString("linkServerFormat", "%fromName%\\n%toServer%\\n%toWorld%\\n%toName%");
         multiLink = conf.getBoolean("multiLink", true);
         restoreOnClose = conf.getBoolean("restoreOnClose", false);
         requirePin = conf.getBoolean("requirePin", false);
         requireValidPin = conf.getBoolean("requireValidPin", true);
         invalidPinDamage = conf.getInt("invalidPinDamage", 0);
+        protect = conf.getBoolean("protect", false);
         sendChat = conf.getBoolean("sendChat", false);
         sendChatDistance = conf.getInt("sendChatDistance", 1000);
         receiveChat = conf.getBoolean("receiveChat", false);
@@ -148,11 +150,11 @@ public class Design {
         receiveXP = conf.getBoolean("receiveXP", false);
         randomNextLink = conf.getBoolean("randomNextLink", false);
         sendNextLink = conf.getBoolean("sendNextLink", false);
-        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
+        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toNameCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
         invalidLinkFormat = conf.getString("invalidLinkFormat", "invalid link selected");
-        unknownLinkFormat = conf.getString("unknownLinkFormat", "unknown or offline destination gate");
+        unknownLinkFormat = conf.getString("unknownLinkFormat", "unknown or offline destination endpoint");
         markerFormat = conf.getString("markerFormat", "%name%");
 
         List<String> items = conf.getStringList("bannedItems", new ArrayList<String>());
@@ -408,6 +410,10 @@ public class Design {
         return invalidPinDamage;
     }
 
+    public boolean getProtect() {
+        return protect;
+    }
+    
     public boolean getSendChat() {
         return sendChat;
     }
@@ -713,14 +719,14 @@ public class Design {
     }
     
     // Returns a new gate if a match in the surrounding blocks is found, otherwise null.
-    public LocalGate create(DesignMatch match, String playerName, String gateName) throws GateException {
-        LocalGate gate = new LocalGate(match.world, gateName, playerName, this, match.gateBlocks, match.direction);
+    public LocalGateImpl create(DesignMatch match, String playerName, String gateName) throws EndpointException {
+        LocalGateImpl gate = new LocalGateImpl(match.world, gateName, playerName, this, match.gateBlocks, match.direction);
         return gate;
     }
 
     // Builds a gate at the specified location, creates it, and returns it.
     // The location must contain a yaw that indicates the gate direction.
-    public LocalGate create(Location location, String playerName, String gateName) throws TransporterException {
+    public LocalGateImpl create(Location location, String playerName, String gateName) throws TransporterException {
         DesignMatch match = build(location, playerName);
         return create(match, playerName, gateName);
     }

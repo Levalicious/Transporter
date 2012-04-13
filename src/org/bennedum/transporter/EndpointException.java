@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bennedum.transporter.api;
+package org.bennedum.transporter;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface RemoteWorld {
+public class EndpointException extends TransporterException {
     
-    public RemoteServer getRemoteServer();
-    
-    public String getName();
-    
-    public void getFullTime(Callback<Long> cb);
-    
-    public void getTime(Callback<Long> cb);
+    public EndpointException(String msg, Object ... args) {
+        super(String.format(msg, args));
+    }
     
 }

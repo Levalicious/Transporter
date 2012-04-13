@@ -16,10 +16,12 @@
 package org.bennedum.transporter;
 
 import org.bennedum.transporter.api.Callback;
+import org.bennedum.transporter.api.RemoteException;
 import org.bennedum.transporter.api.RemoteLocation;
 import org.bennedum.transporter.api.RemotePlayer;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
+import org.bennedum.transporter.net.Message;
 
 /**
  *
@@ -53,7 +55,7 @@ public final class RemotePlayerImpl implements RemotePlayer {
     }
 
     @Override
-    public RemoteWorld getWorld() {
+    public RemoteWorld getRemoteWorld() {
         return server.getRemoteWorld(worldName);
     }
 
@@ -67,26 +69,76 @@ public final class RemotePlayerImpl implements RemotePlayer {
     }
     
     @Override
-    public RemoteServer getServer() {
+    public RemoteServer getRemoteServer() {
         return server;
     }
 
     @Override
-    public void getLocation(Callback<RemoteLocation> cb) {
-        // TODO: implement this
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void getRemoteWorld(final Callback<RemoteWorld> cb) {
+        Message args = new Message();
+        args.put("player", name);
+        server.sendAPI(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                cb.onSuccess(server.getRemoteWorld(m.getString("result")));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                cb.onFailure(re);
+            }
+        }, "player.getWorld", args);
+    }
+    
+    @Override
+    public void getRemoteLocation(final Callback<RemoteLocation> cb) {
+        Message args = new Message();
+        args.put("player", name);
+        server.sendAPI(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                Message locMsg = m.getMessage("result");
+                RemoteLocation loc = new RemoteLocation(server, server.getRemoteWorld(locMsg.getString("world")), locMsg.getDouble("x"), locMsg.getDouble("y"), locMsg.getDouble("z"));
+                cb.onSuccess(loc);
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                cb.onFailure(re);
+            }
+        }, "player.getLocation", args);
     }
 
     @Override
-    public void sendMessage(Callback<Void> cb, String msg) {
-        // TODO: implement this
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void sendMessage(final Callback<Void> cb, String msg) {
+        Message args = new Message();
+        args.put("player", name);
+        args.put("message", msg);
+        server.sendAPI(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                cb.onSuccess(null);
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                cb.onFailure(re);
+            }
+        }, "player.sendMessage", args);
     }
 
     @Override
-    public void sendRawMessage(Callback<Void> cb, String msg) {
-        // TODO: implement this
-        throw new UnsupportedOperationException("Not supported yet.");
+    public void sendRawMessage(final Callback<Void> cb, String msg) {
+        Message args = new Message();
+        args.put("player", name);
+        args.put("message", msg);
+        server.sendAPI(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                cb.onSuccess(null);
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                cb.onFailure(re);
+            }
+        }, "player.sendRawMessage", args);
     }
     
 }

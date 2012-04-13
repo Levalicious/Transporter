@@ -17,18 +17,10 @@ package org.bennedum.transporter.command;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
-import org.bennedum.transporter.Gate;
-import org.bennedum.transporter.Design;
-import org.bennedum.transporter.Designs;
-import org.bennedum.transporter.Gates;
-import org.bennedum.transporter.Global;
-import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.TransporterException;
 import org.bennedum.transporter.Utils;
 import org.bukkit.command.Command;
-import org.bukkit.entity.Player;
 
 /**
  *
@@ -82,6 +74,7 @@ public class DebugCommand extends TrpCommandProcessor {
             return;
         }
 
+        /*
         if ("dump".startsWith(subCmd)) {
             if (args.isEmpty())
                 throw new CommandException("dump what?");
@@ -108,10 +101,13 @@ public class DebugCommand extends TrpCommandProcessor {
                 if (args.isEmpty())
                     throw new CommandException("gate name required");
                 String name = args.remove(1);
-                Gate gate = Gates.get(name);
+                GateBase gate = Gates.get(name);
                 if (gate == null)
                     throw new CommandException("unknown or offline gate '%s'", name);
-                gate.dump(ctx);
+                if (gate.isSameServer())
+                    ((LocalGateImpl)gate).dump(ctx);
+                else
+                    ctx.send("gate '%s' is a remote gate", gate.getFullName());
                 return;
             }
 
@@ -128,7 +124,8 @@ public class DebugCommand extends TrpCommandProcessor {
             }
             throw new CommandException("dump what?");
         }
-
+        */
+        
         throw new CommandException("debug what?");
     }
 

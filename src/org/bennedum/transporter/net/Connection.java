@@ -454,11 +454,9 @@ public final class Connection {
                 errMsg.put("error", "unknown key");
                 sendMessage(errMsg, false);
                 close();
-                return;
             } else {
                 state = State.ESTABLISHED;
                 server.onConnected(version);
-                return;
             }
 
         } else if (state == State.ESTABLISHED) {

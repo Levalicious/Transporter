@@ -27,14 +27,14 @@ public interface RemoteServer {
     
     public boolean isConnected();
     
-    public Set<RemotePlayer> getPlayers();
+    public Set<RemotePlayer> getRemotePlayers();
     
-    public Set<RemoteWorld> getWorlds();
+    public Set<RemoteWorld> getRemoteWorlds();
     
-    public Set<RemoteGate> getGates();
+    public Set<RemoteEndpoint> getRemoteEndpoints();
  
     public RemoteWorld getRemoteWorld(String worldName);
     
-    public RemoteGate getRemoteGate(String gateName);
+    public RemoteEndpoint getRemoteEndpoint(String epName);
     
 }

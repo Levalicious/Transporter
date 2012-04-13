@@ -178,7 +178,7 @@ public final class WorldProxy implements OptionsListener {
 
     public World load(Context ctx) {
         World world = getWorld();
-        boolean loadGates = (world != null);
+        boolean loadEndpoints = (world != null);
         if (world == null) {
             ctx.send("loading world '%s'...", name);
             WorldCreator wc = new WorldCreator(name);
@@ -205,8 +205,8 @@ public final class WorldProxy implements OptionsListener {
             if (seed == null)
                 seed = world.getSeed() + "";
         }
-        if (loadGates)
-            Gates.loadGatesForWorld(ctx, world);
+        if (loadEndpoints)
+            Endpoints.loadEndpointsForWorld(ctx, world);
         return world;
     }
 
@@ -215,7 +215,7 @@ public final class WorldProxy implements OptionsListener {
         if (world != null) {
             Global.plugin.getServer().unloadWorld(world, true);
             // TODO: remove when Bukkit sends onWorldUnloaded events
-            Gates.remove(world);
+            Endpoints.removeEndpointsForWorld(world);
         }
         return world;
     }

@@ -15,16 +15,12 @@
  */
 package org.bennedum.transporter;
 
-import java.util.Set;
+import org.bennedum.transporter.api.RemoteEndpoint;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public final class TransporterAPI {
-    
-    public Set<PlayerProxy> getRemotePlayers() {
-        return Players.getRemotePlayers();
-    }
+public abstract class RemoteEndpointImpl extends EndpointImpl implements RemoteEndpoint {
     
 }

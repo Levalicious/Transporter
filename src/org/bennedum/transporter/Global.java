@@ -51,8 +51,6 @@ public final class Global {
 
     public static final List<CommandProcessor> commands = new ArrayList<CommandProcessor>();
 
-    private static Map<Integer,LocalGate> selectedGates = new HashMap<Integer,LocalGate>();
-
     static {
         commands.add(new HelpCommand());
         commands.add(new ReloadCommand());
@@ -66,20 +64,6 @@ public final class Global {
         commands.add(new WorldCommand());
 
         commands.add(new DebugCommand());
-    }
-
-    public static void setSelectedGate(Player player, LocalGate gate) {
-        selectedGates.put((player == null) ? Integer.MAX_VALUE : player.getEntityId(), gate);
-    }
-
-    public static LocalGate getSelectedGate(Player player) {
-        return selectedGates.get((player == null) ? Integer.MAX_VALUE : player.getEntityId());
-    }
-
-    public static void deselectGate(LocalGate gate) {
-        for (Integer playerId : new ArrayList<Integer>(selectedGates.keySet()))
-            if (selectedGates.get(playerId) == gate)
-                selectedGates.remove(playerId);
     }
 
 }

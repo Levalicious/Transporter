@@ -40,7 +40,7 @@ public final class GateMap {
 
     public GateMap() {}
 
-    public void put(LocalGate gate, GateBlock block) {
+    public void put(LocalGateImpl gate, GateBlock block) {
         int hash = hashLocation(block.getLocation());
         if (buckets[hash] == null)
             buckets[hash] = new EntryList();
@@ -87,13 +87,13 @@ public final class GateMap {
         return entries;
     }
 
-    public LocalGate getGate(Location location) {
+    public LocalGateImpl getGate(Location location) {
         Entry e = get(location);
         if (e == null) return null;
         return e.gate;
     }
 
-    public void removeGate(LocalGate gate) {
+    public void removeGate(LocalGateImpl gate) {
         for (int i = 0; i < CAPACITY; i++) {
             List<Entry> entries = buckets[i];
             if (entries == null) continue;
@@ -139,9 +139,9 @@ public final class GateMap {
     }
     
     public static class Entry {
-        public LocalGate gate;
+        public LocalGateImpl gate;
         public GateBlock block;
-        public Entry(LocalGate gate, GateBlock block) {
+        public Entry(LocalGateImpl gate, GateBlock block) {
             this.gate = gate;
             this.block = block;
         }

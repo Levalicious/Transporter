@@ -1,6 +1,6 @@
 name: Transporter
 main: org.bennedum.transporter.Transporter
-version: "7.8"
+version: "8.0"
 authors:
   - frdfsnlght
 website: http://dev.bukkit.org/server-mods/transporter/
@@ -10,4 +10,3 @@ commands:
   trp:
     description: Main Transporter command. See /trp help for more.
     usage: /<command> command [<option> ...]
-

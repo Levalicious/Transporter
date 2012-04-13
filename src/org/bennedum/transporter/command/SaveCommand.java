@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
-import org.bennedum.transporter.Gates;
+import org.bennedum.transporter.Endpoints;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.TransporterException;
 import org.bukkit.command.Command;
@@ -41,7 +41,7 @@ public class SaveCommand extends TrpCommandProcessor {
     @Override
     public List<String> getUsage(Context ctx) {
         List<String> cmds = new ArrayList<String>();
-        cmds.add(getPrefix(ctx) + GROUP + "[config|gates]");
+        cmds.add(getPrefix(ctx) + GROUP + "[config|endpoints]");
         return cmds;
     }
 
@@ -52,13 +52,13 @@ public class SaveCommand extends TrpCommandProcessor {
         if (args.isEmpty()) {
             if (Permissions.has(ctx.getPlayer(), "trp.save.config"))
                 what.add("config");
-            if (Permissions.has(ctx.getPlayer(), "trp.save.gates"))
-                what.add("gates");
+            if (Permissions.has(ctx.getPlayer(), "trp.save.endpoints"))
+                what.add("endpoints");
         } else {
             for (String arg : args) {
                 arg = arg.toLowerCase();
                 if ("config".startsWith(arg)) arg = "config";
-                else if ("gates".startsWith(arg)) arg = "gates";
+                else if ("endpoints".startsWith(arg)) arg = "endpoints";
                 else
                     throw new CommandException("save what?");
                 Permissions.require(ctx.getPlayer(), "trp.save." + arg);
@@ -68,8 +68,8 @@ public class SaveCommand extends TrpCommandProcessor {
         for (String arg : what) {
             if (arg.equals("config"))
                 Config.save(ctx);
-            else if (arg.equals("gates"))
-                Gates.save(ctx);
+            else if (arg.equals("endpoints"))
+                Endpoints.save(ctx);
         }
     }
 

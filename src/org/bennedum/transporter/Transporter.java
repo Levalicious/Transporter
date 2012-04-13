@@ -18,6 +18,7 @@ package org.bennedum.transporter;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import org.bennedum.transporter.api.API;
 import org.bennedum.transporter.command.CommandException;
 import org.bennedum.transporter.command.CommandProcessor;
 import org.bennedum.transporter.net.Network;
@@ -41,7 +42,7 @@ public class Transporter extends JavaPlugin {
     private WorldListenerImpl worldListener = new WorldListenerImpl();
     private EntityListenerImpl entityListener = new EntityListenerImpl();
 
-    private TransporterAPI api = null;
+    private API api = null;
     
     @Override
     public void onEnable() {
@@ -122,7 +123,7 @@ public class Transporter extends JavaPlugin {
         Context ctx = new Context();
         Network.stop(ctx);
         Config.save(ctx);
-        Gates.save(ctx);
+        Endpoints.save(ctx);
         ctx.sendLog("disabled");
         Global.plugin = null;
     }
@@ -185,9 +186,9 @@ public class Transporter extends JavaPlugin {
         }
     }
 
-    public TransporterAPI getAPI() {
+    public API getAPI() {
         if (api == null)
-            api = new TransporterAPI();
+            api = new API();
         return api;
     }
     

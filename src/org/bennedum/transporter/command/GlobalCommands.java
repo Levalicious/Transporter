@@ -21,11 +21,18 @@ import java.util.Comparator;
 import java.util.List;
 import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
+import org.bennedum.transporter.EndpointImpl;
+import org.bennedum.transporter.Endpoints;
+import org.bennedum.transporter.Gates;
+import org.bennedum.transporter.Global;
 import org.bennedum.transporter.Permissions;
-import org.bennedum.transporter.PlayerProxy;
-import org.bennedum.transporter.Players;
+import org.bennedum.transporter.RemotePlayerImpl;
+import org.bennedum.transporter.Reservation;
+import org.bennedum.transporter.ReservationException;
 import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.Volumes;
 import org.bukkit.command.Command;
+import org.bukkit.entity.Player;
 
 /**
  *
@@ -38,8 +45,12 @@ public final class GlobalCommands extends TrpCommandProcessor {
         return super.matches(ctx, cmd, args) && (
                ("list".startsWith(args.get(0).toLowerCase())) ||
                ("get".startsWith(args.get(0).toLowerCase())) ||
-               ("set".startsWith(args.get(0).toLowerCase()))
+               ("set".startsWith(args.get(0).toLowerCase())) ||
+               ("go".startsWith(args.get(0).toLowerCase())) ||
+               ("send".startsWith(args.get(0).toLowerCase())) ||
+               ("pm".startsWith(args.get(0).toLowerCase()))
             );
+        
     }
     
     @Override
@@ -48,6 +59,10 @@ public final class GlobalCommands extends TrpCommandProcessor {
         cmds.add(getPrefix(ctx) + "list");
         cmds.add(getPrefix(ctx) + "get <option>|*");
         cmds.add(getPrefix(ctx) + "set <option> <value>");
+        if (ctx.isPlayer())
+            cmds.add(getPrefix(ctx) + "go [<endpoint>]");
+        cmds.add(getPrefix(ctx) + "send <player> [<endpoint>]");
+        cmds.add(getPrefix(ctx) + "pm <player> <message>");
         return cmds;
     }
     
@@ -59,38 +74,80 @@ public final class GlobalCommands extends TrpCommandProcessor {
 
         if ("list".startsWith(subCmd)) {
             Permissions.require(ctx.getPlayer(), "trp.list");
-            if (Players.getAll().isEmpty())
+            List<Player> localPlayers = new ArrayList<Player>();
+            Collections.addAll(localPlayers, Global.plugin.getServer().getOnlinePlayers());
+            List<RemotePlayerImpl> remotePlayers = new ArrayList(Global.plugin.getAPI().getRemotePlayers());
+            
+            if (localPlayers.isEmpty() && remotePlayers.isEmpty())
                 ctx.send("there are no players");
             else {
-                List<PlayerProxy> players = Players.getAll();
-                Collections.sort(players, new Comparator<PlayerProxy>() {
+                Collections.sort(localPlayers, new Comparator<Player>() {
                     @Override
-                    public int compare(PlayerProxy a, PlayerProxy b) {
-                        if ((a.getServerName() != null) && (b.getServerName() == null)) return 1;
-                        if ((a.getServerName() == null) && (b.getServerName() != null)) return -1;
-                        int res = 0;
-                        if ((a.getServerName() != null) && (b.getServerName() != null))
-                            res = a.getServerName().compareToIgnoreCase(b.getServerName());
+                    public int compare(Player a, Player b) {
+                        return a.getName().compareToIgnoreCase(b.getName());
+                    }
+                });
+                Collections.sort(remotePlayers, new Comparator<RemotePlayerImpl>() {
+                    @Override
+                    public int compare(RemotePlayerImpl a, RemotePlayerImpl b) {
+                        int res = a.getRemoteServer().getName().compareToIgnoreCase(b.getRemoteServer().getName());
                         if (res == 0)
                             res = a.getName().compareToIgnoreCase(b.getName());
                         return res;
                     }
                 });
-                ctx.send("%d players:", players.size());
+                
+                ctx.send("%d local players:", localPlayers.size());
+                for (Player p : localPlayers)
+                    ctx.send("  %s (%s)", p.getDisplayName(), p.getWorld().getName());
+                
+                ctx.send("%d remote players:", remotePlayers.size());
                 String lastServer = "*";
-                for (PlayerProxy player : players) {
-                    if (! lastServer.equals(player.getServerName())) {
-                        if (player.getServerName() != null) {
-                            ctx.send("  server: %s", player.getServerName());
-                            lastServer = player.getServerName();
-                        }
+                for (RemotePlayerImpl p : remotePlayers) {
+                    if (! lastServer.equals(p.getRemoteServer().getName())) {
+                        ctx.send("  server: %s", p.getRemoteServer().getName());
+                        lastServer = p.getRemoteServer().getName();
                     }
-                    if (lastServer.equals("*"))
-                        ctx.send("  %s (%s)", player.getDisplayName(), player.getWorldName());
-                    else
-                        ctx.send("    %s (%s)", player.getDisplayName(), player.getWorldName());
+                    ctx.send("    %s (%s)", p.getDisplayName(), p.getRemoteWorld().getName());
                 }
             }
+            return;
+        }
+
+        if ("go".startsWith(subCmd)) {
+            if (! ctx.isPlayer())
+                throw new CommandException("this command can only be used by a player");
+            EndpointImpl ep;
+            if (! args.isEmpty()) {
+                String name = args.remove(0);
+                ep = Endpoints.find(ctx, name);
+                if (ep == null)
+                    throw new CommandException("unknown endpoint '%s'", name);
+            } else {
+                ep = Gates.getSelectedGate(ctx.getPlayer());
+                if (ep == null)
+                    ep = Volumes.getSelectedVolume(ctx.getPlayer());
+            }
+            if (ep == null)
+                throw new CommandException("endpoint name required");
+
+            Permissions.require(ctx.getPlayer(), "trp.go." + ep.getFullName());
+            try {
+                Reservation r = new Reservation(ctx.getPlayer(), ep);
+                r.depart();
+            } catch (ReservationException e) {
+                ctx.warnLog(e.getMessage());
+            }
+            return;
+        }
+
+        if ("send".startsWith(subCmd)) {
+            // TODO: add send command
+            return;
+        }
+        
+        if ("pm".startsWith(subCmd)) {
+            // TODO: add pm command
             return;
         }
         

@@ -15,14 +15,12 @@
  */
 package org.bennedum.transporter;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -33,7 +31,7 @@ import org.bukkit.entity.Player;
 public final class Chat {
 
     public static void send(Player player, String message) {
-        Map<Server,Set<RemoteGate>> servers = new HashMap<Server,Set<RemoteGate>>();
+        Map<Server,Set<RemoteGateImpl>> servers = new HashMap<Server,Set<RemoteGateImpl>>();
 
         // add all servers that relay all chat
         for (Server server : Servers.getAll())
@@ -41,80 +39,59 @@ public final class Chat {
                 servers.put(server, null);
 
         Location loc = player.getLocation();
-        Gate destGate;
+        RemoteGateImpl destGate;
         Server destServer;
-        for (LocalGate gate : Gates.getLocalGates()) {
+        for (LocalGateImpl gate : Endpoints.getLocalGates()) {
             if (gate.isOpen() && gate.getSendChat() && gate.isInChatSendProximity(loc)) {
                 try {
-                    destGate = gate.getDestinationGate();
-                    if (! destGate.isSameServer()) {
-                        destServer = Servers.get(destGate.getServerName());
-                        if (servers.containsKey(destServer)) {
-                            if (servers.get(destServer) == null) continue;
-                        } else
-                            servers.put(destServer, new HashSet<RemoteGate>());
-                        servers.get(destServer).add((RemoteGate)destGate);
-                    }
-                } catch (GateException e) {}
+                    Object ep = gate.getDestinationEndpoint();
+                    if (! (ep instanceof RemoteGateImpl)) continue;
+                    destGate = (RemoteGateImpl)ep;
+                    destServer = (Server)destGate.getRemoteServer();
+                    if (servers.containsKey(destServer)) {
+                        if (servers.get(destServer) == null) continue;
+                    } else
+                        servers.put(destServer, new HashSet<RemoteGateImpl>());
+                    servers.get(destServer).add(destGate);
+                } catch (EndpointException e) {}
             }
         }
         for (Server server : servers.keySet()) {
-            server.doSendChat(player, message, servers.get(server));
+            server.sendChat(player, message, servers.get(server));
         }
     }
 
-    public static void receive(String playerName, String displayName, String fromWorldName, Server fromServer, String message, List<String> toGates) {
-        Future<Map<String,Location>> future = Utils.call(new Callable<Map<String,Location>>() {
-            @Override
-            public Map<String,Location> call() {
-                Map<String,Location> players = new HashMap<String,Location>();
-                for (Player player : Global.plugin.getServer().getOnlinePlayers())
-                    players.put(player.getName(), player.getLocation());
-                return players;
-            }
-        });
+    public static void receive(RemotePlayerImpl player, String message, List<String> toGates) {
+        Player[] players = Global.plugin.getServer().getOnlinePlayers();
+//        Set<Player,Location> players = new HashMap<String,Location>();
+//        for (Player lp : Global.plugin.getServer().getOnlinePlayers())
+//            players.put(lp.getName(), lp.getLocation());
 
-        Map<String,Location> players = null;
-        try {
-            players = future.get();
-        } catch (InterruptedException e) {
-        } catch (ExecutionException e) {}
-        if (players == null) return;
-
-        final Set<String> playersToReceive = new HashSet<String>();
-
-        if ((toGates == null) && fromServer.getReceiveChat())
-            playersToReceive.addAll(players.keySet());
+        final Set<Player> playersToReceive = new HashSet<Player>();
+        if ((toGates == null) && ((Server)player.getRemoteServer()).getReceiveChat())
+            Collections.addAll(playersToReceive, players);
         else if ((toGates != null) && (! toGates.isEmpty())) {
             for (String gateName : toGates) {
-                LocalGate gate = Gates.getLocalGate(gateName);
-                if (gate == null) continue;
-                if (! gate.isSameServer()) continue;
+                EndpointImpl ep = Endpoints.get(gateName);
+                if ((ep == null) || (! (ep instanceof LocalGateImpl))) continue;
+                LocalGateImpl gate = (LocalGateImpl)ep;
                 if (! gate.getReceiveChat()) continue;
-                for (String player : players.keySet())
-                    if (gate.isInChatReceiveProximity(players.get(player)))
-                        playersToReceive.add(player);
+                for (Player p : players) {
+                    if (gate.isInChatReceiveProximity(p.getLocation()))
+                        playersToReceive.add(p);
+                }
             }
         }
 
         if (playersToReceive.isEmpty()) return;
 
         String format = Config.getServerChatFormat();
-        format = format.replace("%player%", displayName);
-        format = format.replace("%server%", fromServer.getName());
-        format = format.replace("%world%", fromWorldName);
+        format = format.replace("%player%", player.getDisplayName());
+        format = format.replace("%server%", player.getRemoteServer().getName());
+        format = format.replace("%world%", player.getRemoteWorld().getName());
         format = format.replace("%message%", message);
-        final String msg = format;
-        Utils.fire(new Runnable() {
-            @Override
-            public void run() {
-                for (String playerName : playersToReceive) {
-                    Player player = Global.plugin.getServer().getPlayer(playerName);
-                    if ((player != null) && (player.isOnline()))
-                        player.sendMessage(msg);
-                }
-            }
-        });
+        for (Player p : playersToReceive)
+            p.sendMessage(format);
     }
 
 }
