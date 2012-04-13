@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.bennedum.transporter.api.Callback;
-import org.bennedum.transporter.api.RemoteEndpoint;
 import org.bennedum.transporter.api.RemoteException;
+import org.bennedum.transporter.api.RemoteGate;
 import org.bennedum.transporter.api.RemotePlayer;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
@@ -124,7 +124,7 @@ public final class Server implements OptionsListener, RemoteServer {
 
     private Map<String,RemotePlayerImpl> remotePlayers = new HashMap<String,RemotePlayerImpl>();
     private Map<String,RemoteWorldImpl> remoteWorlds = new HashMap<String,RemoteWorldImpl>();
-    private Map<String,RemoteEndpointImpl> remoteEndpoints = new HashMap<String,RemoteEndpointImpl>();
+    private Map<String,RemoteGateImpl> remoteGates = new HashMap<String,RemoteGateImpl>();
     
     private long nextRequestId = 1;
     private Map<Long,Callback<Message>> requests = new HashMap<Long,Callback<Message>>();
@@ -178,8 +178,8 @@ public final class Server implements OptionsListener, RemoteServer {
     }
     
     @Override
-    public Set<RemoteEndpoint> getRemoteEndpoints() {
-        return new HashSet<RemoteEndpoint>(remoteEndpoints.values());
+    public Set<RemoteGate> getRemoteGates() {
+        return new HashSet<RemoteGate>(remoteGates.values());
     }
  
     @Override
@@ -188,8 +188,8 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     @Override
-    public RemoteEndpoint getRemoteEndpoint(String epName) {
-        return remoteEndpoints.get(epName);
+    public RemoteGate getRemoteGate(String gateName) {
+        return remoteGates.get(gateName);
     }
     
     @Override
@@ -516,9 +516,9 @@ public final class Server implements OptionsListener, RemoteServer {
             @Override
             public void run() {
                 remotePlayers.clear();
-                remoteEndpoints.clear();
+                remoteGates.clear();
                 remoteWorlds.clear();
-                Endpoints.removeEndpointsForServer(me);
+                Gates.removeGatesForServer(me);
             }
         });
     }
@@ -562,54 +562,49 @@ public final class Server implements OptionsListener, RemoteServer {
         sendMessage(message);
     }
 
-    public void sendEndpointAdded(LocalEndpointImpl ep) {
+    public void sendGateAdded(LocalGateImpl gate) {
         if (! isConnected()) return;
-        Message message = createMessage("endpointAdded");
-        if (ep instanceof LocalGateImpl)
-            message.put("type", "gate");
-        else if (ep instanceof LocalVolumeImpl)
-            message.put("type", "volume");
-        else
-            return;
-        message.put("name", ep.getLocalName());
+        Message message = createMessage("gateAdded");
+        message.put("type", gate.getType().toString());
+        message.put("name", gate.getLocalName());
         sendMessage(message);
     }
 
-    public void sendEndpointRenamed(String oldLocalName, String newName) {
+    public void sendGateRenamed(String oldLocalName, String newName) {
         if (! isConnected()) return;
-        Message message = createMessage("endpointRenamed");
+        Message message = createMessage("gateRenamed");
         message.put("oldName", oldLocalName);
         message.put("newName", newName);
         sendMessage(message);
     }
 
-    public void sendEndpointRemoved(LocalEndpointImpl ep) {
+    public void sendGateRemoved(LocalGateImpl gate) {
         if (! isConnected()) return;
-        Message message = createMessage("endpointRemoved");
-        message.put("name", ep.getLocalName());
+        Message message = createMessage("gateRemoved");
+        message.put("name", gate.getLocalName());
         sendMessage(message);
     }
 
-    public void sendEndpointDestroyed(LocalEndpointImpl ep) {
+    public void sendGateDestroyed(LocalGateImpl gate) {
         if (! isConnected()) return;
-        Message message = createMessage("endpointDestroyed");
-        message.put("name", ep.getLocalName());
+        Message message = createMessage("gateDestroyed");
+        message.put("name", gate.getLocalName());
         sendMessage(message);
     }
 
-    public void sendEndpointAttach(RemoteEndpointImpl toEp, LocalEndpointImpl fromEp) {
+    public void sendGateAttach(RemoteGateImpl toGate, LocalGateImpl fromGate) {
         if (! isConnected()) return;
-        Message message = createMessage("endpointAttach");
-        message.put("to", toEp.getLocalName());
-        message.put("from", fromEp.getLocalName());
+        Message message = createMessage("gateAttach");
+        message.put("to", toGate.getLocalName());
+        message.put("from", fromGate.getLocalName());
         sendMessage(message);
     }
 
-    public void sendEndpointDetach(RemoteEndpointImpl toEp, LocalEndpointImpl fromEp) {
+    public void sendGateDetach(RemoteGateImpl toGate, LocalGateImpl fromGate) {
         if (! isConnected()) return;
-        Message message = createMessage("endpointDetach");
-        message.put("to", toEp.getLocalName());
-        message.put("from", fromEp.getLocalName());
+        Message message = createMessage("gateDetach");
+        message.put("to", toGate.getLocalName());
+        message.put("from", fromGate.getLocalName());
         sendMessage(message);
     }
 
@@ -668,38 +663,38 @@ public final class Server implements OptionsListener, RemoteServer {
         sendMessage(message);
     }
 
-    public void sendLinkAdd(Player player, LocalEndpointImpl fromEp, RemoteEndpointImpl toEp) {
+    public void sendLinkAdd(Player player, LocalGateImpl fromGate, RemoteGateImpl toGate) {
         if (! isConnected()) return;
         Message message = createMessage("linkAdd");
-        message.put("from", fromEp.getLocalName());
-        message.put("to", toEp.getLocalName());
+        message.put("from", fromGate.getLocalName());
+        message.put("to", toGate.getLocalName());
         message.put("player", (player == null) ? null : player.getName());
         sendMessage(message);
     }
 
-    public void sendLinkAddComplete(String playerName, LocalEndpointImpl fromEp, RemoteEndpointImpl toEp) {
+    public void sendLinkAddComplete(String playerName, LocalGateImpl fromGate, RemoteGateImpl toGate) {
         if (! isConnected()) return;
         Message message = createMessage("linkAddComplete");
-        message.put("from", fromEp.getLocalName());
-        message.put("to", toEp.getLocalName());
+        message.put("from", fromGate.getLocalName());
+        message.put("to", toGate.getLocalName());
         message.put("player", playerName);
         sendMessage(message);
     }
 
-    public void sendLinkRemove(Player player, LocalEndpointImpl fromEp, RemoteEndpointImpl toEp) {
+    public void sendLinkRemove(Player player, LocalGateImpl fromGate, RemoteGateImpl toGate) {
         if (! isConnected()) return;
         Message message = createMessage("linkRemove");
-        message.put("from", fromEp.getLocalName());
-        message.put("to", toEp.getLocalName());
+        message.put("from", fromGate.getLocalName());
+        message.put("to", toGate.getLocalName());
         message.put("player", (player == null) ? null : player.getName());
         sendMessage(message);
     }
 
-    public void sendLinkRemoveComplete(String playerName, LocalEndpointImpl fromEp, RemoteEndpointImpl toEp) {
+    public void sendLinkRemoveComplete(String playerName, LocalGateImpl fromGate, RemoteGateImpl toGate) {
         if (! isConnected()) return;
         Message message = createMessage("linkRemoveComplete");
-        message.put("from", fromEp.getLocalName());
-        message.put("to", toEp.getLocalName());
+        message.put("from", fromGate.getLocalName());
+        message.put("to", toGate.getLocalName());
         message.put("player", playerName);
         sendMessage(message);
     }
@@ -770,18 +765,18 @@ public final class Server implements OptionsListener, RemoteServer {
                 receiveRefresh();
             else if (command.equals("refreshData"))
                 receiveRefreshData(message);
-            else if (command.equals("endpointAdded"))
-                receiveEndpointAdded(message);
-            else if (command.equals("endpointRenamed"))
-                receiveEndpointRenamed(message);
-            else if (command.equals("endpointRemoved"))
-                receiveEndpointRemoved(message);
-            else if (command.equals("endpointDestroyed"))
-                receiveEndpointDestroyed(message);
-            else if (command.equals("endpointAttach"))
-                receiveEndpointAttach(message);
-            else if (command.equals("endpointDetach"))
-                receiveEndpointDetach(message);
+            else if (command.equals("gateAdded"))
+                receiveGateAdded(message);
+            else if (command.equals("gateRenamed"))
+                receiveGateRenamed(message);
+            else if (command.equals("gateRemoved"))
+                receiveGateRemoved(message);
+            else if (command.equals("gateDestroyed"))
+                receiveGateDestroyed(message);
+            else if (command.equals("gateAttach"))
+                receiveGateAttach(message);
+            else if (command.equals("gateDetach"))
+                receiveGateDetach(message);
             else if (command.equals("reservation"))
                 receiveReservation(message);
             else if (command.equals("reservationApproved"))
@@ -879,20 +874,15 @@ public final class Server implements OptionsListener, RemoteServer {
         }
         out.put("players", players);
         
-        // endpoints
-        List<Message> endpoints = new ArrayList<Message>();
-        for (LocalEndpointImpl ep : Endpoints.getLocalEndpoints()) {
-            Message epm = new Message();
-            if (ep instanceof LocalGateImpl)
-                epm.put("type", "gate");
-            else if (ep instanceof LocalVolumeImpl)
-                epm.put("type", "volume");
-            else
-                continue;
-            epm.put("name", ep.getLocalName());
-            endpoints.add(epm);
+        // gates
+        List<Message> gates = new ArrayList<Message>();
+        for (LocalGateImpl gate : Gates.getLocalGates()) {
+            Message gm = new Message();
+            gm.put("type", gate.getType().toString());
+            gm.put("name", gate.getLocalName());
+            gates.add(gm);
         }
-        out.put("endpoints", endpoints);
+        out.put("gates", gates);
 
         sendMessage(out);
     }
@@ -941,62 +931,56 @@ public final class Server implements OptionsListener, RemoteServer {
         }
         Utils.debug("received %d players from '%s'", remotePlayers.size(), getName());
         
-        // endpoints
-        Collection<Message> endpoints = message.getMessageList("endpoints");
-        if (endpoints == null)
-            throw new ServerException("endpoint list required");
-        remoteEndpoints.clear();
-        Endpoints.removeEndpointsForServer(this);
-        for (Message epm : endpoints) {
-            String epType = epm.getString("type");
-            String epName = epm.getString("name");
-            RemoteEndpointImpl ep;
+        // gates
+        Collection<Message> gates = message.getMessageList("gates");
+        if (gates == null)
+            throw new ServerException("gate list required");
+        remoteGates.clear();
+        Gates.removeGatesForServer(this);
+        for (Message gm : gates) {
             try {
-                if (epType.equals("gate"))
-                    ep = new RemoteGateImpl(this, epName);
-                else if (epType.equals("volume"))
-                    ep = new RemoteVolumeImpl(this, epName);
-                else
-                    continue;
-                remoteEndpoints.put(ep.getLocalName(), ep);
+                String gTypeStr = gm.getString("type");
+                GateType gType = Utils.valueOf(GateType.class, gTypeStr);
+                String gName = gm.getString("name");
+                RemoteGateImpl gate = RemoteGateImpl.create(this, gType, gName);
+                remoteGates.put(gate.getLocalName(), gate);
                 try {
-                    Endpoints.add(ep);
-                } catch (EndpointException ee) {
-                    remoteEndpoints.remove(ep.getLocalName());
+                    Gates.add(gate);
+                } catch (GateException ge) {
+                    remoteGates.remove(gate.getLocalName());
                     throw new IllegalArgumentException();
                 }
+            } catch (GateException ge) {
+                Utils.warning("received bad gate from '%s'", getName());
             } catch (IllegalArgumentException iae) {
-                Utils.warning("received bad endpoint from '%s'", getName());
+                Utils.warning("received bad gate from '%s'", getName());
             }
         }
-        Utils.debug("received %d endpoints from '%s'", remoteEndpoints.size(), getName());
+        Utils.debug("received %d gates from '%s'", remoteGates.size(), getName());
     }
 
-    private void receiveEndpointAdded(Message message) {
-        String epType = message.getString("type");
-        String epName = message.getString("name");
-        RemoteEndpointImpl ep;
+    private void receiveGateAdded(Message message) {
         try {
-            if (epType.equals("gate"))
-                ep = new RemoteGateImpl(this, epName);
-            else if (epType.equals("volume"))
-                ep = new RemoteVolumeImpl(this, epName);
-            else
-                throw new IllegalArgumentException();
-            remoteEndpoints.put(ep.getLocalName(), ep);
+            String gTypeStr = message.getString("type");
+            GateType gType = Utils.valueOf(GateType.class, gTypeStr);
+            String gName = message.getString("name");
+            RemoteGateImpl gate = RemoteGateImpl.create(this, gType, gName);
+            remoteGates.put(gate.getLocalName(), gate);
             try {
-                Endpoints.add(ep);
-            } catch (EndpointException ee) {
-                remoteEndpoints.remove(ep.getLocalName());
+                Gates.add(gate);
+            } catch (GateException ge) {
+                remoteGates.remove(gate.getLocalName());
                 throw new IllegalArgumentException();
             }
-            Utils.debug("received endpoint '%s' from '%s'", ep.getLocalName(), getName());
+            Utils.debug("received gate '%s' from '%s'", gate.getLocalName(), getName());
+        } catch (GateException ge) {
+            Utils.warning("received bad gate from '%s'", getName());
         } catch (IllegalArgumentException iae) {
-            Utils.warning("received bad endpoint from '%s'", getName());
+            Utils.warning("received bad gate from '%s'", getName());
         }
     }
 
-    private void receiveEndpointRenamed(Message message) throws ServerException {
+    private void receiveGateRenamed(Message message) throws ServerException {
         String oldName = message.getString("oldName");
         if (oldName == null)
             throw new ServerException("missing oldName");
@@ -1004,70 +988,70 @@ public final class Server implements OptionsListener, RemoteServer {
         if (newName == null)
             throw new ServerException("missing newName");
         
-        RemoteEndpointImpl ep = (RemoteEndpointImpl)getRemoteEndpoint(oldName);
-        if (ep == null)
-            throw new ServerException("old endpoint '%s' not found", oldName);
-        String oldFullName = ep.getFullName();
-        remoteEndpoints.remove(oldName);
-        ep.setName(newName);
-        remoteEndpoints.put(ep.getLocalName(), ep);
-        Endpoints.rename(ep, oldFullName);
+        RemoteGateImpl gate = remoteGates.get(oldName);
+        if (gate == null)
+            throw new ServerException("old gate '%s' not found", oldName);
+        String oldFullName = gate.getFullName();
+        remoteGates.remove(oldName);
+        gate.setName(newName);
+        remoteGates.put(gate.getLocalName(), gate);
+        Gates.rename(gate, oldFullName);
     }
 
-    private void receiveEndpointRemoved(Message message) throws ServerException {
+    private void receiveGateRemoved(Message message) throws ServerException {
         String lname = message.getString("name");
         if (lname == null)
             throw new ServerException("missing name");
-        RemoteEndpointImpl ep = remoteEndpoints.get(lname);
-        if (ep == null)
-            throw new ServerException("unknown endpoint '%s'", lname);
-        remoteEndpoints.remove(lname);
+        RemoteGateImpl gate = remoteGates.get(lname);
+        if (gate == null)
+            throw new ServerException("unknown gate '%s'", lname);
+        remoteGates.remove(lname);
         try {
-            Endpoints.remove(ep);
-        } catch (EndpointException ee) {}
+            Gates.remove(gate);
+        } catch (GateException ge) {}
     }
 
-    private void receiveEndpointDestroyed(Message message) throws ServerException {
+    private void receiveGateDestroyed(Message message) throws ServerException {
         String lname = message.getString("name");
         if (lname == null)
             throw new ServerException("missing name");
-        RemoteEndpointImpl ep = remoteEndpoints.get(lname);
-        if (ep == null)
-            throw new ServerException("unknown endpoint '%s'", lname);
-        remoteEndpoints.remove(lname);
-        Endpoints.destroy(ep, false);
+        RemoteGateImpl gate = remoteGates.get(lname);
+        if (gate == null)
+            throw new ServerException("unknown gate '%s'", lname);
+        remoteGates.remove(lname);
+        Gates.destroy(gate, false);
     }
 
-    private void receiveEndpointAttach(Message message) throws ServerException {
+    private void receiveGateAttach(Message message) throws ServerException {
         String toName = message.getString("to");
         if (toName == null)
             throw new ServerException("missing to");
         String fromName = message.getString("from");
         if (fromName == null)
             throw new ServerException("missing from");
-        LocalEndpointImpl toEp = Endpoints.getLocalEndpoint(toName);
-        if (toEp == null)
-            throw new ServerException("unknown destination endpoint '%s'", toName);
-        RemoteEndpointImpl fromEp = remoteEndpoints.get(fromName);
-        if (fromEp == null)
-            throw new ServerException("unknown origin endpoint '%s'", fromName);
-        toEp.attach(fromEp);
+        LocalGateImpl toGate = Gates.getLocalGate(toName);
+        if (toGate == null)
+            throw new ServerException("unknown destination gate '%s'", toName);
+        RemoteGateImpl fromGate = remoteGates.get(fromName);
+        if (fromGate == null)
+            throw new ServerException("unknown origin gate '%s'", fromName);
+        toGate.attach(fromGate);
     }
 
-    private void receiveEndpointDetach(Message message) throws ServerException {
+    private void receiveGateDetach(Message message) throws ServerException {
         String toName = message.getString("to");
         if (toName == null)
             throw new ServerException("missing to");
         String fromName = message.getString("from");
         if (fromName == null)
             throw new ServerException("missing from");
-        LocalEndpointImpl toEp = Endpoints.getLocalEndpoint(toName);
-        if (toEp == null)
+        LocalGateImpl toGate = Gates.getLocalGate(toName);
+        if (toGate == null)
             throw new ServerException("unknown destination endpoint '%s'", toName);
-        RemoteEndpointImpl fromEp = remoteEndpoints.get(fromName);
-        if (fromEp == null)
-            throw new ServerException("unknown origin endpoint '%s'", fromName);
-        toEp.detach(fromEp);
+        RemoteGateImpl fromGate = remoteGates.get(fromName);
+        if (fromGate == null)
+            throw new ServerException("unknown origin gate '%s'", fromName);
+        toGate.detach(fromGate);
     }
 
     private void receiveReservation(Message message) throws ServerException {
@@ -1146,15 +1130,15 @@ public final class Server implements OptionsListener, RemoteServer {
 
         // reverse the sense of direction
         
-        LocalEndpointImpl fromEp = Endpoints.getLocalEndpoint(toName);
-        if (fromEp == null)
-            throw new ServerException("unknown destination endpoint '%s'", toName);
-        RemoteEndpointImpl toEp = remoteEndpoints.get(fromName);
-        if (toEp == null)
-            throw new ServerException("unknown origin endpoint '%s'", fromName);
+        LocalGateImpl fromGate = Gates.getLocalGate(toName);
+        if (fromGate == null)
+            throw new ServerException("unknown destination gate '%s'", toName);
+        RemoteGateImpl toGate = remoteGates.get(fromName);
+        if (toGate == null)
+            throw new ServerException("unknown origin gate '%s'", fromName);
 
-        fromEp.addLink(new Context(playerName), toEp.getFullName());
-        sendLinkAddComplete(playerName, fromEp, toEp);
+        fromGate.addLink(new Context(playerName), toGate.getFullName());
+        sendLinkAddComplete(playerName, fromGate, toGate);
     }
 
     private void receiveLinkAddComplete(Message message) throws ServerException {
@@ -1171,15 +1155,15 @@ public final class Server implements OptionsListener, RemoteServer {
 
         // reverse the sense of direction
         
-        LocalEndpointImpl fromEp = Endpoints.getLocalEndpoint(toName);
-        if (fromEp == null)
-            throw new ServerException("unknown destination endpoint '%s'", toName);
-        RemoteEndpointImpl toEp = remoteEndpoints.get(fromName);
-        if (toEp == null)
-            throw new ServerException("unknown origin endpoint '%s'", fromName);
+        LocalGateImpl fromGate = Gates.getLocalGate(toName);
+        if (fromGate == null)
+            throw new ServerException("unknown destination gate '%s'", toName);
+        RemoteGateImpl toGate = remoteGates.get(fromName);
+        if (toGate == null)
+            throw new ServerException("unknown origin gate '%s'", fromName);
 
         Context ctx = new Context(playerName);
-        ctx.sendLog("added link from '%s' to '%s'", toEp.getName(ctx), fromEp.getName(ctx));
+        ctx.sendLog("added link from '%s' to '%s'", toGate.getName(ctx), fromGate.getName(ctx));
     }
 
     private void receiveLinkRemove(Message message) throws TransporterException {
@@ -1196,15 +1180,15 @@ public final class Server implements OptionsListener, RemoteServer {
 
         // reverse the sense of direction
         
-        LocalEndpointImpl fromEp = Endpoints.getLocalEndpoint(toName);
-        if (fromEp == null)
-            throw new ServerException("unknown destination endpoint '%s'", toName);
-        RemoteEndpointImpl toEp = remoteEndpoints.get(fromName);
-        if (toEp == null)
-            throw new ServerException("unknown origin endpoint '%s'", fromName);
+        LocalGateImpl fromgate = Gates.getLocalGate(toName);
+        if (fromgate == null)
+            throw new ServerException("unknown destination gate '%s'", toName);
+        RemoteGateImpl toGate = remoteGates.get(fromName);
+        if (toGate == null)
+            throw new ServerException("unknown origin gate '%s'", fromName);
 
-        fromEp.removeLink(new Context(playerName), toEp.getFullName());
-        sendLinkRemoveComplete(playerName, fromEp, toEp);
+        fromgate.removeLink(new Context(playerName), toGate.getFullName());
+        sendLinkRemoveComplete(playerName, fromgate, toGate);
     }
 
     private void receiveLinkRemoveComplete(Message message) throws ServerException {
@@ -1221,15 +1205,15 @@ public final class Server implements OptionsListener, RemoteServer {
 
         // reverse the sense of direction
         
-        LocalEndpointImpl fromEp = Endpoints.getLocalEndpoint(toName);
-        if (fromEp == null)
-            throw new ServerException("unknown destination endpoint '%s'", toName);
-        RemoteEndpointImpl toEp = remoteEndpoints.get(fromName);
-        if (toEp == null)
-            throw new ServerException("unknown origin endpoint '%s'", fromName);
+        LocalGateImpl fromGate = Gates.getLocalGate(toName);
+        if (fromGate == null)
+            throw new ServerException("unknown destination gate '%s'", toName);
+        RemoteGateImpl toGate = remoteGates.get(fromName);
+        if (toGate == null)
+            throw new ServerException("unknown origin gate '%s'", fromName);
 
         Context ctx = new Context(playerName);
-        ctx.sendLog("removed link from '%s' to '%s'", toEp.getName(ctx), fromEp.getName(ctx));
+        ctx.sendLog("removed link from '%s' to '%s'", toGate.getName(ctx), fromGate.getName(ctx));
     }
 
     private void receivePlayerChangedWorld(Message message) throws ServerException {

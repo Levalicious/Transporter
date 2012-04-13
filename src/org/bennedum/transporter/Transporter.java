@@ -123,7 +123,7 @@ public class Transporter extends JavaPlugin {
         Context ctx = new Context();
         Network.stop(ctx);
         Config.save(ctx);
-        Endpoints.save(ctx);
+        Gates.save(ctx);
         ctx.sendLog("disabled");
         Global.plugin = null;
     }

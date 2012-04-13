@@ -34,6 +34,10 @@ public class Configuration extends ConfigurationNode {
         this.file = file;
     }
     
+    public File getFile() {
+        return file;
+    }
+    
     public void load() {
         clear();
         try {

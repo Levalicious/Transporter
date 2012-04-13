@@ -15,7 +15,6 @@
  */
 package org.bennedum.transporter;
 
-import org.bennedum.transporter.api.LocalEndpoint;
 import org.bennedum.transporter.api.RemoteGate;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
@@ -24,18 +23,30 @@ import org.bennedum.transporter.api.RemoteWorld;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public final class RemoteGateImpl extends RemoteEndpointImpl implements RemoteGate {
+public abstract class RemoteGateImpl extends GateImpl implements RemoteGate {
 
-    private Server server;
-    private String worldName;
+    public static RemoteGateImpl create(Server server, GateType type, String name) throws GateException {
+        switch (type) {
+            case BLOCK:
+                return new RemoteBlockGateImpl(server, name);
+            case AREA:
+                return new RemoteAreaGateImpl(server, name);
+        }
+        throw new GateException("unknown gate type '%s'", type.toString());
+    }
+    
+    protected Server server;
+    protected String worldName;
 
-    public RemoteGateImpl(Server server, String name) {
+    protected RemoteGateImpl(Server server, String name) {
         this.server = server;
         if (name == null) throw new IllegalArgumentException("name is required");
         String[] parts = name.split("\\.", 2);
         worldName = parts[0];
         this.name = parts[1];
     }
+    
+    public abstract GateType getType();
     
     @Override
     public String getLocalName() {
@@ -73,20 +84,15 @@ public final class RemoteGateImpl extends RemoteEndpointImpl implements RemoteGa
     }
     
     @Override
-    protected void attach(EndpointImpl originEndpoint) {
-        if (! (originEndpoint instanceof LocalEndpointImpl)) return;
-        server.sendEndpointAttach(this, (LocalEndpointImpl)originEndpoint);
+    protected void attach(GateImpl origin) {
+        if (! (origin instanceof LocalGateImpl)) return;
+        server.sendGateAttach(this, (LocalGateImpl)origin);
     }
 
     @Override
-    protected void detach(EndpointImpl originEndpoint) {
-        if (! (originEndpoint instanceof LocalEndpointImpl)) return;
-        server.sendEndpointDetach(this, (LocalEndpointImpl)originEndpoint);
-    }
-    
-    @Override
-    public String toString() {
-        return "RemoteGate[" + getFullName() + "]";
+    protected void detach(GateImpl origin) {
+        if (! (origin instanceof LocalGateImpl)) return;
+        server.sendGateDetach(this, (LocalGateImpl)origin);
     }
     
 }

@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bennedum.transporter.api;
+package org.bennedum.transporter;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface RemoteEndpoint extends Endpoint {
+public enum GateType {
     
-    public RemoteWorld getRemoteWorld();
-    
-    public RemoteServer getRemoteServer();
+    BLOCK,
+    AREA;
     
 }

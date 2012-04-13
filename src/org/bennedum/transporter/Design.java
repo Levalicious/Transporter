@@ -126,11 +126,11 @@ public class Design {
         linkWorld = conf.getBoolean("linkWorld", true);
         linkServer = conf.getBoolean("linkServer", true);
         linkNoneFormat = conf.getString("linkNoneFormat", "%fromGate%\\n\\n<none>");
-        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromName%\\n\\n<unselected>");
-        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromName%\\n\\n<offline>");
-        linkLocalFormat = conf.getString("linkLocalFormat", "%fromName%\\n%toName%");
-        linkWorldFormat = conf.getString("linkWorldFormat", "%fromName%\\n%toWorld%\\n%toName%");
-        linkServerFormat = conf.getString("linkServerFormat", "%fromName%\\n%toServer%\\n%toWorld%\\n%toName%");
+        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromGate%\\n\\n<unselected>");
+        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromGate%\\n\\n<offline>");
+        linkLocalFormat = conf.getString("linkLocalFormat", "%fromGate%\\n%toGate%");
+        linkWorldFormat = conf.getString("linkWorldFormat", "%fromGate%\\n%toWorld%\\n%toGate%");
+        linkServerFormat = conf.getString("linkServerFormat", "%fromGate%\\n%toServer%\\n%toWorld%\\n%toGate%");
         multiLink = conf.getBoolean("multiLink", true);
         restoreOnClose = conf.getBoolean("restoreOnClose", false);
         requirePin = conf.getBoolean("requirePin", false);
@@ -150,7 +150,7 @@ public class Design {
         receiveXP = conf.getBoolean("receiveXP", false);
         randomNextLink = conf.getBoolean("randomNextLink", false);
         sendNextLink = conf.getBoolean("sendNextLink", false);
-        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toNameCtx%'");
+        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
         invalidLinkFormat = conf.getString("invalidLinkFormat", "invalid link selected");
@@ -719,8 +719,8 @@ public class Design {
     }
     
     // Returns a new gate if a match in the surrounding blocks is found, otherwise null.
-    public LocalGateImpl create(DesignMatch match, String playerName, String gateName) throws EndpointException {
-        LocalGateImpl gate = new LocalGateImpl(match.world, gateName, playerName, this, match.gateBlocks, match.direction);
+    public LocalBlockGateImpl create(DesignMatch match, String playerName, String gateName) throws GateException {
+        LocalBlockGateImpl gate = new LocalBlockGateImpl(match.world, gateName, playerName, this, match.gateBlocks, match.direction);
         return gate;
     }
 

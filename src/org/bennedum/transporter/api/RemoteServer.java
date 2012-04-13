@@ -31,10 +31,10 @@ public interface RemoteServer {
     
     public Set<RemoteWorld> getRemoteWorlds();
     
-    public Set<RemoteEndpoint> getRemoteEndpoints();
+    public Set<RemoteGate> getRemoteGates();
  
     public RemoteWorld getRemoteWorld(String worldName);
     
-    public RemoteEndpoint getRemoteEndpoint(String epName);
+    public RemoteGate getRemoteGate(String name);
     
 }

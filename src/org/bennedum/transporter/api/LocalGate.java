@@ -19,6 +19,6 @@ package org.bennedum.transporter.api;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface LocalGate extends Gate, LocalEndpoint {
+public interface LocalGate extends Gate {
     
 }

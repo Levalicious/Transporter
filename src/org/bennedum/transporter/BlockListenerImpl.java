@@ -32,7 +32,7 @@ public class BlockListenerImpl implements Listener {
         LocalGateImpl gate = Gates.findGateForProtection(event.getBlock().getLocation());
         if (gate != null) {
             event.setCancelled(true);
-            gate.updateScreens();
+            gate.onProtect(event.getBlock().getLocation());
         }
     }
 
@@ -41,7 +41,7 @@ public class BlockListenerImpl implements Listener {
         LocalGateImpl gate = Gates.findGateForProtection(event.getBlock().getLocation());
         if (gate != null) {
             event.setCancelled(true);
-            gate.updateScreens();
+            gate.onProtect(event.getBlock().getLocation());
             return;
         }
         gate = Gates.findGateForScreen(event.getBlock().getLocation());
@@ -49,12 +49,12 @@ public class BlockListenerImpl implements Listener {
             Context ctx = new Context(event.getPlayer());
             try {
                 Permissions.require(ctx.getPlayer(), "trp.gate.destroy." + gate.getFullName());
-                Endpoints.destroy(gate, false);
+                Gates.destroy(gate, false);
                 ctx.sendLog("destroyed gate '%s'", gate.getName());
             } catch (PermissionsException pe) {
                 ctx.warn(pe.getMessage());
                 event.setCancelled(true);
-                gate.updateScreens();
+                gate.onProtect(event.getBlock().getLocation());
             }
         }
     }
@@ -114,7 +114,9 @@ public class BlockListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockRedstone(BlockRedstoneEvent event) {
-        LocalGateImpl gate = Gates.findGateForTrigger(event.getBlock().getLocation());
+        LocalGateImpl g = Gates.findGateForTrigger(event.getBlock().getLocation());
+        if (! (g instanceof LocalBlockGateImpl)) return;
+        LocalBlockGateImpl gate = (LocalBlockGateImpl)g;
         if (gate != null) {
             DesignBlockDetail block = gate.getTriggerBlocks().get(event.getBlock().getLocation()).block.getDetail();
             if (gate.isClosed() && (block.getTriggerOpenMode() != RedstoneMode.NONE) && gate.hasValidDestination()) {
@@ -127,7 +129,7 @@ public class BlockListenerImpl implements Listener {
                     try {
                         gate.open();
                         Utils.debug("gate '%s' opened via redstone", gate.getName());
-                    } catch (EndpointException ee) {
+                    } catch (GateException ee) {
                         Utils.warning(ee.getMessage());
                     }
                 }
@@ -147,7 +149,10 @@ public class BlockListenerImpl implements Listener {
             return;
         }
         
-        gate = Gates.findGateForSwitch(event.getBlock().getLocation());
+        g = Gates.findGateForSwitch(event.getBlock().getLocation());
+        if (! (g instanceof LocalBlockGateImpl)) return;
+        gate = (LocalBlockGateImpl)g;
+        
         if (gate != null) {
             DesignBlockDetail block = gate.getSwitchBlocks().get(event.getBlock().getLocation()).block.getDetail();
             boolean nextLink = false;

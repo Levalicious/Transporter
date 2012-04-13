@@ -28,6 +28,10 @@ public final class Pins {
     
     private static final Map<String,String> pins = new HashMap<String,String>();
 
+    public static boolean isValidPin(String pin) {
+        return pin.length() < 20;
+    }
+    
     public static void onConfigLoad(Context ctx) {
         pins.clear();
         ConfigurationNode node = Config.getNode("pins");

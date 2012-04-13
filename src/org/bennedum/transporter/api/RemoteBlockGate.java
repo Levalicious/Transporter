@@ -19,14 +19,6 @@ package org.bennedum.transporter.api;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface Gate {
-    
-    // simplename
-    public String getName();
-    
-    // worldname.simplename
-    public String getLocalName();
-
-    public String getFullName();
+public interface RemoteBlockGate extends RemoteGate {
     
 }

@@ -206,7 +206,7 @@ public final class WorldProxy implements OptionsListener {
                 seed = world.getSeed() + "";
         }
         if (loadEndpoints)
-            Endpoints.loadEndpointsForWorld(ctx, world);
+            Gates.loadGatesForWorld(ctx, world);
         return world;
     }
 
@@ -215,7 +215,7 @@ public final class WorldProxy implements OptionsListener {
         if (world != null) {
             Global.plugin.getServer().unloadWorld(world, true);
             // TODO: remove when Bukkit sends onWorldUnloaded events
-            Endpoints.removeEndpointsForWorld(world);
+            Gates.removeGatesForWorld(world);
         }
         return world;
     }

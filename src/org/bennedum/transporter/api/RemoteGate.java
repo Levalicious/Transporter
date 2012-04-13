@@ -19,6 +19,10 @@ package org.bennedum.transporter.api;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface RemoteGate extends Gate, RemoteEndpoint {
+public interface RemoteGate extends Gate {
+    
+    public RemoteWorld getRemoteWorld();
+    
+    public RemoteServer getRemoteServer();
     
 }

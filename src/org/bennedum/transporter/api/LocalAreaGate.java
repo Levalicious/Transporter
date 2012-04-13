@@ -19,6 +19,6 @@ package org.bennedum.transporter.api;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface LocalVolume extends Volume, LocalEndpoint {
+public interface LocalAreaGate extends LocalGate {
     
 }

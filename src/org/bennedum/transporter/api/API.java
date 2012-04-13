@@ -17,7 +17,7 @@ package org.bennedum.transporter.api;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.bennedum.transporter.Endpoints;
+import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Server;
 import org.bennedum.transporter.Servers;
 
@@ -35,19 +35,11 @@ public final class API {
     }
     
     public Set<LocalGate> getLocalGates() {
-        return new HashSet<LocalGate>(Endpoints.getLocalGates());
+        return new HashSet<LocalGate>(Gates.getLocalGates());
     }
     
     public Set<RemoteGate> getRemoteGates() {
-        return new HashSet<RemoteGate>(Endpoints.getRemoteGates());
-    }
-    
-    public Set<LocalVolume> getLocalVolumes() {
-        return new HashSet<LocalVolume>(Endpoints.getLocalVolumes());
-    }
-    
-    public Set<RemoteVolume> getRemoteVolumes() {
-        return new HashSet<RemoteVolume>(Endpoints.getRemoteVolumes());
+        return new HashSet<RemoteGate>(Gates.getRemoteGates());
     }
     
     public Set<RemoteServer> getRemoteServers() {

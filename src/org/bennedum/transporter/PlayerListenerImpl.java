@@ -175,7 +175,7 @@ public final class PlayerListenerImpl implements Listener {
                         testGate.open();
                         ctx.send("opened gate '%s'", testGate.getName());
                         Utils.debug("player '%s' open gate '%s'", player.getName(), testGate.getName());
-                    } catch (EndpointException ee) {
+                    } catch (GateException ee) {
                         ctx.warnLog(ee.getMessage());
                     }
             }

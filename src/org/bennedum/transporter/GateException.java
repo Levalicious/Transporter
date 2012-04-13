@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bennedum.transporter.api;
+package org.bennedum.transporter;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface RemoteVolume extends Volume, RemoteEndpoint {
+public class GateException extends TransporterException {
+    
+    public GateException(String msg, Object ... args) {
+        super(String.format(msg, args));
+    }
     
 }

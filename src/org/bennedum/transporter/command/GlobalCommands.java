@@ -21,8 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
-import org.bennedum.transporter.EndpointImpl;
-import org.bennedum.transporter.Endpoints;
+import org.bennedum.transporter.GateImpl;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
 import org.bennedum.transporter.Permissions;
@@ -30,7 +29,6 @@ import org.bennedum.transporter.RemotePlayerImpl;
 import org.bennedum.transporter.Reservation;
 import org.bennedum.transporter.ReservationException;
 import org.bennedum.transporter.TransporterException;
-import org.bennedum.transporter.Volumes;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
 
@@ -60,8 +58,8 @@ public final class GlobalCommands extends TrpCommandProcessor {
         cmds.add(getPrefix(ctx) + "get <option>|*");
         cmds.add(getPrefix(ctx) + "set <option> <value>");
         if (ctx.isPlayer())
-            cmds.add(getPrefix(ctx) + "go [<endpoint>]");
-        cmds.add(getPrefix(ctx) + "send <player> [<endpoint>]");
+            cmds.add(getPrefix(ctx) + "go [<gate>]");
+        cmds.add(getPrefix(ctx) + "send <player> [<gate>]");
         cmds.add(getPrefix(ctx) + "pm <player> <message>");
         return cmds;
     }
@@ -117,23 +115,20 @@ public final class GlobalCommands extends TrpCommandProcessor {
         if ("go".startsWith(subCmd)) {
             if (! ctx.isPlayer())
                 throw new CommandException("this command can only be used by a player");
-            EndpointImpl ep;
+            GateImpl gate;
             if (! args.isEmpty()) {
                 String name = args.remove(0);
-                ep = Endpoints.find(ctx, name);
-                if (ep == null)
-                    throw new CommandException("unknown endpoint '%s'", name);
-            } else {
-                ep = Gates.getSelectedGate(ctx.getPlayer());
-                if (ep == null)
-                    ep = Volumes.getSelectedVolume(ctx.getPlayer());
-            }
-            if (ep == null)
-                throw new CommandException("endpoint name required");
+                gate = Gates.find(ctx, name);
+                if (gate == null)
+                    throw new CommandException("unknown gate '%s'", name);
+            } else
+                gate = Gates.getSelectedGate(ctx.getPlayer());
+            if (gate == null)
+                throw new CommandException("gate name required");
 
-            Permissions.require(ctx.getPlayer(), "trp.go." + ep.getFullName());
+            Permissions.require(ctx.getPlayer(), "trp.go." + gate.getFullName());
             try {
-                Reservation r = new Reservation(ctx.getPlayer(), ep);
+                Reservation r = new Reservation(ctx.getPlayer(), gate);
                 r.depart();
             } catch (ReservationException e) {
                 ctx.warnLog(e.getMessage());

@@ -15,14 +15,34 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.Gate;
+
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class EndpointException extends TransporterException {
-    
-    public EndpointException(String msg, Object ... args) {
-        super(String.format(msg, args));
+public abstract class GateImpl implements Gate {
+
+    public static boolean isValidName(String name) {
+        if ((name.length() == 0) || (name.length() > 15)) return false;
+        return ! (name.contains(".") || name.contains("*"));
     }
+
+    protected String name;
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public abstract String getName(Context ctx);
+    public abstract String getGlobalName();
+    public abstract boolean isSameServer();
+    protected abstract void attach(GateImpl origin);
+    protected abstract void detach(GateImpl origin);
     
 }

@@ -15,34 +15,25 @@
  */
 package org.bennedum.transporter;
 
-import org.bennedum.transporter.api.Endpoint;
+import org.bennedum.transporter.api.RemoteBlockGate;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public abstract class EndpointImpl implements Endpoint {
-    
-    public static boolean isValidName(String name) {
-        if ((name.length() == 0) || (name.length() > 15)) return false;
-        return ! (name.contains(".") || name.contains("*"));
+public final class RemoteBlockGateImpl extends RemoteGateImpl implements RemoteBlockGate {
+
+    public RemoteBlockGateImpl(Server server, String name) {
+        super(server, name);
     }
-
-    protected String name;
-
+            
     @Override
-    public String getName() {
-        return name;
+    public GateType getType() { return GateType.BLOCK; }
+    
+    @Override
+    public String toString() {
+        return "RemoteBlockGate[" + getFullName() + "]";
     }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public abstract String getName(Context ctx);
-    public abstract String getGlobalName();
-    public abstract boolean isSameServer();
-    protected abstract void attach(EndpointImpl originEndpoint);
-    protected abstract void detach(EndpointImpl originEndpoint);
+    
     
 }

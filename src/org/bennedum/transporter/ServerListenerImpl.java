@@ -32,7 +32,7 @@ public class ServerListenerImpl implements Listener {
         String cmd = event.getCommand();
         if (cmd.equalsIgnoreCase("save-all")) {
             Config.save(ctx);
-            Endpoints.save(ctx);
+            Gates.save(ctx);
         }
     }
 

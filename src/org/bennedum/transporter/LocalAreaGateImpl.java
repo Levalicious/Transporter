@@ -13,12 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bennedum.transporter.api;
+package org.bennedum.transporter;
+
+import org.bennedum.transporter.api.LocalAreaGate;
+import org.bennedum.transporter.config.Configuration;
+import org.bukkit.World;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public interface LocalEndpoint extends Endpoint {
+public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaGate {
+    
+    public LocalAreaGateImpl(World world, Configuration conf) throws GateException {
+        super(world, conf);
+    }
+    
+    
+    @Override
+    public GateType getType() { return GateType.AREA; }
+    
+    @Override
+    public String toString() {
+        return "AreaGate[" + getLocalName() + "]";
+    }
+    
     
 }

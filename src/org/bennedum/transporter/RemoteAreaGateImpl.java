@@ -15,12 +15,25 @@
  */
 package org.bennedum.transporter;
 
-import org.bennedum.transporter.api.RemoteEndpoint;
+import org.bennedum.transporter.api.RemoteAreaGate;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public abstract class RemoteEndpointImpl extends EndpointImpl implements RemoteEndpoint {
+public final class RemoteAreaGateImpl extends RemoteGateImpl implements RemoteAreaGate {
+
+    public RemoteAreaGateImpl(Server server, String name) {
+        super(server, name);
+    }
+            
+    @Override
+    public GateType getType() { return GateType.AREA; }
+    
+    @Override
+    public String toString() {
+        return "RemoteAreaGate[" + getFullName() + "]";
+    }
+    
     
 }

@@ -15,17 +15,16 @@ Testing/TODO:
 * Test "portal" blocks with facing?
 * Test API
 * Add private message command
+* Add remote API timeouts
 
 Wiki Updates:
 * Removed server options "sendJoin", "receiveJoin".
 * Added server option "announcePlayers".
 * Removed server ping timeout parameter.
 * Totally new API.
-* *Format options have new substitution names for gate names.
-* Change trp reload gates command to trp reload endpoints.
-* Change trp.reload.gates permission to trp.reload.endpoints.
-* Change trp save gates command to trp save endpoints.
-* Change trp.save.gates permission to trp.save.endpoints.
+* Removed "design" format substitution name for map markers.
+
+
 * Change trp.gate.use permission to trp.endpoint.use.
 * Change global useGatePermissions to useEndpointPermissions
 

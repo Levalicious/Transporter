@@ -508,7 +508,7 @@ public class Utils {
             writer.println();
 
             // local gates...
-            List<LocalGateImpl> gates = new ArrayList<LocalGateImpl>(Endpoints.getLocalGates());
+            List<LocalGateImpl> gates = new ArrayList<LocalGateImpl>(Gates.getLocalGates());
             Collections.sort(gates, new Comparator<LocalGateImpl>() {
                 @Override
                 public int compare(LocalGateImpl a, LocalGateImpl b) {
@@ -520,7 +520,7 @@ public class Utils {
             for (LocalGateImpl gate : gates) {
                 writer.format("  %s\n", gate.getFullName());
                 if (gate.isSameServer()) {
-                    writer.format("    design: %s\n", gate.getDesignName());
+                    writer.format("    type: %s\n", gate.getType().toString());
                     if (gate.getLinkLocal())
                         writer.format("local cost: %s/%s\n",
                                 gate.getSendLocalCost(),
@@ -541,21 +541,6 @@ public class Utils {
             }
             writer.println();
 
-            // local volumes...
-            List<LocalVolumeImpl> volumes = new ArrayList<LocalVolumeImpl>(Endpoints.getLocalVolumes());
-            Collections.sort(volumes, new Comparator<LocalVolumeImpl>() {
-                @Override
-                public int compare(LocalVolumeImpl a, LocalVolumeImpl b) {
-                    return a.getFullName().compareToIgnoreCase(b.getFullName());
-                }
-            });
-            
-            writer.format("%d volumes:\n", volumes.size());
-            for (LocalVolumeImpl volume : volumes) {
-                writer.format("  %s\n", volume.getFullName());
-            }
-            writer.println();
-            
             // list of interfaces/addresses
             writer.println("Network interfaces:");
             for (Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces(); e.hasMoreElements(); ) {

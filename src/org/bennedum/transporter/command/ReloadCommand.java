@@ -20,7 +20,7 @@ import java.util.List;
 import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Designs;
-import org.bennedum.transporter.Endpoints;
+import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.TransporterException;
 import org.bukkit.command.Command;
@@ -42,7 +42,7 @@ public class ReloadCommand extends TrpCommandProcessor {
     @Override
     public List<String> getUsage(Context ctx) {
         List<String> cmds = new ArrayList<String>();
-        cmds.add(getPrefix(ctx) + GROUP + "[config|designs|endpoints]");
+        cmds.add(getPrefix(ctx) + GROUP + "[config|designs|gates]");
         return cmds;
     }
     
@@ -55,14 +55,14 @@ public class ReloadCommand extends TrpCommandProcessor {
                 what.add("config");
             if (Permissions.has(ctx.getPlayer(), "trp.reload.designs"))
                 what.add("designs");
-            if (Permissions.has(ctx.getPlayer(), "trp.reload.endpoints"))
-                what.add("endpoints");
+            if (Permissions.has(ctx.getPlayer(), "trp.reload.gates"))
+                what.add("gates");
         } else {
             for (String arg : args) {
                 arg = arg.toLowerCase();
                 if ("config".startsWith(arg)) arg = "config";
                 else if ("designs".startsWith(arg)) arg = "designs";
-                else if ("endpoints".startsWith(arg)) arg = "endpoints";
+                else if ("gates".startsWith(arg)) arg = "gates";
                 else
                     throw new CommandException("reload what?");
                 Permissions.require(ctx.getPlayer(), "trp.reload." + arg);
@@ -74,8 +74,8 @@ public class ReloadCommand extends TrpCommandProcessor {
                 Config.load(ctx);
             else if (arg.equals("designs"))
                 Designs.load(ctx);
-            else if (arg.equals("endpoints"))
-                Endpoints.load(ctx);
+            else if (arg.equals("gates"))
+                Gates.load(ctx);
         }
     }
 

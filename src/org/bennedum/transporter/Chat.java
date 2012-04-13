@@ -41,19 +41,19 @@ public final class Chat {
         Location loc = player.getLocation();
         RemoteGateImpl destGate;
         Server destServer;
-        for (LocalGateImpl gate : Endpoints.getLocalGates()) {
+        for (LocalGateImpl gate : Gates.getLocalGates()) {
             if (gate.isOpen() && gate.getSendChat() && gate.isInChatSendProximity(loc)) {
                 try {
-                    Object ep = gate.getDestinationEndpoint();
-                    if (! (ep instanceof RemoteGateImpl)) continue;
-                    destGate = (RemoteGateImpl)ep;
+                    GateImpl dg = gate.getDestinationGate();
+                    if (! (dg instanceof RemoteGateImpl)) continue;
+                    destGate = (RemoteGateImpl)dg;
                     destServer = (Server)destGate.getRemoteServer();
                     if (servers.containsKey(destServer)) {
                         if (servers.get(destServer) == null) continue;
                     } else
                         servers.put(destServer, new HashSet<RemoteGateImpl>());
                     servers.get(destServer).add(destGate);
-                } catch (EndpointException e) {}
+                } catch (GateException e) {}
             }
         }
         for (Server server : servers.keySet()) {
@@ -72,9 +72,9 @@ public final class Chat {
             Collections.addAll(playersToReceive, players);
         else if ((toGates != null) && (! toGates.isEmpty())) {
             for (String gateName : toGates) {
-                EndpointImpl ep = Endpoints.get(gateName);
-                if ((ep == null) || (! (ep instanceof LocalGateImpl))) continue;
-                LocalGateImpl gate = (LocalGateImpl)ep;
+                GateImpl g = Gates.get(gateName);
+                if ((g == null) || (! (g instanceof LocalGateImpl))) continue;
+                LocalGateImpl gate = (LocalGateImpl)g;
                 if (! gate.getReceiveChat()) continue;
                 for (Player p : players) {
                     if (gate.isInChatReceiveProximity(p.getLocation()))

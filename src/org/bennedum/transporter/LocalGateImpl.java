@@ -45,10 +45,35 @@ import org.bukkit.util.Vector;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate, OptionsListener {
+public abstract class LocalGateImpl extends GateImpl implements LocalGate, OptionsListener {
 
+    public static LocalGateImpl load(World world, File file) throws GateException {
+        if (! file.exists())
+            throw new GateException("%s not found", file.getAbsolutePath());
+        if (! file.isFile())
+            throw new GateException("%s is not a file", file.getAbsolutePath());
+        if (! file.canRead())
+            throw new GateException("unable to read %s", file.getAbsoluteFile());
+        Configuration conf = new Configuration(file);
+        conf.load();
+        String typeStr = conf.getString("type", "BLOCK");
+        GateType type;
+        try {
+            type = Utils.valueOf(GateType.class, typeStr);
+        } catch (IllegalArgumentException iae) {
+            throw new GateException("invalid gate type '%s'", typeStr);
+        }
+        
+        switch (type) {
+            case BLOCK:
+                return new LocalBlockGateImpl(world, conf);
+            case AREA:
+                return new LocalAreaGateImpl(world, conf);
+        }
+        throw new GateException("unknown gate type '%s'", type.toString());
+    }
+    
     public static final Set<String> OPTIONS = new HashSet<String>();
-    private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\\\n");
     
     static {
         OPTIONS.add("duration");
@@ -97,196 +122,103 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         OPTIONS.add("markerFormat");
     }
 
-    private static boolean isValidPin(String pin) {
-        return pin.length() < 20;
-    }
-
-    /*
-    public static String getLocalLinkWorldName(String link) {
-        String[] parts = link.split("\\.");
-        if (parts.length > 2) return null;
-        return parts[0];
-    }
-*/
+    protected File file;
+    protected World world;
+    protected Vector center;
+    protected String creatorName;
+    protected BlockFace direction;
     
-    private File file;
-    private World world;
-    private Vector center;
+    protected int duration;
+    protected boolean linkLocal;
+    protected boolean linkWorld;
+    protected boolean linkServer;
+    protected String linkNoneFormat;
+    protected String linkUnselectedFormat;
+    protected String linkOfflineFormat;
+    protected String linkLocalFormat;
+    protected String linkWorldFormat;
+    protected String linkServerFormat;
+    protected boolean multiLink;
+    protected boolean requirePin;
+    protected boolean requireValidPin;
+    protected int invalidPinDamage;
+    protected boolean protect;
+    protected boolean sendChat;
+    protected int sendChatDistance;
+    protected boolean receiveChat;
+    protected int receiveChatDistance;
+    protected boolean requireAllowedItems;
+    protected boolean sendInventory;
+    protected boolean receiveInventory;
+    protected boolean deleteInventory;
+    protected boolean receiveGameMode;
+    protected String allowGameModes;
+    protected boolean receiveXP;
+    protected boolean randomNextLink;
+    protected boolean sendNextLink;
+    protected String teleportFormat;
+    protected String noLinksFormat;
+    protected String noLinkSelectedFormat;
+    protected String invalidLinkFormat;
+    protected String unknownLinkFormat;
+    protected String markerFormat;
 
-    private String creatorName;
-    private String designName;
-    private BlockFace direction;
-    private int duration;
-    private boolean linkLocal;
-    private boolean linkWorld;
-    private boolean linkServer;
-    private String linkNoneFormat;
-    private String linkUnselectedFormat;
-    private String linkOfflineFormat;
-    private String linkLocalFormat;
-    private String linkWorldFormat;
-    private String linkServerFormat;
-    private boolean multiLink;
-    private boolean restoreOnClose;
-    private boolean requirePin;
-    private boolean requireValidPin;
-    private int invalidPinDamage;
-    private boolean protect;
-    private boolean sendChat;
-    private int sendChatDistance;
-    private boolean receiveChat;
-    private int receiveChatDistance;
-    private boolean requireAllowedItems;
-    private boolean sendInventory;
-    private boolean receiveInventory;
-    private boolean deleteInventory;
-    private boolean receiveGameMode;
-    private String allowGameModes;
-    private boolean receiveXP;
-    private boolean randomNextLink;
-    private boolean sendNextLink;
-    private String teleportFormat;
-    private String noLinksFormat;
-    private String noLinkSelectedFormat;
-    private String invalidLinkFormat;
-    private String unknownLinkFormat;
-    private String markerFormat;
+    protected double linkLocalCost;
+    protected double linkWorldCost;
+    protected double linkServerCost;
+    protected double sendLocalCost;
+    protected double sendWorldCost;
+    protected double sendServerCost;
+    protected double receiveLocalCost;
+    protected double receiveWorldCost;
+    protected double receiveServerCost;
 
-    private double linkLocalCost;
-    private double linkWorldCost;
-    private double linkServerCost;
-    private double sendLocalCost;
-    private double sendWorldCost;
-    private double sendServerCost;
-    private double receiveLocalCost;
-    private double receiveWorldCost;
-    private double receiveServerCost;
+    protected final List<String> links = new ArrayList<String>();
+    protected final Set<String> pins = new HashSet<String>();
+    protected final Set<String> bannedItems = new HashSet<String>();
+    protected final Set<String> allowedItems = new HashSet<String>();
+    protected final Map<String,String> replaceItems = new HashMap<String,String>();
 
-    private final List<String> links = new ArrayList<String>();
-    private final Set<String> pins = new HashSet<String>();
-    private final Set<String> bannedItems = new HashSet<String>();
-    private final Set<String> allowedItems = new HashSet<String>();
-    private final Map<String,String> replaceItems = new HashMap<String,String>();
+    protected Set<String> incoming = new HashSet<String>();
+    protected String outgoing = null;
 
-    private List<GateBlock> blocks;
+    protected boolean dirty = false;
+    protected boolean portalOpen = false;
+    protected long portalOpenTime = 0;
+    protected Options options = new Options(this, OPTIONS, "trp.gate", this);
 
-    private Set<String> incoming = new HashSet<String>();
-    private String outgoing = null;
-    private List<SavedBlock> savedBlocks = null;
-
-    private boolean portalOpen = false;
-    private long portalOpenTime = 0;
-    private boolean dirty = false;
-    private Options options = new Options(this, OPTIONS, "trp.gate", this);
-
-    public LocalGateImpl(World world, String gateName, String playerName, Design design, List<GateBlock> blocks, BlockFace direction) throws EndpointException {
-        this.world = world;
-        name = gateName;
-        creatorName = playerName;
-        this.designName = design.getName();
-        this.direction = direction;
-
-        duration = design.getDuration();
-        linkLocal = design.getLinkLocal();
-        linkWorld = design.getLinkWorld();
-        linkServer = design.getLinkServer();
-        linkNoneFormat = design.getLinkNoneFormat();
-        linkUnselectedFormat = design.getLinkUnselectedFormat();
-        linkOfflineFormat = design.getLinkOfflineFormat();
-        linkLocalFormat = design.getLinkLocalFormat();
-        linkWorldFormat = design.getLinkWorldFormat();
-        linkServerFormat = design.getLinkServerFormat();
-        multiLink = design.getMultiLink();
-        restoreOnClose = design.getRestoreOnClose();
-        requirePin = design.getRequirePin();
-        requireValidPin = design.getRequireValidPin();
-        invalidPinDamage = design.getInvalidPinDamage();
-        protect = design.getProtect();
-        sendChat = design.getSendChat();
-        sendChatDistance = design.getSendChatDistance();
-        receiveChat = design.getReceiveChat();
-        receiveChatDistance = design.getReceiveChatDistance();
-        requireAllowedItems = design.getRequireAllowedItems();
-        sendInventory = design.getSendInventory();
-        receiveInventory = design.getReceiveInventory();
-        deleteInventory = design.getDeleteInventory();
-        receiveGameMode = design.getReceiveGameMode();
-        allowGameModes = design.getAllowGameModes();
-        receiveXP = design.getReceiveXP();
-        randomNextLink = design.getRandomNextLink();
-        sendNextLink = design.getSendNextLink();
-        teleportFormat = design.getTeleportFormat();
-        noLinksFormat = design.getNoLinksFormat();
-        noLinkSelectedFormat = design.getNoLinkSelectedFormat();
-        invalidLinkFormat = design.getInvalidLinkFormat();
-        unknownLinkFormat = design.getUnknownLinkFormat();
-        markerFormat = design.getMarkerFormat();
-
-        linkLocalCost = design.getLinkLocalCost();
-        linkWorldCost = design.getLinkWorldCost();
-        linkServerCost = design.getLinkServerCost();
-        sendLocalCost = design.getSendLocalCost();
-        sendWorldCost = design.getSendWorldCost();
-        sendServerCost = design.getSendServerCost();
-        receiveLocalCost = design.getReceiveLocalCost();
-        receiveWorldCost = design.getReceiveWorldCost();
-        receiveServerCost = design.getReceiveServerCost();
-
-        bannedItems.addAll(design.getBannedItems());
-        allowedItems.addAll(design.getAllowedItems());
-        replaceItems.putAll(design.getReplaceItems());
-
-        this.blocks = blocks;
-
-        calculateCenter();
-        validate();
-        generateFile();
-        updateScreens();
-        dirty = true;
-    }
-
-    public LocalGateImpl(World world, File file) throws EndpointException, BlockException {
-        if (! file.exists())
-            throw new EndpointException("%s not found", file.getAbsolutePath());
-        if (! file.isFile())
-            throw new EndpointException("%s is not a file", file.getAbsolutePath());
-        if (! file.canRead())
-            throw new EndpointException("unable to read %s", file.getAbsoluteFile());
-        Configuration conf = new Configuration(file);
-        conf.load();
-
-        this.file = file;
+    protected LocalGateImpl(World world, Configuration conf) throws GateException {
+        this.file = conf.getFile();
         this.world = world;
         name = conf.getString("name");
         creatorName = conf.getString("creatorName");
-        designName = conf.getString("designName");
         try {
             direction = Utils.valueOf(BlockFace.class, conf.getString("direction", "NORTH"));
         } catch (IllegalArgumentException iae) {
-            throw new EndpointException("invalid or ambiguous direction");
+            throw new GateException("invalid or ambiguous direction");
         }
         duration = conf.getInt("duration", -1);
         linkLocal = conf.getBoolean("linkLocal", true);
         linkWorld = conf.getBoolean("linkWorld", true);
         linkServer = conf.getBoolean("linkServer", true);
         
-        linkNoneFormat = conf.getString("linkNoneFormat", "%fromName%\\n\\n<none>");
-        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromName%\\n\\n<unselected>");
-        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromName%\\n\\n<offline>");
-        linkLocalFormat = conf.getString("linkLocalFormat", "%fromName%\\n%toName%");
-        linkWorldFormat = conf.getString("linkWorldFormat", "%fromName%\\n%toWorld%\\n%toName%");
-        linkServerFormat = conf.getString("linkServerFormat", "%fromName%\\n%toServer%\\n%toWorld%\\n%toName%");
+        linkNoneFormat = conf.getString("linkNoneFormat", "%fromGate%\\n\\n<none>");
+        linkUnselectedFormat = conf.getString("linkUnselectedFormat", "%fromGate%\\n\\n<unselected>");
+        linkOfflineFormat = conf.getString("linkOfflineFormat", "%fromGate%\\n\\n<offline>");
+        linkLocalFormat = conf.getString("linkLocalFormat", "%fromGate%\\n%toGate%");
+        linkWorldFormat = conf.getString("linkWorldFormat", "%fromGate%\\n%toWorld%\\n%toGate%");
+        linkServerFormat = conf.getString("linkServerFormat", "%fromGate%\\n%toServer%\\n%toWorld%\\n%toGate%");
         
         multiLink = conf.getBoolean("multiLink", true);
-        restoreOnClose = conf.getBoolean("restoreOnClose", false);
         links.addAll(conf.getStringList("links", new ArrayList<String>()));
         pins.addAll(conf.getStringList("pins", new ArrayList<String>()));
+        portalOpen = conf.getBoolean("portalOpen", false);
 
         List<String> items = conf.getStringList("bannedItems", new ArrayList<String>());
         for (String item : items) {
             String i = Inventory.normalizeItem(item);
             if (i == null)
-                throw new EndpointException("invalid banned item '%s'", item);
+                throw new GateException("invalid banned item '%s'", item);
             bannedItems.add(i);
         }
 
@@ -294,7 +226,7 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         for (String item : items) {
             String i = Inventory.normalizeItem(item);
             if (i == null)
-                throw new EndpointException("invalid allowed item '%s'", item);
+                throw new GateException("invalid allowed item '%s'", item);
             allowedItems.add(i);
         }
 
@@ -303,11 +235,11 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
             for (String oldItem : items) {
                 String oi = Inventory.normalizeItem(oldItem);
                 if (oi == null)
-                    throw new EndpointException("invalid replace item '%s'", oldItem);
+                    throw new GateException("invalid replace item '%s'", oldItem);
                 String newItem = conf.getString("replaceItems." + oldItem);
                 String ni = Inventory.normalizeItem(newItem);
                 if (ni == null)
-                    throw new EndpointException("invalid replace item '%s'", newItem);
+                    throw new GateException("invalid replace item '%s'", newItem);
                 replaceItems.put(oi, ni);
             }
         }
@@ -329,7 +261,7 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         receiveXP = conf.getBoolean("receiveXP", false);
         randomNextLink = conf.getBoolean("randomNextLink", false);
         sendNextLink = conf.getBoolean("sendNextLink", false);
-        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toNameCtx%'");
+        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
         invalidLinkFormat = conf.getString("invalidLinkFormat", "invalid link selected");
@@ -338,7 +270,6 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
 
         incoming.addAll(conf.getStringList("incoming", new ArrayList<String>()));
         outgoing = conf.getString("outgoing");
-        portalOpen = conf.getBoolean("portalOpen", false);
 
         linkLocalCost = conf.getDouble("linkLocalCost", 0);
         linkWorldCost = conf.getDouble("linkWorldCost", 0);
@@ -349,41 +280,76 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         receiveLocalCost = conf.getDouble("receiveLocalCost", 0);
         receiveWorldCost = conf.getDouble("receiveWorldCost", 0);
         receiveServerCost = conf.getDouble("receiveServerCost", 0);
-
-        List<ConfigurationNode> nodes = conf.getNodeList("blocks");
-        if (nodes == null)
-            throw new EndpointException("missing blocks");
-        blocks = new ArrayList<GateBlock>();
-        for (ConfigurationNode node : nodes) {
-            GateBlock block = new GateBlock(node);
-            block.setWorld(world);
-            blocks.add(block);
-        }
-
-        nodes = conf.getNodeList("saved", null);
-        if (nodes != null) {
-            savedBlocks = new ArrayList<SavedBlock>();
-            for (ConfigurationNode node : nodes) {
-                SavedBlock block = new SavedBlock(node);
-                block.setWorld(world);
-                savedBlocks.add(block);
-            }
-            if (savedBlocks.isEmpty()) savedBlocks = null;
-        }
-
-        // convert 6.10 stuff
-        int relayChatDistance = conf.getInt("relayChatDistance", Integer.MIN_VALUE);
-        if (relayChatDistance != Integer.MIN_VALUE) {
-            sendChat = receiveChat = (relayChatDistance > 0);
-            if (relayChatDistance > 0)
-                sendChatDistance = receiveChatDistance = relayChatDistance;
-        }
-
-        calculateCenter();
-        validate();
     }
 
-    // Endpoint interface
+    protected LocalGateImpl(World world, String gateName, String creatorName, BlockFace direction) throws GateException {
+        this.world = world;
+        name = gateName;
+        this.creatorName = creatorName;
+        this.direction = direction;
+
+        setDuration(-1);
+        setLinkLocal(true);
+        setLinkWorld(true);
+        setLinkServer(true);
+        setLinkNoneFormat(null);
+        setLinkUnselectedFormat(null);
+        setLinkOfflineFormat(null);
+        setLinkLocalFormat(null);
+        setLinkWorldFormat(null);
+        setLinkServerFormat(null);
+        setMultiLink(true);
+        setRequirePin(false);
+        setRequireValidPin(true);
+        setInvalidPinDamage(0);
+        setProtect(false);
+        setSendChat(false);
+        setSendChatDistance(1000);
+        setReceiveChat(false);
+        setReceiveChatDistance(1000);
+        setRequireAllowedItems(true);
+        setSendInventory(true);
+        setReceiveInventory(true);
+        setDeleteInventory(false);
+        setReceiveGameMode(false);
+        setAllowGameModes("*");
+        setReceiveXP(false);
+        setRandomNextLink(false);
+        setSendNextLink(false);
+        setTeleportFormat(null);
+        setNoLinksFormat(null);
+        setNoLinkSelectedFormat(null);
+        setInvalidLinkFormat(null);
+        setUnknownLinkFormat(null);
+        setMarkerFormat(null);
+
+        setLinkLocalCost(0);
+        setLinkWorldCost(0);
+        setLinkServerCost(0);
+        setSendLocalCost(0);
+        setSendWorldCost(0);
+        setSendServerCost(0);
+        setReceiveLocalCost(0);
+        setReceiveWorldCost(0);
+        setReceiveServerCost(0);
+    }
+    
+    public abstract GateType getType();
+    public abstract boolean isOccupyingLocation(Location location);
+
+    public abstract void onSend(Entity entity);
+    public abstract void onReceive(Entity entity);
+    public abstract void onProtect(Location loc);
+    
+    protected abstract void calculateCenter();
+    
+    protected abstract void onOpen();
+    protected abstract void onClose();
+    protected abstract void onNameChanged();
+    protected abstract void onDestinationChanged();
+    protected abstract void onSave(Configuration conf);
+    
+    // Gate interface
     
     @Override
     public String getLocalName() {
@@ -395,7 +361,7 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         return getLocalName();
     }
     
-    // EndpointImpl overrides
+    // GateImpl overrides
     
     @Override
     public String getName(Context ctx) {
@@ -414,14 +380,14 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
     }
 
     @Override
-    protected void attach(EndpointImpl originEndpoint) {
-        if (originEndpoint != null) {
-            String epName = originEndpoint.getFullName();
-            if (incoming.contains(epName)) return;
-            incoming.add(epName);
+    protected void attach(GateImpl origin) {
+        if (origin != null) {
+            String originName = origin.getFullName();
+            if (incoming.contains(originName)) return;
+            incoming.add(originName);
             dirty = true;
         }
-        openPortal();
+        onOpen();
 
         // try to attach to our destination
         if ((outgoing == null) || (! hasLink(outgoing))) {
@@ -429,193 +395,75 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
                 outgoing = null;
             else
                 outgoing = getLinks().get(0);
-            updateScreens();
+            onDestinationChanged();
         }
         if (outgoing != null) {
-            EndpointImpl ep = Endpoints.get(outgoing);
-            if (ep != null)
-                ep.attach(this);
+            GateImpl gate = Gates.get(outgoing);
+            if (gate != null)
+                gate.attach(this);
         }
-        save();
+        save(false);
     }
 
     @Override
-    protected void detach(EndpointImpl originEndpoint) {
-        String epName = originEndpoint.getFullName();
-        if (! incoming.contains(epName)) return;
+    protected void detach(GateImpl origin) {
+        String originName = origin.getFullName();
+        if (! incoming.contains(originName)) return;
 
-        incoming.remove(epName);
+        incoming.remove(originName);
         dirty = true;
         closeIfAllowed();
-        save();
+        save(false);
     }
 
-    // LocalEndpointImpl overrides
+    // End interfaces and implementations
     
-    @Override
-    public void addLink(Context ctx, String toEpName) throws TransporterException {
-        Permissions.require(ctx.getPlayer(), "trp.gate.link.add." + getLocalName());
-
-        if (isLinked() && (! getMultiLink()))
-            throw new EndpointException("gate '%s' cannot accept multiple links", getName(ctx));
-
-        EndpointImpl toEp = Endpoints.find(toEpName);
-        if (toEp == null)
-            throw new EndpointException("endpoint '%s' cannot be found", toEpName);
-        
-        if (toEp.isSameServer()) {
-            LocalEndpointImpl toEpLocal = (LocalEndpointImpl)toEp;
-            if (isSameWorld(toEpLocal.getWorld()) && (! Config.getAllowLinkLocal()))
-                throw new CommandException("linking to on-world endpoints is not permitted");
-            else if (! Config.getAllowLinkWorld())
-                throw new CommandException("linking to off-world endpoints is not permitted");
-            if (isSameWorld(toEpLocal.getWorld()))
-                Economy.requireFunds(ctx.getPlayer(), getLinkLocalCost());
-            else 
-                Economy.requireFunds(ctx.getPlayer(), getLinkWorldCost());
-
-        } else {
-            if (! Config.getAllowLinkServer())
-                throw new CommandException("linking to remote endpoints is not permitted");
-            Economy.requireFunds(ctx.getPlayer(), getLinkServerCost());
-        }
-
-        if (! addLink(toEp.getFullName()))
-            throw new EndpointException("gate '%s' already links to '%s'", getName(ctx), toEp.getName(ctx));
-
-        ctx.sendLog("added link from '%s' to '%s'", getName(ctx), toEp.getName(ctx));
-
-        try {
-            if (toEp.isSameServer()) {
-                LocalEndpointImpl toEpLocal = (LocalEndpointImpl)toEp;
-                if (isSameWorld(toEpLocal.getWorld()) && Economy.deductFunds(ctx.getPlayer(), getLinkLocalCost()))
-                    ctx.sendLog("debited %s for on-world linking", Economy.format(getLinkLocalCost()));
-                else if (Economy.deductFunds(ctx.getPlayer(), getLinkWorldCost()))
-                    ctx.sendLog("debited %s for off-world linking", Economy.format(getLinkWorldCost()));
-            } else {
-                if (Economy.deductFunds(ctx.getPlayer(), getLinkServerCost()))
-                    ctx.sendLog("debited %s for off-server linking", Economy.format(getLinkServerCost()));
-            }
-        } catch (EconomyException ee) {
-            Utils.warning("unable to debit linking costs for %s: %s", ctx.getPlayer().getName(), ee.getMessage());
-        }
-    }
-
-    @Override
-    public void removeLink(Context ctx, String toEpName) throws TransporterException {
-        Permissions.require(ctx.getPlayer(), "trp.gate.link.remove." + getFullName());
-
-        EndpointImpl toEp = Endpoints.find(toEpName);
-        if (toEp != null) toEpName = toEp.getFullName();
-
-        if (! removeLink(toEpName))
-            throw new EndpointException("gate '%s' does not have a link to '%s'", getName(ctx), toEpName);
-
-        ctx.sendLog("removed link from '%s' to '%s'", getName(ctx), toEpName);
-    }
-    
-    @Override
-    public void nextLink() throws TransporterException {
-        // trivial case of single link to prevent needless detach/attach
-        if ((links.size() == 1) && links.contains(outgoing)) {
-            //updateScreens();
-            return;
-        }
-
-        // detach from the current gate
-        if (portalOpen && (outgoing != null)) {
-            EndpointImpl ep = Endpoints.get(outgoing);
-            if (ep != null)
-                ep.detach(this);
-        }
-
-        // select next link
-        if ((outgoing == null) || (! links.contains(outgoing))) {
-            if (! links.isEmpty()) {
-                outgoing = links.get(0);
-                dirty = true;
-            }
-
-        } else if (randomNextLink) {
-            List<String> candidateLinks = new ArrayList<String>(links);
-            candidateLinks.remove(outgoing);
-            if (candidateLinks.size() > 1)
-                Collections.shuffle(candidateLinks);
-            if (! candidateLinks.isEmpty()) {
-                outgoing = candidateLinks.get(0);
-                dirty = true;
-            }
-
-        } else {
-            int i = links.indexOf(outgoing) + 1;
-            if (i >= links.size()) i = 0;
-            outgoing = links.get(i);
-            dirty = true;
-        }
-
-        updateScreens();
-
-        // attach to the next gate
-        if (portalOpen && (outgoing != null)) {
-            EndpointImpl ep = Endpoints.get(outgoing);
-            if (ep != null)
-                ep.attach(this);
-        }
-        save();
-        getDestinationEndpoint();
-    }
-
-    @Override
     public void onRenameComplete() {
         file.delete();
         generateFile();
-        save();
-        updateScreens();
+        save(true);
+        onNameChanged();
     }
     
-    @Override
-    public void onEndpointAdded(EndpointImpl ep) {
-        if (ep == this) return;
-        if ((outgoing != null) && outgoing.equals(ep.getFullName()))
-            updateScreens();
+    public void onGateAdded(GateImpl gate) {
+        if (gate == this) return;
+        if ((outgoing != null) && outgoing.equals(gate.getFullName()))
+            onDestinationChanged();
     }
 
-    @Override
-    public void onEndpointRemoved(EndpointImpl ep) {
-        if (ep == this) return;
-        String epName = ep.getFullName();
-        if (epName.equals(outgoing)) {
+    public void onGateRemoved(GateImpl gate) {
+        if (gate == this) return;
+        String gateName = gate.getFullName();
+        if (gateName.equals(outgoing)) {
             outgoing = null;
             dirty = true;
-            updateScreens();
+            onDestinationChanged();
         }
         closeIfAllowed();
-        save();
+        save(false);
     }
 
-    @Override
-    public void onEndpointDestroyed(EndpointImpl ep) {
-        if (ep == this) return;
-        String epName = ep.getFullName();
-        if (removeLink(epName))
+    public void onGateDestroyed(GateImpl gate) {
+        if (gate == this) return;
+        String gateName = gate.getFullName();
+        if (removeLink(gateName))
             dirty = true;
-        if (epName.equals(outgoing)) {
+        if (gateName.equals(outgoing)) {
             outgoing = null;
             dirty = true;
-            updateScreens();
+            onDestinationChanged();
         }
-        if (incoming.contains(epName)) {
-            incoming.remove(epName);
+        if (incoming.contains(gateName)) {
+            incoming.remove(gateName);
             dirty = true;
         }
         closeIfAllowed();
-        save();
+        save(false);
     }
     
-    @Override
-    public void onEndpointRenamed(EndpointImpl ep, String oldFullName) {
-        if (ep == this) return;
-        String newName = ep.getFullName();
+    public void onGateRenamed(GateImpl gate, String oldFullName) {
+        if (gate == this) return;
+        String newName = gate.getFullName();
         if (links.contains(oldFullName)) {
             links.set(links.indexOf(oldFullName), newName);
             dirty = true;
@@ -623,79 +471,91 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         if (oldFullName.equals(outgoing)) {
             outgoing = newName;
             dirty = true;
-            updateScreens();
+            onDestinationChanged();
         }
         if (incoming.contains(oldFullName)) {
             incoming.remove(oldFullName);
             incoming.add(newName);
             dirty = true;
         }
-        save();
+        save(false);
     }
     
-    @Override
-    public void onSend(Entity entity) {
-        GateMap map = getSendLightningBlocks();
-        GateBlock block = map.randomBlock();
-        if (block == null) return;
-        switch (block.getDetail().getSendLightningMode()) {
-            case NORMAL:
-                world.strikeLightning(block.getLocation());
-                break;
-            case SAFE:
-                world.strikeLightningEffect(block.getLocation());
-                break;
-        }
-    }
-
-    @Override
-    public void onReceive(Entity entity) {
-        GateMap map = getReceiveLightningBlocks();
-        GateBlock block = map.randomBlock();
-        if (block == null) return;
-        switch (block.getDetail().getReceiveLightningMode()) {
-            case NORMAL:
-                world.strikeLightning(block.getLocation());
-                break;
-            case SAFE:
-                world.strikeLightningEffect(block.getLocation());
-                break;
-        }
-    }
-
-    @Override
     public void onDestroy(boolean unbuild) {
         close();
         file.delete();
-        if (unbuild) {
-            for (GateBlock gb : blocks) {
-                if (! gb.getDetail().isBuildable()) continue;
-                Block b = gb.getLocation().getBlock();
-                b.setTypeIdAndData(0, (byte)0, false);
-            }
-        }
     }
 
+    public boolean isOpen() {
+        return portalOpen;
+    }
 
-    @Override
+    public boolean isClosed() {
+        return ! portalOpen;
+    }
+
     public boolean isSameWorld(World world) {
         return this.world == world;
     }
     
-    @Override
     public World getWorld() {
         return world;
     }
     
-    @Override
-    public void save() {
-        if (! dirty) return;
+    public void open() throws GateException {
+        if (portalOpen) return;
+
+        // try to get our destination
+        if ((outgoing == null) || (! hasLink(outgoing))) {
+            if (! isLinked())
+                throw new GateException("this gate has no links");
+            outgoing = getLinks().get(0);
+            dirty = true;
+        }
+        GateImpl gate = Gates.get(outgoing);
+        if (gate == null)
+            throw new GateException("unknown or offline gate '%s'", outgoing);
+
+        gate.attach(this);
+        onOpen();
+        onDestinationChanged();
+        save(false);
+
+        if (duration > 0) {
+            final LocalGateImpl myself = this;
+            Utils.fireDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    myself.closeIfAllowed();
+                }
+            }, duration + 100);
+        }
+    }
+
+    public void close() {
+        if (! portalOpen) return;
+
+        incoming.clear();
+        onClose();
+        onDestinationChanged();
+
+        // try to detach from our destination
+        if (outgoing != null) {
+            GateImpl gate = Gates.get(outgoing);
+            if (gate != null)
+                gate.detach(this);
+        }
+        save(false);
+    }
+
+    
+    public void save(boolean force) {
+        if ((! dirty) && (! force)) return;
         dirty = false;
 
         Configuration conf = new Configuration(file);
         conf.setProperty("name", name);
         conf.setProperty("creatorName", creatorName);
-        conf.setProperty("designName", designName);
         conf.setProperty("direction", direction.toString());
         conf.setProperty("duration", duration);
         conf.setProperty("linkLocal", linkLocal);
@@ -710,7 +570,6 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         conf.setProperty("linkServerFormat", linkServerFormat);
         
         conf.setProperty("multiLink", multiLink);
-        conf.setProperty("restoreOnClose", restoreOnClose);
         conf.setProperty("links", links);
         conf.setProperty("pins", new ArrayList<String>(pins));
         conf.setProperty("bannedItems", new ArrayList<String>(bannedItems));
@@ -739,10 +598,10 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         conf.setProperty("invalidLinkFormat", invalidLinkFormat);
         conf.setProperty("unknownLinkFormat", unknownLinkFormat);
         conf.setProperty("markerFormat", markerFormat);
+        conf.setProperty("portalOpen", portalOpen);
 
         if (! incoming.isEmpty()) conf.setProperty("incoming", new ArrayList<String>(incoming));
         if (outgoing != null) conf.setProperty("outgoing", outgoing);
-        conf.setProperty("portalOpen", portalOpen);
 
         conf.setProperty("linkLocalCost", linkLocalCost);
         conf.setProperty("linkWorldCost", linkWorldCost);
@@ -754,60 +613,23 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         conf.setProperty("receiveWorldCost", receiveWorldCost);
         conf.setProperty("receiveServerCost", receiveServerCost);
 
-        List<Object> node = new ArrayList<Object>();
-        for (GateBlock block : blocks)
-            node.add(block.encode());
-        conf.setProperty("blocks", node);
-
-        if (savedBlocks != null) {
-            node = new ArrayList<Object>();
-            for (SavedBlock block : savedBlocks)
-                node.add(block.encode());
-            conf.setProperty("saved", node);
-        }
-
+        onSave(conf);
+        
         File parent = file.getParentFile();
         if (! parent.exists())
             parent.mkdirs();
         conf.save();
     }
 
-    // End interfaces and implementations
-    
-    // called when the gate is loaded from a file
-    public void initialize() {
-        if (portalOpen)
-            Gates.addPortalBlocks(getPortalBlocks());
-        if (protect)
-            Gates.addProtectBlocks(getBuildBlocks());
-    }
+    public void initialize() {}
 
-    private void calculateCenter() {
-        double cx = 0, cy = 0, cz = 0;
-        for (GateBlock block : blocks) {
-            cx += block.getLocation().getBlockX() + 0.5;
-            cy += block.getLocation().getBlockY() + 0.5;
-            cz += block.getLocation().getBlockZ() + 0.5;
-        }
-        cx /= blocks.size();
-        cy /= blocks.size();
-        cz /= blocks.size();
-        center = new Vector(cx, cy, cz);
-    }
-
-    private void validate() throws EndpointException {
+    protected void validate() throws GateException {
         if (name == null)
-            throw new EndpointException("name is required");
+            throw new GateException("name is required");
         if (! isValidName(name))
-            throw new EndpointException("name is not valid");
+            throw new GateException("name is not valid");
         if (creatorName == null)
-            throw new EndpointException("creatorName is required");
-        if (designName == null)
-            throw new EndpointException("designName is required");
-        if (! Design.isValidName(designName))
-            throw new EndpointException("designName is not valid");
-        if (blocks.isEmpty())
-            throw new EndpointException("must have at least one block");
+            throw new GateException("creatorName is required");
     }
 
     public Vector getCenter() {
@@ -818,19 +640,10 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         return creatorName;
     }
 
-    public String getDesignName() {
-        return designName;
-    }
-    
     public BlockFace getDirection() {
         return direction;
     }
 
-    @Override
-    public String toString() {
-        return "LocalGate[" + getLocalName() + "]";
-    }
-    
     /* Begin options */
 
     public int getDuration() {
@@ -961,14 +774,6 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
             Gates.addProtectBlocks(getBuildBlocks());
         else
             Gates.removeProtectBlocks(this);
-    }
-
-    public boolean getRestoreOnClose() {
-        return restoreOnClose;
-    }
-
-    public void setRestoreOnClose(boolean b) {
-        restoreOnClose = b;
     }
 
     public boolean getRequirePin() {
@@ -1303,9 +1108,8 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
 
     @Override
     public void onOptionSet(Context ctx, String name, String value) {
-        dirty = true;
         ctx.sendLog("option '%s' set to '%s' for gate '%s'", name, value, getName(ctx));
-        save();
+        save(true);
     }
 
     @Override
@@ -1315,73 +1119,18 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
 
     /* End options */
 
-    public double getSendCost(EndpointImpl toEp) {
-        if (toEp == null) return 0;
-        if (! toEp.isSameServer()) return sendServerCost;
-        if (((LocalEndpointImpl)toEp).isSameWorld(world)) return sendLocalCost;
+    public double getSendCost(GateImpl toGate) {
+        if (toGate == null) return 0;
+        if (! toGate.isSameServer()) return sendServerCost;
+        if (((LocalGateImpl)toGate).isSameWorld(world)) return sendLocalCost;
         return sendWorldCost;
     }
 
-    public double getReceiveCost(EndpointImpl fromEp) {
-        if (fromEp == null) return 0;
-        if (! fromEp.isSameServer()) return receiveServerCost;
-        if (((LocalEndpointImpl)fromEp).isSameWorld(world)) return receiveLocalCost;
+    public double getReceiveCost(GateImpl fromGate) {
+        if (fromGate == null) return 0;
+        if (! fromGate.isSameServer()) return receiveServerCost;
+        if (((LocalGateImpl)fromGate).isSameWorld(world)) return receiveLocalCost;
         return receiveWorldCost;
-    }
-
-    public boolean isOpen() {
-        return portalOpen;
-    }
-
-    public boolean isClosed() {
-        return ! portalOpen;
-    }
-
-    public void open() throws EndpointException {
-        if (portalOpen) return;
-
-        // try to get our destination
-        if ((outgoing == null) || (! hasLink(outgoing))) {
-            if (! isLinked())
-                throw new EndpointException("this gate has no links");
-            outgoing = getLinks().get(0);
-            dirty = true;
-            //updateScreens();
-        }
-        EndpointImpl ep = Endpoints.get(outgoing);
-        if (ep == null)
-            throw new EndpointException("unknown or offline endpoint '%s'", outgoing);
-
-        openPortal();
-        ep.attach(this);
-        updateScreens();
-        save();
-
-        if (duration > 0) {
-            final LocalGateImpl myself = this;
-            Utils.fireDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    myself.closeIfAllowed();
-                }
-            }, duration + 100);
-        }
-    }
-
-    public void close() {
-        if (! portalOpen) return;
-
-        incoming.clear();
-        closePortal();
-        updateScreens();
-
-        // try to detach from our destination
-        if (outgoing != null) {
-            EndpointImpl ep = Endpoints.get(outgoing);
-            if (ep != null)
-                ep.detach(this);
-        }
-        save();
     }
 
     public List<String> getLinks() {
@@ -1396,27 +1145,135 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         return links.contains(link);
     }
 
+    public void addLink(Context ctx, String toGateName) throws TransporterException {
+        Permissions.require(ctx.getPlayer(), "trp.gate.link.add." + getLocalName());
+
+        if (isLinked() && (! getMultiLink()))
+            throw new GateException("gate '%s' cannot accept multiple links", getName(ctx));
+
+        GateImpl toGate = Gates.find(toGateName);
+        if (toGate == null)
+            throw new GateException("gate '%s' cannot be found", toGateName);
+        
+        if (toGate.isSameServer()) {
+            LocalGateImpl toGateLocal = (LocalGateImpl)toGate;
+            if (isSameWorld(toGateLocal.getWorld()) && (! Config.getAllowLinkLocal()))
+                throw new CommandException("linking to on-world gates is not permitted");
+            else if (! Config.getAllowLinkWorld())
+                throw new CommandException("linking to off-world gates is not permitted");
+            if (isSameWorld(toGateLocal.getWorld()))
+                Economy.requireFunds(ctx.getPlayer(), getLinkLocalCost());
+            else 
+                Economy.requireFunds(ctx.getPlayer(), getLinkWorldCost());
+
+        } else {
+            if (! Config.getAllowLinkServer())
+                throw new CommandException("linking to remote gates is not permitted");
+            Economy.requireFunds(ctx.getPlayer(), getLinkServerCost());
+        }
+
+        if (! addLink(toGate.getFullName()))
+            throw new GateException("gate '%s' already links to '%s'", getName(ctx), toGate.getName(ctx));
+
+        ctx.sendLog("added link from '%s' to '%s'", getName(ctx), toGate.getName(ctx));
+
+        try {
+            if (toGate.isSameServer()) {
+                LocalGateImpl toGateLocal = (LocalGateImpl)toGate;
+                if (isSameWorld(toGateLocal.getWorld()) && Economy.deductFunds(ctx.getPlayer(), getLinkLocalCost()))
+                    ctx.sendLog("debited %s for on-world linking", Economy.format(getLinkLocalCost()));
+                else if (Economy.deductFunds(ctx.getPlayer(), getLinkWorldCost()))
+                    ctx.sendLog("debited %s for off-world linking", Economy.format(getLinkWorldCost()));
+            } else {
+                if (Economy.deductFunds(ctx.getPlayer(), getLinkServerCost()))
+                    ctx.sendLog("debited %s for off-server linking", Economy.format(getLinkServerCost()));
+            }
+        } catch (EconomyException ee) {
+            Utils.warning("unable to debit linking costs for %s: %s", ctx.getPlayer().getName(), ee.getMessage());
+        }
+    }
+
     protected boolean addLink(String link) {
         if (links.contains(link)) return false;
         links.add(link);
         if (links.size() == 1)
             outgoing = link;
-        dirty = true;
-        updateScreens();
-        save();
+        onDestinationChanged();
+        save(true);
         return true;
     }
 
+    public void removeLink(Context ctx, String toGateName) throws TransporterException {
+        Permissions.require(ctx.getPlayer(), "trp.gate.link.remove." + getFullName());
+
+        GateImpl toGate = Gates.find(toGateName);
+        if (toGate != null) toGateName = toGate.getFullName();
+
+        if (! removeLink(toGateName))
+            throw new GateException("gate '%s' does not have a link to '%s'", getName(ctx), toGateName);
+
+        ctx.sendLog("removed link from '%s' to '%s'", getName(ctx), toGateName);
+    }
+    
     protected boolean removeLink(String link) {
         if (! links.contains(link)) return false;
         links.remove(link);
         if (link.equals(outgoing))
             outgoing = null;
-        dirty = true;
-        updateScreens();
+        onDestinationChanged();
         closeIfAllowed();
-        save();
+        save(true);
         return true;
+    }
+    
+    public void nextLink() throws GateException {
+        // trivial case of single link to prevent needless detach/attach
+        if ((links.size() == 1) && links.contains(outgoing)) {
+            //updateScreens();
+            return;
+        }
+
+        // detach from the current gate
+        if (portalOpen && (outgoing != null)) {
+            GateImpl gate = Gates.get(outgoing);
+            if (gate != null)
+                gate.detach(this);
+        }
+
+        // select next link
+        if ((outgoing == null) || (! links.contains(outgoing))) {
+            if (! links.isEmpty()) {
+                outgoing = links.get(0);
+                dirty = true;
+            }
+
+        } else if (randomNextLink) {
+            List<String> candidateLinks = new ArrayList<String>(links);
+            candidateLinks.remove(outgoing);
+            if (candidateLinks.size() > 1)
+                Collections.shuffle(candidateLinks);
+            if (! candidateLinks.isEmpty()) {
+                outgoing = candidateLinks.get(0);
+                dirty = true;
+            }
+
+        } else {
+            int i = links.indexOf(outgoing) + 1;
+            if (i >= links.size()) i = 0;
+            outgoing = links.get(i);
+            dirty = true;
+        }
+
+        onDestinationChanged();
+
+        // attach to the next gate
+        if (portalOpen && (outgoing != null)) {
+            GateImpl gate = Gates.get(outgoing);
+            if (gate != null)
+                gate.attach(this);
+        }
+        save(false);
+        getDestinationGate();
     }
     
     public boolean isLastLink() {
@@ -1427,9 +1284,9 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
 
     public boolean hasValidDestination() {
         try {
-            getDestinationEndpoint();
+            getDestinationGate();
             return true;
-        } catch (EndpointException e) {
+        } catch (GateException e) {
             return false;
         }
     }
@@ -1438,48 +1295,39 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         return outgoing;
     }
 
-    public EndpointImpl getDestinationEndpoint() throws EndpointException {
+    public GateImpl getDestinationGate() throws GateException {
         if (outgoing == null) {
             if (! isLinked())
-                throw new EndpointException(getNoLinksFormat());
+                throw new GateException(getNoLinksFormat());
             else
-                throw new EndpointException(getNoLinkSelectedFormat());
+                throw new GateException(getNoLinkSelectedFormat());
         } else if (! hasLink(outgoing))
-            throw new EndpointException(getInvalidLinkFormat());
-        EndpointImpl ep = Endpoints.get(outgoing);
-        if (ep == null)
-            throw new EndpointException(getUnknownLinkFormat());
-        return ep;
+            throw new GateException(getInvalidLinkFormat());
+        GateImpl gate = Gates.get(outgoing);
+        if (gate == null)
+            throw new GateException(getUnknownLinkFormat());
+        return gate;
     }
 
-    public void rebuild() {
-        GateMap portalBlocks = getPortalBlocks();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isBuildable()) continue;
-            if (portalOpen && portalBlocks.containsLocation(gb.getLocation())) continue;
-            gb.getDetail().getBuildBlock().build(gb.getLocation());
-        }
-        updateScreens();
-    }
-
-    public boolean addPin(String pin) throws EndpointException {
-        if (! isValidPin(pin))
-            throw new EndpointException("invalid pin");
+    public boolean addPin(String pin) throws GateException {
+        if (! Pins.isValidPin(pin))
+            throw new GateException("invalid pin");
         if (pins.contains(pin)) return false;
         pins.add(pin);
+        save(true);
         return true;
     }
 
     public boolean removePin(String pin) {
         if (pins.contains(pin)) return false;
         pins.remove(pin);
-        save();
+        save(true);
         return true;
     }
 
     public void removeAllPins() {
         pins.clear();
-        save();
+        save(true);
     }
 
     public boolean hasPin(String pin) {
@@ -1490,96 +1338,87 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         return bannedItems;
     }
     
-    public boolean addBannedItem(String item) throws EndpointException {
+    public boolean addBannedItem(String item) throws GateException {
         try {
             if (! Inventory.appendItemList(bannedItems, item)) return false;
         } catch (InventoryException e) {
-            throw new EndpointException(e.getMessage());
+            throw new GateException(e.getMessage());
         }
-        dirty = true;
-        save();
+        save(true);
         return true;
     }
 
-    public boolean removeBannedItem(String item) throws EndpointException {
+    public boolean removeBannedItem(String item) throws GateException {
         try {
             if (! Inventory.removeItemList(bannedItems, item)) return false;
         } catch (InventoryException e) {
-            throw new EndpointException(e.getMessage());
+            throw new GateException(e.getMessage());
         }
-        dirty = true;
-        save();
+        save(true);
         return true;
     }
 
     public void removeAllBannedItems() {
         bannedItems.clear();
-        dirty = true;
-        save();
+        save(true);
     }
 
     public Set<String> getAllowedItems() {
         return allowedItems;
     }
     
-    public boolean addAllowedItem(String item) throws EndpointException {
+    public boolean addAllowedItem(String item) throws GateException {
         try {
             if (! Inventory.appendItemList(allowedItems, item)) return false;
         } catch (InventoryException e) {
-            throw new EndpointException(e.getMessage());
+            throw new GateException(e.getMessage());
         }
-        dirty = true;
-        save();
+        save(true);
         return true;
     }
 
-    public boolean removeAllowedItem(String item) throws EndpointException {
+    public boolean removeAllowedItem(String item) throws GateException {
         try {
             if (! Inventory.removeItemList(allowedItems, item)) return false;
         } catch (InventoryException e) {
-            throw new EndpointException(e.getMessage());
+            throw new GateException(e.getMessage());
         }
-        dirty = true;
-        save();
+        save(true);
         return true;
     }
 
     public void removeAllAllowedItems() {
         allowedItems.clear();
-        dirty = true;
-        save();
+        save(true);
     }
 
     public Map<String,String> getReplaceItems() {
         return replaceItems;
     }
     
-    public boolean addReplaceItem(String fromItem, String toItem) throws EndpointException {
+    public boolean addReplaceItem(String fromItem, String toItem) throws GateException {
         try {
             if (! Inventory.appendItemMap(replaceItems, fromItem, toItem)) return false;
         } catch (InventoryException e) {
-            throw new EndpointException(e.getMessage());
+            throw new GateException(e.getMessage());
         }
-        dirty = true;
-        save();
+        save(true);
         return true;
     }
 
-    public boolean removeReplaceItem(String item) throws EndpointException {
+    public boolean removeReplaceItem(String item) throws GateException {
         try {
             if (! Inventory.removeItemMap(replaceItems, item)) return false;
         } catch (InventoryException e) {
-            throw new EndpointException(e.getMessage());
+            throw new GateException(e.getMessage());
         }
-        dirty = true;
-        save();
+        save(true);
         return true;
     }
 
     public void removeAllReplaceItems() {
         replaceItems.clear();
-        dirty = true;
-        save();
+        save(true);
     }
 
     public boolean isAllowedGameMode(String mode) {
@@ -1631,90 +1470,7 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         return (there.distance(center) <= receiveChatDistance);
     }
 
-    private GateMap getBuildBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isBuildable()) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public GateMap getScreenBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isScreen()) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public GateMap getTriggerBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isTrigger()) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public GateMap getSwitchBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isSwitch()) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    private GateMap getPortalBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isPortal()) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public GateMap getSpawnBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isSpawn()) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public GateMap getSendLightningBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (gb.getDetail().getSendLightningMode() == LightningMode.NONE) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public GateMap getReceiveLightningBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (gb.getDetail().getReceiveLightningMode() == LightningMode.NONE) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public boolean isOccupyingLocation(Location location) {
-        if (location.getWorld() != world) return false;
-        for (GateBlock block : blocks) {
-            if (! block.getDetail().isBuildable()) continue;
-            if ((location.getBlockX() == block.getLocation().getBlockX()) &&
-                (location.getBlockY() == block.getLocation().getBlockY()) &&
-                (location.getBlockZ() == block.getLocation().getBlockZ())) return true;
-        }
-        return false;
-    }
-
-    private void generateFile() {
+    protected void generateFile() {
         File worldFolder = Worlds.worldPluginFolder(world);
         File gatesFolder = new File(worldFolder, "gates");
         String fileName = name.replaceAll("[^\\w-\\.]", "_");
@@ -1722,88 +1478,6 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
         fileName += name.hashCode();
         fileName += ".yml";
         file = new File(gatesFolder, fileName);
-    }
-
-    final public void updateScreens() {
-        GateMap screens = getScreenBlocks();
-        if (screens.size() == 0) return;
-        
-        String format;
-        EndpointImpl toEp = null;
-        
-        if (outgoing == null) {
-            if (! isLinked())
-                format = getLinkNoneFormat();
-            else
-                format = getLinkUnselectedFormat();
-        } else {
-            toEp = Endpoints.get(outgoing);
-            if (toEp == null)
-                format = getLinkOfflineFormat();
-            else {
-                if (! toEp.isSameServer())
-                    format = getLinkServerFormat();
-                else if (! ((LocalEndpointImpl)toEp).isSameWorld(world))
-                    format = getLinkWorldFormat();
-                else
-                    format = getLinkLocalFormat();
-            }
-        }
-        List<String> lines = new ArrayList<String>();
-        
-        if ((format != null) && (! format.equals("-"))) {
-            format = format.replace("%fromName%", this.getName());
-            format = format.replace("%fromWorld%", this.getWorld().getName());
-            if (toEp != null) {
-                format = format.replace("%toName%", toEp.getName());
-                if (toEp.isSameServer()) {
-                    format = format.replace("%toWorld%", ((LocalEndpointImpl)toEp).getWorld().getName());
-                    format = format.replace("%toServer%", "local");
-                } else {
-                    format = format.replace("%toWorld%", ((RemoteEndpointImpl)toEp).getRemoteWorld().getName());
-                    format = format.replace("%toServer%", ((RemoteEndpointImpl)toEp).getRemoteServer().getName());
-                }
-            } else if (outgoing != null) {
-                String[] parts = outgoing.split("\\.");
-                format = format.replace("%toGate%", parts[parts.length - 1]);
-                if (parts.length > 1)
-                    format = format.replace("%toWorld%", parts[parts.length - 2]);
-                if (parts.length > 2)
-                    format = format.replace("%toServer%", parts[parts.length - 3]);
-                else
-                    format = format.replace("%toServer%", "local");
-            }
-            lines.addAll(Arrays.asList(NEWLINE_PATTERN.split(format)));
-        }
-        
-        for (GateBlock gb : screens.getBlocks()) {
-            Block block = gb.getLocation().getBlock();
-            BlockState sign = block.getState();
-            if (! (sign instanceof Sign)) continue;
-            for (int i = 0; i < 4; i++) {
-                if (i >= lines.size())
-                    ((Sign)sign).setLine(i, "");
-                else
-                    ((Sign)sign).setLine(i, lines.get(i));
-            }
-            sign.update();
-        }
-    }
-
-    private void openPortal() {
-        if (portalOpen) return;
-        portalOpen = true;
-        portalOpenTime = System.currentTimeMillis();
-        savedBlocks = new ArrayList<SavedBlock>();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isOpenable()) continue;
-            if (restoreOnClose)
-                savedBlocks.add(new SavedBlock(gb.getLocation()));
-            gb.getDetail().getOpenBlock().build(gb.getLocation());
-        }
-        if (savedBlocks.isEmpty()) savedBlocks = null;
-        Gates.addPortalBlocks(getPortalBlocks());
-        dirty = true;
     }
 
     private void closeIfAllowed() {
@@ -1826,26 +1500,5 @@ public final class LocalGateImpl extends LocalEndpointImpl implements LocalGate,
 
         return false;
     }
-
-    private void closePortal() {
-        if (! portalOpen) return;
-        portalOpen = false;
-        if (savedBlocks != null) {
-            for (SavedBlock b : savedBlocks)
-                b.restore();
-            savedBlocks = null;
-        } else {
-            for (GateBlock gb : blocks) {
-                if (! gb.getDetail().isOpenable()) continue;
-                if (gb.getDetail().isBuildable())
-                    gb.getDetail().getBuildBlock().build(gb.getLocation());
-                else
-                gb.getLocation().getBlock().setTypeIdAndData(0, (byte)0, false);
-            }
-        }
-        Gates.removePortalBlocks(this);
-        dirty = true;
-    }
-
 
 }
