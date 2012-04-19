@@ -118,7 +118,7 @@ public class BlockListenerImpl implements Listener {
         if (! (g instanceof LocalBlockGateImpl)) return;
         LocalBlockGateImpl gate = (LocalBlockGateImpl)g;
         if (gate != null) {
-            DesignBlockDetail block = gate.getTriggerBlocks().get(event.getBlock().getLocation()).block.getDetail();
+            DesignBlockDetail block = gate.getGateBlock(event.getBlock().getLocation()).getDetail();
             if (gate.isClosed() && (block.getTriggerOpenMode() != RedstoneMode.NONE) && gate.hasValidDestination()) {
                 boolean openIt = false;
                 switch (block.getTriggerOpenMode()) {
@@ -154,7 +154,7 @@ public class BlockListenerImpl implements Listener {
         gate = (LocalBlockGateImpl)g;
         
         if (gate != null) {
-            DesignBlockDetail block = gate.getSwitchBlocks().get(event.getBlock().getLocation()).block.getDetail();
+            DesignBlockDetail block = gate.getGateBlock(event.getBlock().getLocation()).getDetail();
             boolean nextLink = false;
             switch (block.getSwitchMode()) {
                 case HIGH: nextLink = (event.getNewCurrent() > 0) && (event.getOldCurrent() == 0); break;

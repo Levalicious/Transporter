@@ -33,7 +33,6 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,8 +45,6 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import org.bennedum.transporter.net.Cipher;
-import org.bennedum.transporter.net.Message;
 
 /**
  *
@@ -60,7 +57,7 @@ public final class Patcher extends javax.swing.JFrame {
 
     /** Creates new form Patcher */
     public Patcher() {
-
+        
         /*
         try {
             String textOut = "";

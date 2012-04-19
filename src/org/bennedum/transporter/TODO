@@ -13,9 +13,13 @@ Testing/TODO:
 * Test minecart teleportation
 * Test stairs with facing option
 * Test "portal" blocks with facing?
+* Add private message command (trp pm) for remote players
+* Add server command lookup
+* Flesh out API methods
+    * teleport player
+    * ?
 * Test API
-* Add private message command
-* Add remote API timeouts
+* Add "api" command with options like timeout, debug, allow*
 
 Wiki Updates:
 * Removed server options "sendJoin", "receiveJoin".
@@ -23,10 +27,11 @@ Wiki Updates:
 * Removed server ping timeout parameter.
 * Totally new API.
 * Removed "design" format substitution name for map markers.
+* Reduced gate hit detection times by over 99%!
+* Changed gate autosaving for option changes and other actions.
+* Fixed player facing direction bugs during server-to-server teleports.
 
-
-* Change trp.gate.use permission to trp.endpoint.use.
-* Change global useGatePermissions to useEndpointPermissions
+* Added global "apiTimeout" option, defaults to 5000 (must be greater than 1000).
 
 
 

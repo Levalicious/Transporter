@@ -44,7 +44,7 @@ public abstract class Callback<T> {
         return System.currentTimeMillis() - requestTime;
     }
     
-    abstract public void onSuccess(T t);
+    public void onSuccess(T t) {}
     
     public void onFailure(RemoteException e) {}
     

@@ -67,6 +67,7 @@ public final class Config {
         OPTIONS.add("dynmapMarkerSetLabel");
         OPTIONS.add("exportedGatesFile");
         OPTIONS.add("worldLoadDelay");
+        OPTIONS.add("apiTimeout");
         OPTIONS.add("httpProxyHost");
         OPTIONS.add("httpProxyType");
         OPTIONS.add("httpProxyPort");
@@ -356,16 +357,6 @@ public final class Config {
         config.setProperty("global.useRegisterEconomy", b);
     }
 
-    /*
-    public static boolean getUseBOSEconomy() {
-        return config.getBoolean("global.useBOSEconomy", false);
-    }
-
-    public static void setUseBOSEconomy(boolean b) {
-        config.setProperty("global.useBOSEconomy", b);
-    }
-    */
-
     public static boolean getUseDynmap() {
         return config.getBoolean("global.useDynmap", false);
     }
@@ -373,16 +364,6 @@ public final class Config {
     public static void setUseDynmap(boolean b) {
         config.setProperty("global.useDynmap", b);
     }
-
-    /*
-    public static boolean getUseSuperPermissions() {
-        return config.getBoolean("global.useSuperPermissions", false);
-    }
-
-    public static void setUseSuperPermissions(boolean b) {
-        config.setProperty("global.useSuperPermissions", b);
-    }
-    */
 
     public static boolean getUseVaultPermissions() {
         return config.getBoolean("global.useVaultPermissions", false);
@@ -433,6 +414,15 @@ public final class Config {
     public static void setWorldLoadDelay(int i) {
         if (i < 0) i = 0;
         setPropertyDirect("global.worldLoadDelay", i);
+    }
+    
+    public static int getAPITimeout() {
+        return config.getInt("global.apiTimeout", 5000);
+    }
+    
+    public static void setAPITimeout(int i) {
+        if (i < 1000) i = 1000;
+        setPropertyDirect("global.apiTimeout", i);
     }
     
     public static String getHttpProxyHost() {

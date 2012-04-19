@@ -77,7 +77,7 @@ public final class RemotePlayerImpl implements RemotePlayer {
     public void getRemoteWorld(final Callback<RemoteWorld> cb) {
         Message args = new Message();
         args.put("player", name);
-        server.sendAPI(new Callback<Message>() {
+        server.sendAPIRequest(new Callback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 cb.onSuccess(server.getRemoteWorld(m.getString("result")));
@@ -86,14 +86,14 @@ public final class RemotePlayerImpl implements RemotePlayer {
             public void onFailure(RemoteException re) {
                 cb.onFailure(re);
             }
-        }, "player.getWorld", args);
+        }, "player", "getWorld", args);
     }
     
     @Override
     public void getRemoteLocation(final Callback<RemoteLocation> cb) {
         Message args = new Message();
         args.put("player", name);
-        server.sendAPI(new Callback<Message>() {
+        server.sendAPIRequest(new Callback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 Message locMsg = m.getMessage("result");
@@ -104,7 +104,7 @@ public final class RemotePlayerImpl implements RemotePlayer {
             public void onFailure(RemoteException re) {
                 cb.onFailure(re);
             }
-        }, "player.getLocation", args);
+        }, "player", "getLocation", args);
     }
 
     @Override
@@ -112,16 +112,16 @@ public final class RemotePlayerImpl implements RemotePlayer {
         Message args = new Message();
         args.put("player", name);
         args.put("message", msg);
-        server.sendAPI(new Callback<Message>() {
+        server.sendAPIRequest(new Callback<Message>() {
             @Override
             public void onSuccess(Message m) {
-                cb.onSuccess(null);
+                if (cb != null) cb.onSuccess(null);
             }
             @Override
             public void onFailure(RemoteException re) {
-                cb.onFailure(re);
+                if (cb != null) cb.onFailure(re);
             }
-        }, "player.sendMessage", args);
+        }, "player", "sendMessage", args);
     }
 
     @Override
@@ -129,16 +129,16 @@ public final class RemotePlayerImpl implements RemotePlayer {
         Message args = new Message();
         args.put("player", name);
         args.put("message", msg);
-        server.sendAPI(new Callback<Message>() {
+        server.sendAPIRequest(new Callback<Message>() {
             @Override
             public void onSuccess(Message m) {
-                cb.onSuccess(null);
+                if (cb != null) cb.onSuccess(null);
             }
             @Override
             public void onFailure(RemoteException re) {
-                cb.onFailure(re);
+                if (cb != null) cb.onFailure(re);
             }
-        }, "player.sendRawMessage", args);
+        }, "player", "sendRawMessage", args);
     }
     
 }

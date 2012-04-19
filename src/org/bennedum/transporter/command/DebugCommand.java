@@ -18,8 +18,15 @@ package org.bennedum.transporter.command;
 import java.util.ArrayList;
 import java.util.List;
 import org.bennedum.transporter.Context;
+import org.bennedum.transporter.Global;
 import org.bennedum.transporter.TransporterException;
 import org.bennedum.transporter.Utils;
+import org.bennedum.transporter.api.API;
+import org.bennedum.transporter.api.Callback;
+import org.bennedum.transporter.api.RemoteException;
+import org.bennedum.transporter.api.RemotePlayer;
+import org.bennedum.transporter.api.RemoteServer;
+import org.bennedum.transporter.api.RemoteWorld;
 import org.bukkit.command.Command;
 
 /**
@@ -49,7 +56,7 @@ public class DebugCommand extends TrpCommandProcessor {
     }
 
     @Override
-    public void process(Context ctx, Command cmd, List<String> args)  throws TransporterException {
+    public void process(final Context ctx, Command cmd, List<String> args)  throws TransporterException {
         args.remove(0);
         if (args.isEmpty())
             throw new CommandException("debug what?");
@@ -74,6 +81,45 @@ public class DebugCommand extends TrpCommandProcessor {
             return;
         }
 
+        if ("api".startsWith(subCmd)) {
+            API api = Global.plugin.getAPI();
+            for (RemoteServer server : api.getRemoteServers()) {
+                final RemoteServer s = server;
+                ctx.send("requesting version from %s", server.getName());
+                server.getVersion(new Callback<String>() {
+                    @Override
+                    public void onSuccess(String version) {
+                        ctx.send("%s version: %s", s.getName(), version);
+                    }
+                    @Override
+                    public void onFailure(RemoteException re) {
+                        ctx.send("%s failed: %s", s.getName(), re.getMessage());
+                    }
+                });
+                for (RemoteWorld world : server.getRemoteWorlds()) {
+                    ctx.send("requesting time from %s.%s", server.getName(), world.getName());
+                    final RemoteWorld w = world;
+                    world.getTime(new Callback<Long>() {
+                        @Override
+                        public void onSuccess(Long time) {
+                            ctx.send("%s.%s time: %s", s.getName(), w.getName(), time);
+                        }
+                        @Override
+                        public void onFailure(RemoteException re) {
+                            ctx.send("%s.%s failed: %s", s.getName(), w.getName(), re.getMessage());
+                        }
+                    });
+                }
+                for (RemotePlayer player : server.getRemotePlayers()) {
+                    ctx.send("sending message to %s.%s", server.getName(), player.getName());
+                    final RemotePlayer p = player;
+                    player.sendMessage(null, "hello there");
+                    
+                }
+            }
+            return;
+        }
+        
         /*
         if ("dump".startsWith(subCmd)) {
             if (args.isEmpty())

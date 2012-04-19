@@ -21,4 +21,8 @@ package org.bennedum.transporter.api;
  */
 public interface LocalGate extends Gate {
     
+    public void save(boolean force);
+    
+    // TODO: add options
+    
 }

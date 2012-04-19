@@ -17,26 +17,20 @@ package org.bennedum.transporter;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.bennedum.transporter.api.LocalGate;
 import org.bennedum.transporter.command.CommandException;
 import org.bennedum.transporter.config.Configuration;
-import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
@@ -73,53 +67,53 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         throw new GateException("unknown gate type '%s'", type.toString());
     }
     
-    public static final Set<String> OPTIONS = new HashSet<String>();
+    protected static final Set<String> BASEOPTIONS = new HashSet<String>();
     
     static {
-        OPTIONS.add("duration");
-        OPTIONS.add("linkLocal");
-        OPTIONS.add("linkWorld");
-        OPTIONS.add("linkServer");
-        OPTIONS.add("linkNoneFormat");
-        OPTIONS.add("linkUnselectedFormat");
-        OPTIONS.add("linkOfflineFormat");
-        OPTIONS.add("linkLocalFormat");
-        OPTIONS.add("linkWorldFormat");
-        OPTIONS.add("linkServerFormat");
-        OPTIONS.add("multiLink");
-        OPTIONS.add("protect");
-        OPTIONS.add("restoreOnClose");
-        OPTIONS.add("requirePin");
-        OPTIONS.add("requireValidPin");
-        OPTIONS.add("invalidPinDamage");
-        OPTIONS.add("sendChat");
-        OPTIONS.add("sendChatDistance");
-        OPTIONS.add("receiveChat");
-        OPTIONS.add("receiveChatDistance");
-        OPTIONS.add("requireAllowedItems");
-        OPTIONS.add("sendInventory");
-        OPTIONS.add("receiveInventory");
-        OPTIONS.add("deleteInventory");
-        OPTIONS.add("receiveGameMode");
-        OPTIONS.add("allowGameModes");
-        OPTIONS.add("receiveXP");
-        OPTIONS.add("randomNextLink");
-        OPTIONS.add("sendNextLink");
-        OPTIONS.add("teleportFormat");
-        OPTIONS.add("noLinksFormat");
-        OPTIONS.add("noLinkSelectedFormat");
-        OPTIONS.add("invalidLinkFormat");
-        OPTIONS.add("unknownLinkFormat");
-        OPTIONS.add("linkLocalCost");
-        OPTIONS.add("linkWorldCost");
-        OPTIONS.add("linkServerCost");
-        OPTIONS.add("sendLocalCost");
-        OPTIONS.add("sendWorldCost");
-        OPTIONS.add("sendServerCost");
-        OPTIONS.add("receiveLocalCost");
-        OPTIONS.add("receiveWorldCost");
-        OPTIONS.add("receiveServerCost");
-        OPTIONS.add("markerFormat");
+        BASEOPTIONS.add("duration");
+        BASEOPTIONS.add("linkLocal");
+        BASEOPTIONS.add("linkWorld");
+        BASEOPTIONS.add("linkServer");
+        BASEOPTIONS.add("linkNoneFormat");
+        BASEOPTIONS.add("linkUnselectedFormat");
+        BASEOPTIONS.add("linkOfflineFormat");
+        BASEOPTIONS.add("linkLocalFormat");
+        BASEOPTIONS.add("linkWorldFormat");
+        BASEOPTIONS.add("linkServerFormat");
+        BASEOPTIONS.add("multiLink");
+        BASEOPTIONS.add("protect");
+        BASEOPTIONS.add("restoreOnClose");
+        BASEOPTIONS.add("requirePin");
+        BASEOPTIONS.add("requireValidPin");
+        BASEOPTIONS.add("invalidPinDamage");
+        BASEOPTIONS.add("sendChat");
+        BASEOPTIONS.add("sendChatDistance");
+        BASEOPTIONS.add("receiveChat");
+        BASEOPTIONS.add("receiveChatDistance");
+        BASEOPTIONS.add("requireAllowedItems");
+        BASEOPTIONS.add("sendInventory");
+        BASEOPTIONS.add("receiveInventory");
+        BASEOPTIONS.add("deleteInventory");
+        BASEOPTIONS.add("receiveGameMode");
+        BASEOPTIONS.add("allowGameModes");
+        BASEOPTIONS.add("receiveXP");
+        BASEOPTIONS.add("randomNextLink");
+        BASEOPTIONS.add("sendNextLink");
+        BASEOPTIONS.add("teleportFormat");
+        BASEOPTIONS.add("noLinksFormat");
+        BASEOPTIONS.add("noLinkSelectedFormat");
+        BASEOPTIONS.add("invalidLinkFormat");
+        BASEOPTIONS.add("unknownLinkFormat");
+        BASEOPTIONS.add("linkLocalCost");
+        BASEOPTIONS.add("linkWorldCost");
+        BASEOPTIONS.add("linkServerCost");
+        BASEOPTIONS.add("sendLocalCost");
+        BASEOPTIONS.add("sendWorldCost");
+        BASEOPTIONS.add("sendServerCost");
+        BASEOPTIONS.add("receiveLocalCost");
+        BASEOPTIONS.add("receiveWorldCost");
+        BASEOPTIONS.add("receiveServerCost");
+        BASEOPTIONS.add("markerFormat");
     }
 
     protected File file;
@@ -185,7 +179,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     protected boolean dirty = false;
     protected boolean portalOpen = false;
     protected long portalOpenTime = 0;
-    protected Options options = new Options(this, OPTIONS, "trp.gate", this);
+    protected Options options = new Options(this, BASEOPTIONS, "trp.gate", this);
 
     protected LocalGateImpl(World world, Configuration conf) throws GateException {
         this.file = conf.getFile();
@@ -335,19 +329,23 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     }
     
     public abstract GateType getType();
-    public abstract boolean isOccupyingLocation(Location location);
-
+    public abstract Location getSpawnLocation(Location fromLoc, BlockFace fromDirection);
+    
     public abstract void onSend(Entity entity);
     public abstract void onReceive(Entity entity);
     public abstract void onProtect(Location loc);
     
-    protected abstract void calculateCenter();
-    
+    protected abstract void onValidate() throws GateException;
+    protected abstract void onDestroy(boolean unbuild);
+    protected abstract void onAdd();
+    protected abstract void onRemove();
     protected abstract void onOpen();
     protected abstract void onClose();
     protected abstract void onNameChanged();
     protected abstract void onDestinationChanged();
     protected abstract void onSave(Configuration conf);
+
+    protected abstract void calculateCenter();
     
     // Gate interface
     
@@ -402,7 +400,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (gate != null)
                 gate.attach(this);
         }
-        save(false);
     }
 
     @Override
@@ -413,7 +410,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         incoming.remove(originName);
         dirty = true;
         closeIfAllowed();
-        save(false);
     }
 
     // End interfaces and implementations
@@ -426,21 +422,26 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     }
     
     public void onGateAdded(GateImpl gate) {
-        if (gate == this) return;
-        if ((outgoing != null) && outgoing.equals(gate.getFullName()))
-            onDestinationChanged();
+        if (gate == this)
+            onAdd();
+        else {
+            if ((outgoing != null) && outgoing.equals(gate.getFullName()))
+                onDestinationChanged();
+        }
     }
 
     public void onGateRemoved(GateImpl gate) {
-        if (gate == this) return;
-        String gateName = gate.getFullName();
-        if (gateName.equals(outgoing)) {
-            outgoing = null;
-            dirty = true;
-            onDestinationChanged();
+        if (gate == this)
+            onRemove();
+        else {
+            String gateName = gate.getFullName();
+            if (gateName.equals(outgoing)) {
+                outgoing = null;
+                dirty = true;
+                onDestinationChanged();
+            }
+            closeIfAllowed();
         }
-        closeIfAllowed();
-        save(false);
     }
 
     public void onGateDestroyed(GateImpl gate) {
@@ -458,7 +459,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             dirty = true;
         }
         closeIfAllowed();
-        save(false);
     }
     
     public void onGateRenamed(GateImpl gate, String oldFullName) {
@@ -478,12 +478,13 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             incoming.add(newName);
             dirty = true;
         }
-        save(false);
     }
     
-    public void onDestroy(boolean unbuild) {
+    public void destroy(boolean unbuild) {
         close();
         file.delete();
+        file = null;
+        onDestroy(unbuild);
     }
 
     public boolean isOpen() {
@@ -519,7 +520,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         gate.attach(this);
         onOpen();
         onDestinationChanged();
-        save(false);
 
         if (duration > 0) {
             final LocalGateImpl myself = this;
@@ -545,12 +545,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (gate != null)
                 gate.detach(this);
         }
-        save(false);
     }
 
     
     public void save(boolean force) {
         if ((! dirty) && (! force)) return;
+        if (file == null) return;
         dirty = false;
 
         Configuration conf = new Configuration(file);
@@ -621,8 +621,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         conf.save();
     }
 
-    public void initialize() {}
-
     protected void validate() throws GateException {
         if (name == null)
             throw new GateException("name is required");
@@ -630,6 +628,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             throw new GateException("name is not valid");
         if (creatorName == null)
             throw new GateException("creatorName is required");
+        onValidate();
     }
 
     public Vector getCenter() {
@@ -652,6 +651,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setDuration(int i) {
         duration = i;
+        dirty = true;
     }
 
     public boolean getLinkLocal() {
@@ -660,6 +660,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setLinkLocal(boolean b) {
         linkLocal = b;
+        dirty = true;
     }
 
     public boolean getLinkWorld() {
@@ -668,6 +669,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setLinkWorld(boolean b) {
         linkWorld = b;
+        dirty = true;
     }
 
     public boolean getLinkServer() {
@@ -676,6 +678,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setLinkServer(boolean b) {
         linkServer = b;
+        dirty = true;
     }
 
     public String getLinkNoneFormat() {
@@ -687,8 +690,9 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = "%fromGate%\n\n<none>";
+        if (s == null) s = "%fromGate%\\n\\n<none>";
         linkNoneFormat = s;
+        dirty = true;
     }
 
     public String getLinkUnselectedFormat() {
@@ -700,8 +704,9 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = "%fromGate%\n\n<unselected>";
+        if (s == null) s = "%fromGate%\\n\\n<unselected>";
         linkUnselectedFormat = s;
+        dirty = true;
     }
 
     public String getLinkOfflineFormat() {
@@ -713,8 +718,9 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = "%fromGate%\n\n<offline>";
+        if (s == null) s = "%fromGate%\\n\\n<offline>";
         linkOfflineFormat = s;
+        dirty = true;
     }
 
     public String getLinkLocalFormat() {
@@ -726,8 +732,9 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = "%fromGate%\n%toGate%";
+        if (s == null) s = "%fromGate%\\n%toGate%";
         linkLocalFormat = s;
+        dirty = true;
     }
 
     public String getLinkWorldFormat() {
@@ -739,8 +746,9 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = "%fromGate%\n%toWorld%\n%toGate%";
+        if (s == null) s = "%fromGate%\\n%toWorld%\\n%toGate%";
         linkWorldFormat = s;
+        dirty = true;
     }
 
     public String getLinkServerFormat() {
@@ -752,8 +760,9 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = "%fromGate%\n%toServer%\n%toWorld%\n%toGate%";
+        if (s == null) s = "%fromGate%\\n%toServer%\\n%toWorld%\\n%toGate%";
         linkServerFormat = s;
+        dirty = true;
     }
         
     public boolean getMultiLink() {
@@ -762,6 +771,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setMultiLink(boolean b) {
         multiLink = b;
+        dirty = true;
     }
 
     public boolean getProtect() {
@@ -770,10 +780,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setProtect(boolean b) {
         protect = b;
-        if (protect)
-            Gates.addProtectBlocks(getBuildBlocks());
-        else
-            Gates.removeProtectBlocks(this);
+        dirty = true;
     }
 
     public boolean getRequirePin() {
@@ -782,6 +789,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setRequirePin(boolean b) {
         requirePin = b;
+        dirty = true;
     }
 
     public boolean getRequireValidPin() {
@@ -790,6 +798,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setRequireValidPin(boolean b) {
         requireValidPin = b;
+        dirty = true;
     }
 
     public int getInvalidPinDamage() {
@@ -800,6 +809,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (i < 0)
             throw new IllegalArgumentException("invalidPinDamage must be at least 0");
         invalidPinDamage = i;
+        dirty = true;
     }
 
     public boolean getSendChat() {
@@ -808,6 +818,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setSendChat(boolean b) {
         sendChat = b;
+        dirty = true;
     }
 
     public int getSendChatDistance() {
@@ -816,6 +827,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setSendChatDistance(int i) {
         sendChatDistance = i;
+        dirty = true;
     }
 
     public boolean getReceiveChat() {
@@ -824,6 +836,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setReceiveChat(boolean b) {
         receiveChat = b;
+        dirty = true;
     }
 
     public int getReceiveChatDistance() {
@@ -832,6 +845,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setReceiveChatDistance(int i) {
         receiveChatDistance = i;
+        dirty = true;
     }
 
     public boolean getRequireAllowedItems() {
@@ -840,6 +854,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setRequireAllowedItems(boolean b) {
         requireAllowedItems = b;
+        dirty = true;
     }
 
     public boolean getSendInventory() {
@@ -848,6 +863,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setSendInventory(boolean b) {
         sendInventory = b;
+        dirty = true;
     }
 
     public boolean getReceiveInventory() {
@@ -856,6 +872,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setReceiveInventory(boolean b) {
         receiveInventory = b;
+        dirty = true;
     }
 
     public boolean getDeleteInventory() {
@@ -864,6 +881,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setDeleteInventory(boolean b) {
         deleteInventory = b;
+        dirty = true;
     }
 
     public boolean getReceiveGameMode() {
@@ -872,6 +890,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setReceiveGameMode(boolean b) {
         receiveGameMode = b;
+        dirty = true;
     }
 
     public String getAllowGameModes() {
@@ -898,6 +917,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             }
         }
         allowGameModes = modes.substring(0, modes.length() - 1);
+        dirty = true;
     }
 
     public boolean getReceiveXP() {
@@ -906,6 +926,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setReceiveXP(boolean b) {
         receiveXP = b;
+        dirty = true;
     }
     
     public boolean getRandomNextLink() {
@@ -914,6 +935,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setRandomNextLink(boolean b) {
         randomNextLink = b;
+        dirty = true;
     }
     
     public boolean getSendNextLink() {
@@ -922,6 +944,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void setSendNextLink(boolean b) {
         sendNextLink = b;
+        dirty = true;
     }
     
     public String getTeleportFormat() {
@@ -935,6 +958,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         }
         if (s == null) s = ChatColor.GOLD + "teleported to '%toNameCtx%'";
         teleportFormat = s;
+        dirty = true;
     }
 
     public String getNoLinksFormat() {
@@ -948,6 +972,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         }
         if (s == null) s = "this gate has no links";
         noLinksFormat = s;
+        dirty = true;
     }
 
     public String getNoLinkSelectedFormat() {
@@ -961,6 +986,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         }
         if (s == null) s = "no link is selected";
         noLinkSelectedFormat = s;
+        dirty = true;
     }
 
     public String getInvalidLinkFormat() {
@@ -974,6 +1000,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         }
         if (s == null) s = "invalid link selected";
         invalidLinkFormat = s;
+        dirty = true;
     }
 
     public String getUnknownLinkFormat() {
@@ -987,6 +1014,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         }
         if (s == null) s = "unknown or offline destination gate";
         unknownLinkFormat = s;
+        dirty = true;
     }
 
     public String getMarkerFormat() {
@@ -1000,6 +1028,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         }
         if (s == null) s = "%name%";
         markerFormat = s;
+        dirty = true;
     }
 
     public double getLinkLocalCost() {
@@ -1010,6 +1039,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("linkLocalCost must be at least 0");
         linkLocalCost = cost;
+        dirty = true;
     }
 
     public double getLinkWorldCost() {
@@ -1020,6 +1050,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("linkWorldCost must be at least 0");
         linkWorldCost = cost;
+        dirty = true;
     }
 
     public double getLinkServerCost() {
@@ -1030,6 +1061,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("linkServerCost must be at least 0");
         linkServerCost = cost;
+        dirty = true;
     }
 
     public double getSendLocalCost() {
@@ -1040,6 +1072,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("sendLocalCost must be at least 0");
         sendLocalCost = cost;
+        dirty = true;
     }
 
     public double getSendWorldCost() {
@@ -1050,6 +1083,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("sendWorldCost must be at least 0");
         sendWorldCost = cost;
+        dirty = true;
     }
 
     public double getSendServerCost() {
@@ -1060,6 +1094,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("sendServerCost must be at least 0");
         sendServerCost = cost;
+        dirty = true;
     }
 
     public double getReceiveLocalCost() {
@@ -1070,6 +1105,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("receiveLocalCost must be at least 0");
         receiveLocalCost = cost;
+        dirty = true;
     }
 
     public double getReceiveWorldCost() {
@@ -1080,6 +1116,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("receiveWorldCost must be at least 0");
         receiveWorldCost = cost;
+        dirty = true;
     }
 
     public double getReceiveServerCost() {
@@ -1090,6 +1127,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (cost < 0)
             throw new IllegalArgumentException("receiveServerCost must be at least 0");
         receiveServerCost = cost;
+        dirty = true;
     }
 
 
@@ -1109,7 +1147,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     @Override
     public void onOptionSet(Context ctx, String name, String value) {
         ctx.sendLog("option '%s' set to '%s' for gate '%s'", name, value, getName(ctx));
-        save(true);
     }
 
     @Override
@@ -1199,7 +1236,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (links.size() == 1)
             outgoing = link;
         onDestinationChanged();
-        save(true);
+        dirty = true;
         return true;
     }
 
@@ -1222,7 +1259,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             outgoing = null;
         onDestinationChanged();
         closeIfAllowed();
-        save(true);
+        dirty = true;
         return true;
     }
     
@@ -1272,7 +1309,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (gate != null)
                 gate.attach(this);
         }
-        save(false);
         getDestinationGate();
     }
     
@@ -1314,20 +1350,20 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             throw new GateException("invalid pin");
         if (pins.contains(pin)) return false;
         pins.add(pin);
-        save(true);
+        dirty = true;
         return true;
     }
 
     public boolean removePin(String pin) {
         if (pins.contains(pin)) return false;
         pins.remove(pin);
-        save(true);
+        dirty = true;
         return true;
     }
 
     public void removeAllPins() {
         pins.clear();
-        save(true);
+        dirty = true;
     }
 
     public boolean hasPin(String pin) {
@@ -1344,7 +1380,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         } catch (InventoryException e) {
             throw new GateException(e.getMessage());
         }
-        save(true);
+        dirty = true;
         return true;
     }
 
@@ -1354,13 +1390,13 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         } catch (InventoryException e) {
             throw new GateException(e.getMessage());
         }
-        save(true);
+        dirty = true;
         return true;
     }
 
     public void removeAllBannedItems() {
         bannedItems.clear();
-        save(true);
+        dirty = true;
     }
 
     public Set<String> getAllowedItems() {
@@ -1373,7 +1409,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         } catch (InventoryException e) {
             throw new GateException(e.getMessage());
         }
-        save(true);
+        dirty = true;
         return true;
     }
 
@@ -1383,13 +1419,13 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         } catch (InventoryException e) {
             throw new GateException(e.getMessage());
         }
-        save(true);
+        dirty = true;
         return true;
     }
 
     public void removeAllAllowedItems() {
         allowedItems.clear();
-        save(true);
+        dirty = true;
     }
 
     public Map<String,String> getReplaceItems() {
@@ -1402,7 +1438,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         } catch (InventoryException e) {
             throw new GateException(e.getMessage());
         }
-        save(true);
+        dirty = true;
         return true;
     }
 
@@ -1412,13 +1448,13 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         } catch (InventoryException e) {
             throw new GateException(e.getMessage());
         }
-        save(true);
+        dirty = true;
         return true;
     }
 
     public void removeAllReplaceItems() {
         replaceItems.clear();
-        save(true);
+        dirty = true;
     }
 
     public boolean isAllowedGameMode(String mode) {

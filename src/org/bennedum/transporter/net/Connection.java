@@ -346,7 +346,9 @@ public final class Connection {
                 Utils.severe("last 16 bytes of data: %s", Utils.byteArrayToString(data, data.length - 16, 16));
                 (new Exception("Invalid message encoding!!!")).printStackTrace();
             }
-            writeBuffers.add(data);
+            synchronized (writeBuffers) {
+                writeBuffers.add(data);
+            }
             lastMessageSentTime = System.currentTimeMillis();
         } catch (UnsupportedEncodingException e) {
         }

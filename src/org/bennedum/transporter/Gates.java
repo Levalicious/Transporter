@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.bennedum.transporter.GateMap.Volume;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -33,19 +34,19 @@ import org.bukkit.entity.Player;
 public final class Gates {
 
     // Gate build blocks that are protected
-    private static final GateMap protectBlocks = new GateMap();
-
-    // Gate screens for local gates
-    private static final GateMap screenBlocks = new GateMap();
-
-    // Gate switches for local gates
-    private static final GateMap switchBlocks = new GateMap();
-
-    // Gate triggers for local gates
-    private static final GateMap triggerBlocks = new GateMap();
+    private static final GateMap protectionMap = new GateMap();
 
     // Portal blocks for open, local gates
-    private static final GateMap portalBlocks = new GateMap();
+    private static final GateMap portalMap = new GateMap();
+
+    // Gate screens for local gates
+    private static final GateMap screenMap = new GateMap();
+
+    // Gate switches for local gates
+    private static final GateMap switchMap = new GateMap();
+
+    // Gate triggers for local gates
+    private static final GateMap triggerMap = new GateMap();
 
     // Indexed by full name
     private static final Map<String,GateImpl> gates = new HashMap<String,GateImpl>();
@@ -71,7 +72,6 @@ public final class Gates {
                 LocalGateImpl gate = LocalGateImpl.load(world, gateFile);
                 try {
                     add(gate);
-                    gate.initialize();
                     ctx.sendLog("loaded gate '%s' for world '%s'", gate.getName(), world.getName());
                     loadedCount++;
                 } catch (GateException ee) {
@@ -90,7 +90,7 @@ public final class Gates {
         Markers.update();
         if (gates.isEmpty()) return;
         for (LocalGateImpl gate : getLocalGates()) {
-            gate.save();
+            gate.save(true);
             ctx.sendLog("saved '%s'", gate.getLocalName());
         }
     }
@@ -130,9 +130,6 @@ public final class Gates {
             lg.onGateAdded(gate);
         if (gate instanceof LocalGateImpl) {
             LocalGateImpl lg = (LocalGateImpl)gate;
-            screenBlocks.putAll(lg.getScreenBlocks());
-            triggerBlocks.putAll(lg.getTriggerBlocks());
-            switchBlocks.putAll(lg.getSwitchBlocks());
             for (Server server : Servers.getAll())
                 server.sendGateAdded(lg);
             Markers.update();
@@ -151,16 +148,13 @@ public final class Gates {
     public static void remove(GateImpl gate) throws GateException {
         if (! gates.containsKey(gate.getFullName()))
             throw new GateException("gate not found");
-        gates.remove(gate.getFullName());
         for (LocalGateImpl lg : getLocalGates())
             lg.onGateRemoved(gate);
+        gates.remove(gate.getFullName());
         if (gate instanceof LocalGateImpl) {
             LocalGateImpl lg = (LocalGateImpl)gate;
-            screenBlocks.removeGate(lg);
-            switchBlocks.removeGate(lg);
-            triggerBlocks.removeGate(lg);
             deselectGate(lg);
-            lg.save();
+            lg.save(false);
             for (Server server : Servers.getAll())
                 server.sendGateRemoved(lg);
             Markers.update();
@@ -173,11 +167,8 @@ public final class Gates {
             lg.onGateDestroyed(gate);
         if (gate instanceof LocalGateImpl) {
             LocalGateImpl lg = (LocalGateImpl)gate;
-            screenBlocks.removeGate(lg);
-            switchBlocks.removeGate(lg);
-            triggerBlocks.removeGate(lg);
             deselectGate(lg);
-            lg.onDestroy(unbuild);
+            lg.destroy(unbuild);
             for (Server server : Servers.getAll())
                 server.sendGateDestroyed(lg);
             Markers.update();
@@ -205,7 +196,7 @@ public final class Gates {
             LocalGateImpl lg = (LocalGateImpl)gate;
             lg.onRenameComplete();
             for (Server server : Servers.getAll())
-                server.sendGateRenamed(oldFullName, gate.getFullName());
+                server.sendGateRenamed(oldFullName, gate.getName());
             Markers.update();
         }
     }
@@ -247,42 +238,71 @@ public final class Gates {
         return gs;
     }
 
+    
+    
+    public static LocalGateImpl findGateForPortal(Location loc) {
+        return portalMap.getGate(loc);
+    }
+
+    public static void addPortalVolume(Volume vol) {
+        portalMap.put(vol);
+    }
+
+    public static void removePortalVolume(LocalGateImpl gate) {
+        portalMap.removeGate(gate);
+    }
+
     public static LocalGateImpl findGateForProtection(Location loc) {
-        return protectBlocks.getGate(loc);
+        return protectionMap.getGate(loc);
+    }
+
+    public static void addProtectionVolume(Volume vol) {
+        protectionMap.put(vol);
+    }
+
+    public static void removeProtectionVolume(LocalGateImpl gate) {
+        protectionMap.removeGate(gate);
     }
 
     public static LocalGateImpl findGateForScreen(Location loc) {
-        return screenBlocks.getGate(loc);
+        return screenMap.getGate(loc);
     }
 
+    public static void addScreenVolume(Volume vol) {
+        screenMap.put(vol);
+    }
+
+    public static void removeScreenVolume(LocalGateImpl gate) {
+        screenMap.removeGate(gate);
+    }
+    
     public static LocalGateImpl findGateForSwitch(Location loc) {
-        return switchBlocks.getGate(loc);
+        return switchMap.getGate(loc);
+    }
+
+    public static void addSwitchVolume(Volume vol) {
+        switchMap.put(vol);
+    }
+
+    public static void removeSwitchVolume(LocalGateImpl gate) {
+        switchMap.removeGate(gate);
     }
 
     public static LocalGateImpl findGateForTrigger(Location loc) {
-        return triggerBlocks.getGate(loc);
+        return triggerMap.getGate(loc);
     }
 
-    public static LocalGateImpl findGateForPortal(Location loc) {
-        return portalBlocks.getGate(loc);
+    public static void addTriggerVolume(Volume vol) {
+        triggerMap.put(vol);
     }
 
-    public static void addPortalBlocks(GateMap blocks) {
-        portalBlocks.putAll(blocks);
+    public static void removeTriggerVolume(LocalGateImpl gate) {
+        triggerMap.removeGate(gate);
     }
-
-    public static void removePortalBlocks(LocalGateImpl gate) {
-        portalBlocks.removeGate(gate);
-    }
-
-    public static void addProtectBlocks(GateMap blocks) {
-        protectBlocks.putAll(blocks);
-    }
-
-    public static void removeProtectBlocks(LocalGateImpl gate) {
-        protectBlocks.removeGate(gate);
-    }
-
+    
+    
+    
+    
     public static void setSelectedGate(Player player, LocalGateImpl gate) {
         selectedGates.put((player == null) ? Integer.MAX_VALUE : player.getEntityId(), gate);
     }

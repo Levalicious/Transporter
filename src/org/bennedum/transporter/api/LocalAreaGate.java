@@ -21,4 +21,6 @@ package org.bennedum.transporter.api;
  */
 public interface LocalAreaGate extends LocalGate {
     
+    // TODO: add options
+    
 }

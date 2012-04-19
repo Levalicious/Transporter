@@ -709,6 +709,7 @@ public final class Network {
         if ((selKey == null) || (! selKey.isValid())) return;
         selKey.interestOps(selKey.interestOps() | SelectionKey.OP_WRITE);
 
+        /*
         try {
             Utils.debug("wantWrite to %s: %s %s %s %s", conn,
                 conn.getChannel().isOpen(),
@@ -718,7 +719,8 @@ public final class Network {
         } catch (Throwable t) {
             Utils.debug("wantWrite to %s: got throwable: %s: %s", conn, t.getClass().getName(), t.getMessage());
         }
-
+        */
+        
         selector.wakeup();
     }
 

@@ -720,7 +720,7 @@ public class Design {
     
     // Returns a new gate if a match in the surrounding blocks is found, otherwise null.
     public LocalBlockGateImpl create(DesignMatch match, String playerName, String gateName) throws GateException {
-        LocalBlockGateImpl gate = new LocalBlockGateImpl(match.world, gateName, playerName, this, match.gateBlocks, match.direction);
+        LocalBlockGateImpl gate = new LocalBlockGateImpl(match.world, gateName, playerName, match.direction, this, match.gateBlocks);
         return gate;
     }
 

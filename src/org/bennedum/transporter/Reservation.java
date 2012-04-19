@@ -154,10 +154,6 @@ public final class Reservation {
         addGateLock(player);
         extractPlayer(player);
         extractFromGate(fromGate);
-        if ((fromGate instanceof LocalGateImpl) && (! ((LocalGateImpl)fromGate).getSendInventory())) {
-            inventory = null;
-            armor = null;
-        }
     }
 
     // vehicle moving into gate
@@ -165,10 +161,6 @@ public final class Reservation {
         addGateLock(vehicle);
         extractVehicle(vehicle);
         extractFromGate(fromGate);
-        if ((fromGate instanceof LocalGateImpl) && (! ((LocalGateImpl)fromGate).getSendInventory())) {
-            inventory = null;
-            armor = null;
-        }
     }
 
     // player direct to gate
@@ -228,7 +220,7 @@ public final class Reservation {
         }
         playerPin = in.getString("playerPin");
         clientAddress = in.getString("clientAddress");
-        fromLocation = new Location(null, in.getDouble("fromX"), in.getDouble("fromY"), in.getDouble("fromZ"), in.getFloat("pitch"), in.getFloat("yaw"));
+        fromLocation = new Location(null, in.getDouble("fromX"), in.getDouble("fromY"), in.getDouble("fromZ"), in.getFloat("fromYaw"), in.getFloat("fromPitch"));
         fromVelocity = new Vector(in.getDouble("velX"), in.getDouble("velY"), in.getDouble("velZ"));
         inventory = decodeItemStackArray(in.getMessageList("inventory"));
         health = in.getInt("health");
@@ -877,13 +869,13 @@ public final class Reservation {
 
     private void prepareDestination() {
         if (toGateLocal != null) {
-            GateBlock block = toGateLocal.getSpawnBlocks().randomBlock();
-            toLocation = block.getLocation().clone();
-            toLocation.add(0.5, 0, 0.5);
-            toLocation.setYaw(block.getDetail().getSpawn().calculateYaw(fromLocation.getYaw(), fromDirection, toGateLocal.getDirection()));
-            toLocation.setPitch(fromLocation.getPitch());
+            toLocation = toGateLocal.getSpawnLocation(fromLocation, fromDirection);
             toVelocity = fromVelocity.clone();
             Utils.rotate(toVelocity, fromDirection, toGateLocal.getDirection());
+            Utils.debug("fromLocation: %s", fromLocation);
+            Utils.debug("fromVelocity: %s", fromVelocity);
+            Utils.debug("toLocation: %s", toLocation);
+            Utils.debug("toVelocity: %s", toVelocity);
         } else {
             if (toLocation == null) {
                 if (toWorld == null)

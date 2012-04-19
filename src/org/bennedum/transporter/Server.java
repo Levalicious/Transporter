@@ -198,6 +198,21 @@ public final class Server implements OptionsListener, RemoteServer {
         return connection.isOpen();
     }
     
+    @Override
+    public void getVersion(final Callback<String> cb) {
+        Message args = new Message();
+        sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(m.getString("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "server", "getVersion", args);
+    }
+
     /* End RemoteServer interface */
     
     public void setName(String name) throws ServerException {
@@ -712,7 +727,7 @@ public final class Server implements OptionsListener, RemoteServer {
         Message message = createMessage("playerJoined");
         message.put("name", player.getName());
         message.put("displayName", player.getDisplayName());
-        message.put("worldName", player.getWorld().getName());
+        message.put("world", player.getWorld().getName());
         message.put("announce", announce);
         sendMessage(message);
     }
@@ -733,19 +748,34 @@ public final class Server implements OptionsListener, RemoteServer {
         sendMessage(message);
     }
 
-    public void sendAPI(Callback<Message> cb, String api, Message args) {
+    public void sendAPIRequest(Callback<Message> cb, String target, String method, Message args) {
         if (! isConnected()) {
             cb.onFailure(new RemoteException("not connected"));
             return;
         }
-        long rid = nextRequestId++;
-        Message out = createMessage("api");
-        out.put("method", api);
+        final long rid = nextRequestId++;
+        Message out = createMessage("apiRequest");
         out.put("requestId", rid);
+        out.put("target", target);
+        out.put("method", method);
         out.put("args", args);
+        Utils.debug("api request to %s: %s", name, out);
         cb.setRequestId(rid);
         requests.put(rid, cb);
-        sendMessage(args);
+        sendMessage(out);
+        
+        // setup delayed task to timeout the request on this side if we don't get a response
+        Utils.fireDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Callback<Message> cb = requests.remove(rid);
+                if (cb != null) {
+                    cb.onFailure(new RemoteException("timeout"));
+                    Utils.debug("api request %s to %s timed out", rid, name);
+                }
+            }
+        }, Config.getAPITimeout());
+        
     }
     
     // End remote commands
@@ -805,8 +835,8 @@ public final class Server implements OptionsListener, RemoteServer {
                 receivePlayerQuit(message);
             else if (command.equals("playerKicked"))
                 receivePlayerKicked(message);
-            else if (command.equals("api"))
-                receiveAPI(message);
+            else if (command.equals("apiRequest"))
+                receiveAPIRequest(message);
             else if (command.equals("apiResult"))
                 receiveAPIResult(message);
             else
@@ -960,6 +990,10 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     private void receiveGateAdded(Message message) {
+        if (remoteWorlds.isEmpty()) {
+            Utils.debug("ignored premature gateAdded command");
+            return;
+        }
         try {
             String gTypeStr = message.getString("type");
             GateType gType = Utils.valueOf(GateType.class, gTypeStr);
@@ -1224,8 +1258,8 @@ public final class Server implements OptionsListener, RemoteServer {
         if (worldName == null)
             throw new ServerException("missing world");
         RemotePlayerImpl player = remotePlayers.get(playerName);
-        if (player == null)
-            throw new ServerException("unknown player '%s'", playerName);
+        if (player == null) return;
+            //throw new ServerException("unknown player '%s'", playerName);
         player.setWorld(worldName);
     }
 
@@ -1257,8 +1291,8 @@ public final class Server implements OptionsListener, RemoteServer {
             throw new ServerException("missing name");
         boolean announce = message.getBoolean("announce");
         RemotePlayerImpl player = remotePlayers.get(playerName);
-        if (player == null)
-            throw new ServerException("unknown player '%s'", playerName);
+        if (player == null) return;
+            //throw new ServerException("unknown player '%s'", playerName);
         remotePlayers.remove(playerName);
         if (announce && getAnnouncePlayers()) {
             String format = Config.getServerQuitFormat();
@@ -1275,8 +1309,8 @@ public final class Server implements OptionsListener, RemoteServer {
             throw new ServerException("missing name");
         boolean announce = message.getBoolean("announce");
         RemotePlayerImpl player = remotePlayers.get(playerName);
-        if (player == null)
-            throw new ServerException("unknown player '%s'", playerName);
+        if (player == null) return;
+            //throw new ServerException("unknown player '%s'", playerName);
         remotePlayers.remove(playerName);
         if (announce && getAnnouncePlayers()) {
             String format = Config.getServerKickFormat();
@@ -1287,55 +1321,20 @@ public final class Server implements OptionsListener, RemoteServer {
         }
     }
 
-    private void receiveAPI(Message message) throws ServerException {
-        String api = message.getString("api");
-        if (api == null)
-            throw new ServerException("missing api");
+    private void receiveAPIRequest(Message message) throws ServerException {
+        String target = message.getString("target");
+        if (target == null)
+            throw new ServerException("missing target");
         String method = message.getString("method");
+        if (method == null)
+            throw new ServerException("missing method");
         long rid = message.getLong("requestId");
         Message args = message.getMessage("args");
         
         Message out = createMessage("apiResult");
         out.put("requestId", rid);
         try {
-            if (method.startsWith("world.")) {
-                String subMethod = method.substring(6);
-                World world = Global.plugin.getServer().getWorld(args.getString("world"));
-                if (world == null)
-                    throw new ServerException("world '%s' is unknown", args.getString("world"));
-                if (subMethod.equals("getTime"))
-                    out.put("result", world.getTime());
-                else if (subMethod.equals("getFullTime"))
-                    out.put("result", world.getFullTime());
-                else
-                    throw new ServerException("unknown method '%s'", method);
-                
-            } else if (method.startsWith("player.")) {
-                String subMethod = method.substring(7);
-                Player player = Global.plugin.getServer().getPlayer(args.getString("player"));
-                if (player == null)
-                    throw new ServerException("player '%s' is unknown", args.getString("player"));
-                if (subMethod.equals("getWorld"))
-                    out.put("result", player.getWorld().getName());
-                else if (subMethod.equals("getLocation")) {
-                    Message locMsg = new Message();
-                    Location loc = player.getLocation();
-                    locMsg.put("world", loc.getWorld().getName());
-                    locMsg.put("x", loc.getX());
-                    locMsg.put("y", loc.getY());
-                    locMsg.put("z", loc.getZ());
-                    out.put("result", locMsg);
-                } else if (subMethod.equals("sendMessage")) {
-                    player.sendMessage(message.getString("message"));
-                } else if (subMethod.equals("sendRawMessage")) {
-                    player.sendRawMessage(message.getString("message"));
-                } else
-                    throw new ServerException("unknown method '%s'", method);
-                
-                
-            } else
-                throw new ServerException("unknown method '%s'", method);
-            
+            APIBackend.invoke(target, method, args, out);
         } catch (Throwable t) {
             out.put("failure", t.getMessage());
         }
@@ -1345,8 +1344,10 @@ public final class Server implements OptionsListener, RemoteServer {
     private void receiveAPIResult(Message message) throws ServerException {
         long rid = message.getLong("requestId");
         Callback<Message> cb = requests.remove(rid);
-        if (cb == null)
-            throw new ServerException("unknown requestId %s", rid);
+        if (cb == null) {
+            Utils.debug("received result for unknown api request %s from %s (maybe it timed out?)", rid, name);
+            return;
+        }
         String failure = message.getString("failure");
         if (failure != null)
             cb.onFailure(new RemoteException(failure));
@@ -1362,9 +1363,14 @@ public final class Server implements OptionsListener, RemoteServer {
         return m;
     }
 
-    private void sendMessage(Message message) {
+    private void sendMessage(final Message message) {
         Utils.debug("sending command '%s' to %s", message.getString("command", "<none>"), name);
-        connection.sendMessage(message, true);
+        Utils.worker(new Runnable() {
+            @Override
+            public void run() {
+                connection.sendMessage(message, true);
+            }
+        });
     }
 
     private void normalizePrivateAddress(String addrStr) {

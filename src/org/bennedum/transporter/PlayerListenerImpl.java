@@ -131,6 +131,8 @@ public final class PlayerListenerImpl implements Listener {
  
     }
     
+    private Map<Player,Location> playerLocations = new HashMap<Player,Location>();
+    
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
@@ -200,8 +202,11 @@ public final class PlayerListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerMove(PlayerMoveEvent event) {
+        Location loc = quantizePlayerLocation(event.getPlayer(), event.getTo());
+        if (loc == null) return;
+        
         Player player = event.getPlayer();
-        LocalGateImpl fromGate = Gates.findGateForPortal(event.getTo());
+        LocalGateImpl fromGate = Gates.findGateForPortal(loc);
         if (fromGate == null) {
             Reservation.removeGateLock(player);
             return;
@@ -218,8 +223,6 @@ public final class PlayerListenerImpl implements Listener {
             if (newLoc != null) {
                 event.setFrom(newLoc);
                 event.setTo(newLoc);
-                // cancelling the event is bad in RB 953!
-                //event.setCancelled(true);
             }
         } catch (ReservationException re) {
             ctx.warnLog(re.getMessage());
@@ -280,4 +283,12 @@ public final class PlayerListenerImpl implements Listener {
         Chat.send(event.getPlayer(), event.getMessage());
     }
 
+    private Location quantizePlayerLocation(Player player, Location location) {
+        Location newQLoc = new Location(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+        Location qLoc = playerLocations.get(player);
+        if ((qLoc != null) && qLoc.equals(newQLoc)) return null;
+        playerLocations.put(player, newQLoc);
+        return newQLoc;
+    }
+    
 }

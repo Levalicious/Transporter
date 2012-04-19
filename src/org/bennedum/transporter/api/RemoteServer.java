@@ -37,4 +37,6 @@ public interface RemoteServer {
     
     public RemoteGate getRemoteGate(String name);
     
+    public void getVersion(Callback<String> cb);
+    
 }

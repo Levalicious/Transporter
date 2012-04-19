@@ -50,32 +50,32 @@ public final class RemoteWorldImpl implements RemoteWorld {
     public void getFullTime(final Callback<Long> cb) {
         Message args = new Message();
         args.put("world", name);
-        server.sendAPI(new Callback<Message>() {
+        server.sendAPIRequest(new Callback<Message>() {
             @Override
             public void onSuccess(Message m) {
-                cb.onSuccess(m.getLong("result"));
+                if (cb != null) cb.onSuccess(m.getLong("result"));
             }
             @Override
             public void onFailure(RemoteException re) {
-                cb.onFailure(re);
+                if (cb != null) cb.onFailure(re);
             }
-        }, "world.getFullTime", args);
+        }, "world", "getFullTime", args);
     }
 
     @Override
     public void getTime(final Callback<Long> cb) {
         Message args = new Message();
         args.put("world", name);
-        server.sendAPI(new Callback<Message>() {
+        server.sendAPIRequest(new Callback<Message>() {
             @Override
             public void onSuccess(Message m) {
-                cb.onSuccess(m.getLong("result"));
+                if (cb != null) cb.onSuccess(m.getLong("result"));
             }
             @Override
             public void onFailure(RemoteException re) {
-                cb.onFailure(re);
+                if (cb != null) cb.onFailure(re);
             }
-        }, "world.getTime", args);
+        }, "world", "getTime", args);
     }
     
 }

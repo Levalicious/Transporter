@@ -17,8 +17,13 @@ package org.bennedum.transporter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.regex.Pattern;
+import org.bennedum.transporter.GateMap.Point;
+import org.bennedum.transporter.GateMap.Volume;
 import org.bennedum.transporter.api.LocalBlockGate;
 import org.bennedum.transporter.config.Configuration;
 import org.bennedum.transporter.config.ConfigurationNode;
@@ -39,6 +44,12 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     
     private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\\\n");
     
+    private static final Set<String> OPTIONS = new HashSet<String>(LocalGateImpl.BASEOPTIONS);
+    
+    static {
+        OPTIONS.add("restoreOnClose");
+    }
+    
     private String designName;
     private boolean restoreOnClose;
     
@@ -48,6 +59,8 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     // creation from file
     public LocalBlockGateImpl(World world, Configuration conf) throws GateException {
         super(world, conf);
+        options = new Options(this, OPTIONS, "trp.gate", this);
+        
         designName = conf.getString("designName");
         restoreOnClose = conf.getBoolean("restoreOnClose", false);
         
@@ -87,6 +100,7 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     // creation from design
     public LocalBlockGateImpl(World world, String gateName, String playerName, BlockFace direction, Design design, List<GateBlock> blocks) throws GateException {
         super(world, gateName, playerName, direction);
+        options = new Options(this, OPTIONS, "trp.gate", this);
         
         designName = design.getName();
         restoreOnClose = design.getRestoreOnClose();
@@ -144,22 +158,27 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     public GateType getType() { return GateType.BLOCK; }
     
     @Override
-    public boolean isOccupyingLocation(Location location) {
-        if (location.getWorld() != world) return false;
-        for (GateBlock block : blocks) {
-            if (! block.getDetail().isBuildable()) continue;
-            if ((location.getBlockX() == block.getLocation().getBlockX()) &&
-                (location.getBlockY() == block.getLocation().getBlockY()) &&
-                (location.getBlockZ() == block.getLocation().getBlockZ())) return true;
-        }
-        return false;
+    public Location getSpawnLocation(Location fromLocation, BlockFace fromDirection) {
+        List<GateBlock> gbs = new ArrayList<GateBlock>();
+        for (GateBlock gb : blocks)
+            if (gb.getDetail().isSpawn()) gbs.add(gb);
+        GateBlock block = gbs.get((new Random()).nextInt(gbs.size()));
+        Location toLocation = block.getLocation().clone();
+        toLocation.add(0.5, 0, 0.5);
+        toLocation.setYaw(block.getDetail().getSpawn().calculateYaw(fromLocation.getYaw(), fromDirection, getDirection()));
+        toLocation.setPitch(fromLocation.getPitch());
+        return toLocation;
     }
-
+    
     @Override
     public void onSend(Entity entity) {
-        GateMap map = getSendLightningBlocks();
-        GateBlock block = map.randomBlock();
-        if (block == null) return;
+        List<GateBlock> gbs = new ArrayList<GateBlock>();
+        for (GateBlock gb : blocks) {
+            if (gb.getDetail().getSendLightningMode() != LightningMode.NONE)
+                gbs.add(gb);
+        }
+        if (gbs.isEmpty()) return;
+        GateBlock block = gbs.get((new Random()).nextInt(gbs.size()));
         switch (block.getDetail().getSendLightningMode()) {
             case NORMAL:
                 world.strikeLightning(block.getLocation());
@@ -172,9 +191,13 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
 
     @Override
     public void onReceive(Entity entity) {
-        GateMap map = getReceiveLightningBlocks();
-        GateBlock block = map.randomBlock();
-        if (block == null) return;
+        List<GateBlock> gbs = new ArrayList<GateBlock>();
+        for (GateBlock gb : blocks) {
+            if (gb.getDetail().getReceiveLightningMode() != LightningMode.NONE)
+                gbs.add(gb);
+        }
+        if (gbs.isEmpty()) return;
+        GateBlock block = gbs.get((new Random()).nextInt(gbs.size()));
         switch (block.getDetail().getReceiveLightningMode()) {
             case NORMAL:
                 world.strikeLightning(block.getLocation());
@@ -187,21 +210,58 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     
     @Override
     public void onProtect(Location loc) {
+        GateBlock gb = getGateBlock(loc);
+        if ((gb != null) &&
+            gb.getDetail().isBuildable() &&
+            ((! portalOpen) || (! gb.getDetail().isPortal())))
+            gb.getDetail().getBuildBlock().build(loc);
         updateScreens();
     }
     
     @Override
-    protected void calculateCenter() {
-        double cx = 0, cy = 0, cz = 0;
-        for (GateBlock block : blocks) {
-            cx += block.getLocation().getBlockX() + 0.5;
-            cy += block.getLocation().getBlockY() + 0.5;
-            cz += block.getLocation().getBlockZ() + 0.5;
+    protected void onValidate() throws GateException {
+        if (designName == null)
+            throw new GateException("designName is required");
+        if (! Design.isValidName(designName))
+            throw new GateException("designName is not valid");
+        if (blocks.isEmpty())
+            throw new GateException("must have at least one block");
+    }
+    
+    @Override
+    protected void onAdd() {
+        Gates.addScreenVolume(getScreenVolume());
+        Gates.addTriggerVolume(getTriggerVolume());
+        Gates.addSwitchVolume(getSwitchVolume());
+        if (portalOpen)
+            Gates.addPortalVolume(getPortalVolume());
+        if (protect)
+            Gates.addProtectionVolume(getBuildVolume());
+    }
+    
+    @Override
+    protected void onRemove() {
+        Gates.removePortalVolume(this);
+        Gates.removeProtectionVolume(this);
+        Gates.removeScreenVolume(this);
+        Gates.removeTriggerVolume(this);
+        Gates.removeSwitchVolume(this);
+    }
+    
+    @Override
+    protected void onDestroy(boolean unbuild) {
+        Gates.removePortalVolume(this);
+        Gates.removeProtectionVolume(this);
+        Gates.removeScreenVolume(this);
+        Gates.removeTriggerVolume(this);
+        Gates.removeSwitchVolume(this);
+        if (unbuild) {
+            for (GateBlock gb : blocks) {
+                if (! gb.getDetail().isBuildable()) continue;
+                Block b = gb.getLocation().getBlock();
+                b.setTypeIdAndData(0, (byte)0, false);
+            }
         }
-        cx /= blocks.size();
-        cy /= blocks.size();
-        cz /= blocks.size();
-        center = new Vector(cx, cy, cz);
     }
     
     @Override
@@ -242,7 +302,19 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
         }
     }
 
-    
+    @Override
+    protected void calculateCenter() {
+        double cx = 0, cy = 0, cz = 0;
+        for (GateBlock block : blocks) {
+            cx += block.getLocation().getBlockX() + 0.5;
+            cy += block.getLocation().getBlockY() + 0.5;
+            cz += block.getLocation().getBlockZ() + 0.5;
+        }
+        cx /= blocks.size();
+        cy /= blocks.size();
+        cz /= blocks.size();
+        center = new Vector(cx, cy, cz);
+    }
     
     
     // Overrides
@@ -252,38 +324,6 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
         return "LocalBlockGate[" + getLocalName() + "]";
     }
     
-    @Override
-    public void initialize() {
-        super.initialize();
-        if (portalOpen)
-            Gates.addPortalBlocks(getPortalBlocks());
-        if (protect)
-            Gates.addProtectBlocks(getBuildBlocks());
-    }
-
-    @Override
-    protected void validate() throws GateException {
-        super.validate();
-        if (designName == null)
-            throw new GateException("designName is required");
-        if (! Design.isValidName(designName))
-            throw new GateException("designName is not valid");
-        if (blocks.isEmpty())
-            throw new GateException("must have at least one block");
-    }
-    
-    @Override
-    public void onDestroy(boolean unbuild) {
-        super.onDestroy(unbuild);
-        if (unbuild) {
-            for (GateBlock gb : blocks) {
-                if (! gb.getDetail().isBuildable()) continue;
-                Block b = gb.getLocation().getBlock();
-                b.setTypeIdAndData(0, (byte)0, false);
-            }
-        }
-    }
-    
     // Custom methods
     
     public String getDesignName() {
@@ -291,90 +331,76 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     }
     
     public void rebuild() {
-        GateMap portalBlocks = getPortalBlocks();
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isBuildable()) continue;
-            if (portalOpen && portalBlocks.containsLocation(gb.getLocation())) continue;
+            if (portalOpen && gb.getDetail().isPortal()) continue;
             gb.getDetail().getBuildBlock().build(gb.getLocation());
         }
         updateScreens();
     }
 
-    private GateMap getBuildBlocks() {
-        GateMap map = new GateMap();
+    public GateBlock getGateBlock(Location loc) {
+        for (GateBlock gb : blocks) {
+            Location gbLoc = gb.getLocation();
+            if ((loc.getBlockX() == gbLoc.getBlockX()) &&
+                (loc.getBlockY() == gbLoc.getBlockY()) &&
+                (loc.getBlockZ() == gbLoc.getBlockZ())) return gb;
+        }
+        return null;
+    }
+    
+    private Volume getBuildVolume() {
+        Volume vol = new Volume(this);
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isBuildable()) continue;
-            map.put(this, gb);
+            vol.addPoint(new Point(gb.getLocation()));
         }
-        return map;
+        return vol;
     }
-
-    public GateMap getScreenBlocks() {
-        GateMap map = new GateMap();
+    
+    private Volume getScreenVolume() {
+        Volume vol = new Volume(this);
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isScreen()) continue;
-            map.put(this, gb);
+            vol.addPoint(new Point(gb.getLocation()));
         }
-        return map;
+        return vol;
     }
 
-    public GateMap getTriggerBlocks() {
-        GateMap map = new GateMap();
+    private Volume getTriggerVolume() {
+        Volume vol = new Volume(this);
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isTrigger()) continue;
-            map.put(this, gb);
+            vol.addPoint(new Point(gb.getLocation()));
         }
-        return map;
+        return vol;
     }
 
-    public GateMap getSwitchBlocks() {
-        GateMap map = new GateMap();
+    private Volume getSwitchVolume() {
+        Volume vol = new Volume(this);
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isSwitch()) continue;
-            map.put(this, gb);
+            vol.addPoint(new Point(gb.getLocation()));
         }
-        return map;
+        return vol;
     }
 
-    private GateMap getPortalBlocks() {
-        GateMap map = new GateMap();
+    private Volume getPortalVolume() {
+        Volume vol = new Volume(this);
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isPortal()) continue;
-            map.put(this, gb);
+            vol.addPoint(new Point(gb.getLocation()));
         }
-        return map;
-    }
-
-    public GateMap getSpawnBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isSpawn()) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public GateMap getSendLightningBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (gb.getDetail().getSendLightningMode() == LightningMode.NONE) continue;
-            map.put(this, gb);
-        }
-        return map;
-    }
-
-    public GateMap getReceiveLightningBlocks() {
-        GateMap map = new GateMap();
-        for (GateBlock gb : blocks) {
-            if (gb.getDetail().getReceiveLightningMode() == LightningMode.NONE) continue;
-            map.put(this, gb);
-        }
-        return map;
+        return vol;
     }
 
     private void updateScreens() {
-        GateMap screens = getScreenBlocks();
-        if (screens.size() == 0) return;
+        Set<GateBlock> screens = new HashSet<GateBlock>();
+        for (GateBlock gb : blocks) {
+            if (! gb.getDetail().isScreen()) continue;
+            screens.add(gb);
+        }
+        if (screens.isEmpty()) return;
         
         String format;
         GateImpl toGate = null;
@@ -424,7 +450,7 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
             lines.addAll(Arrays.asList(NEWLINE_PATTERN.split(format)));
         }
         
-        for (GateBlock gb : screens.getBlocks()) {
+        for (GateBlock gb : screens) {
             Block block = gb.getLocation().getBlock();
             BlockState sign = block.getState();
             if (! (sign instanceof Sign)) continue;
@@ -450,7 +476,7 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
             gb.getDetail().getOpenBlock().build(gb.getLocation());
         }
         if (savedBlocks.isEmpty()) savedBlocks = null;
-        Gates.addPortalBlocks(getPortalBlocks());
+        Gates.addPortalVolume(getPortalVolume());
         dirty = true;
     }
     
@@ -470,7 +496,7 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
                 gb.getLocation().getBlock().setTypeIdAndData(0, (byte)0, false);
             }
         }
-        Gates.removePortalBlocks(this);
+        Gates.removePortalVolume(this);
         dirty = true;
     }
 
@@ -488,9 +514,19 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
 
     public void setRestoreOnClose(boolean b) {
         restoreOnClose = b;
+        dirty = true;
     }
 
-    // TODO: add Options object handling
+    @Override
+    public void onOptionSet(Context ctx, String name, String value) {
+        super.onOptionSet(ctx, name, value);
+        if (name.equals("protect")) {
+            if (protect)
+                Gates.addProtectionVolume(getBuildVolume());
+            else
+                Gates.removeProtectionVolume(this);
+        }
+    }
     
     /* End options */
  

@@ -24,8 +24,10 @@ import java.util.Map;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Economy;
 import org.bennedum.transporter.GateImpl;
+import org.bennedum.transporter.GateType;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
+import org.bennedum.transporter.LocalBlockGateImpl;
 import org.bennedum.transporter.LocalGateImpl;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.RemoteGateImpl;
@@ -127,7 +129,7 @@ public class GateCommand extends TrpCommandProcessor {
             LocalGateImpl gate = getGate(ctx, args);
             Permissions.require(ctx.getPlayer(), "trp.gate.info." + gate.getFullName());
             ctx.send("Full name: %s", gate.getFullName());
-            ctx.send("Design: %s", gate.getDesignName());
+            ctx.send("Type: %s", gate.getType().toString());
             ctx.send("Creator: %s", gate.getCreatorName());
             if (Economy.isAvailable()) {
                 if (gate.getLinkLocal())
@@ -175,8 +177,10 @@ public class GateCommand extends TrpCommandProcessor {
 
         if ("rebuild".startsWith(subCmd)) {
             LocalGateImpl gate = getGate(ctx, args);
+            if (gate.getType() != GateType.BLOCK)
+                throw new CommandException("this command can only be used on BLOCK gates");
             Permissions.require(ctx.getPlayer(), "trp.gate.rebuild." + gate.getFullName());
-            gate.rebuild();
+            ((LocalBlockGateImpl)gate).rebuild();
             ctx.sendLog("rebuilt gate '%s'", gate.getName(ctx));
             return;
         }
