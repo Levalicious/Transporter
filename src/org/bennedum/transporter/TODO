@@ -9,17 +9,44 @@
 
 * Implement gate permissions when Permissions plugin supports adding a gate to a group.
 
-Testing/TODO:
-* Test minecart teleportation
-* Test stairs with facing option
-* Test "portal" blocks with facing?
+TODO:
 * Add private message command (trp pm) for remote players
 * Add server command lookup
 * Flesh out API methods
     * teleport player
+    * save all gates, config, worlds
+    * remote command
+    * all local server options to interfaces
+    * all local world options to interfaces
+    * all local gate options to interfaces
     * ?
-* Test API
 * Add "api" command with options like timeout, debug, allow*
+* Emit custom events
+    * remote player join, quit, kick, death
+    * player arrives from remote server
+    * player leaves for remote server
+    * remote player incoming chat
+    * local/remote gate is created/destroyed
+    * server is connected/disconnected
+* after a gate is loaded, re-open/attach to destination, also when remote gate becomes available
+    (so gates on remote servers left open are open and usable after server starts)
+* Add gate commands for area gates
+    * expand <num> [<direction>]
+    * shrink <num> [<direction>]
+    * corner 1|2 [pick]
+* Add gate options for area gates
+    * p1, p2
+    * spawnDirection
+    * spawnSolid (allow spawning into solid blocks)
+    * spawnLiquid (allow spawning into liquid blocks)
+    * spawnSearch (UP,DOWN,UPDOWN,DOWNUP)
+* Add gate option "gameMode" to set a player's game mode upon arrival
+
+Testing:
+* Test minecart teleportation
+* Test stairs with facing option
+* Test "portal" blocks with facing?
+* Test API
 
 Wiki Updates:
 * Removed server options "sendJoin", "receiveJoin".
