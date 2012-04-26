@@ -23,16 +23,21 @@ import java.util.List;
 import java.util.Map;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Economy;
+import org.bennedum.transporter.api.ExpandDirection;
 import org.bennedum.transporter.GateImpl;
-import org.bennedum.transporter.GateType;
+import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
+import org.bennedum.transporter.LocalAreaGateImpl;
 import org.bennedum.transporter.LocalBlockGateImpl;
 import org.bennedum.transporter.LocalGateImpl;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.RemoteGateImpl;
 import org.bennedum.transporter.Server;
 import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.Utils;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 
 /**
@@ -71,6 +76,13 @@ public class GateCommand extends TrpCommandProcessor {
         cmds.add(getPrefix(ctx) + GROUP + "allow remove <item>|* [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "replace add <old> <new> [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "replace remove <olditem>|* [<gate>]");
+        
+        cmds.add(getPrefix(ctx) + GROUP + "resize <num>[,<direction>] [<gate>]");
+        if (ctx.isPlayer()) {
+            cmds.add(getPrefix(ctx) + GROUP + "corner 1|2 [pick] [<gate>]");
+            cmds.add(getPrefix(ctx) + GROUP + "create <designname>|area <gatename> [<to> [rev]]");
+        }
+        
         cmds.add(getPrefix(ctx) + GROUP + "get <option>|* [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "set <option> <value> [<gate>]");
         return cmds;
@@ -243,7 +255,7 @@ public class GateCommand extends TrpCommandProcessor {
                         Global.plugin.getServer().dispatchCommand(ctx.getSender(), "trp gate link add \"" + toGate.getFullName() + "\" \"" + fromGate.getFullName() + "\"");
                     else {
                         Server server = (Server)((RemoteGateImpl)toGate).getRemoteServer();
-                        if (! server.isConnected())
+                        if (! server.isConnectionConnected())
                             ctx.send("unable to add reverse link from offline server");
                         else
                             server.sendLinkAdd(ctx.getPlayer(), (LocalGateImpl)fromGate, (RemoteGateImpl)toGate);
@@ -259,7 +271,7 @@ public class GateCommand extends TrpCommandProcessor {
                         Global.plugin.getServer().dispatchCommand(ctx.getSender(), "trp gate link remove \"" + fromGate.getFullName() + "\" \"" + toGate.getFullName() + "\"");
                     else {
                         Server server = (Server)((RemoteGateImpl)toGate).getRemoteServer();
-                        if (! server.isConnected())
+                        if (! server.isConnectionConnected())
                             ctx.send("unable to remove reverse link from offline server");
                         else
                             server.sendLinkRemove(ctx.getPlayer(), (LocalGateImpl)fromGate, (RemoteGateImpl)toGate);
@@ -445,6 +457,75 @@ public class GateCommand extends TrpCommandProcessor {
             throw new CommandException("do what with a replace?");
         }
 
+        if ("resize".startsWith(subCmd)) {
+            if (args.isEmpty())
+                throw new CommandException("number and direction required");
+            String numDir = args.remove(0);
+            String[] numDirParts = numDir.split(",");
+            int num;
+            ExpandDirection dir = ExpandDirection.ALL;
+            try {
+                num = Integer.parseInt(numDirParts[0]);
+            } catch (NumberFormatException nfe) {
+                throw new CommandException("invalid number");
+            }
+            if (numDirParts.length > 1)
+                try {
+                    dir = Utils.valueOf(ExpandDirection.class, numDirParts[1]);
+                } catch (IllegalArgumentException iae) {
+                    throw new CommandException(iae.getMessage() + " direction");
+                }
+            LocalGateImpl gate = getGate(ctx, args);
+            if (gate.getType() != GateType.AREA)
+                throw new CommandException("this command is only valid for %s gates", GateType.AREA);
+            ((LocalAreaGateImpl)gate).resize(num, dir);
+            return;
+        }
+        
+        if ("corner".startsWith(subCmd)) {
+            if (! ctx.isPlayer())
+                throw new CommandException("must be a player to use this command");
+            if (args.isEmpty())
+                throw new CommandException("corner number required");
+            String numStr = args.remove(0);
+            int num;
+            boolean pick = false;
+            if ((! args.isEmpty()) && ("pick".startsWith(args.get(0).toLowerCase()))) {
+                pick = true;
+                args.remove(0);
+            }
+            try {
+                num = Integer.parseInt(numStr);
+            } catch (NumberFormatException nfe) {
+                throw new CommandException("invalid corner number");
+            }
+            if ((num < 1) || (num > 2))
+                throw new CommandException("number must be 1 or 2");
+            Location loc;
+            if (pick) {
+                List<Block> blocks = ctx.getPlayer().getLineOfSight(null, 1000);
+                if (blocks.isEmpty())
+                    throw new CommandException("no block found");
+                loc = blocks.get(0).getLocation();
+            } else
+                loc = ctx.getPlayer().getLocation().getBlock().getLocation();
+            LocalGateImpl gate = getGate(ctx, args);
+            if (gate.getType() != GateType.AREA)
+                throw new CommandException("this command is only valid for %s gates", GateType.AREA);
+            if (num == 1)
+                ((LocalAreaGateImpl)gate).setP1Location(loc);
+            else if (num == 2)
+                ((LocalAreaGateImpl)gate).setP2Location(loc);
+            return;
+        }
+
+        if ("create".startsWith(subCmd)) {
+            if (! ctx.isPlayer())
+                throw new CommandException("must be a player to use this command");
+            ctx.getPlayer().performCommand("trp design create " + rebuildCommandArgs(args));
+            return;
+        }
+        
         if ("set".startsWith(subCmd)) {
             if (args.isEmpty())
                 throw new CommandException("option name required");

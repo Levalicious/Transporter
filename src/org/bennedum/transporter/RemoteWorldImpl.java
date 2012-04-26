@@ -20,6 +20,8 @@ import org.bennedum.transporter.api.RemoteException;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
 import org.bennedum.transporter.net.Message;
+import org.bukkit.Difficulty;
+import org.bukkit.World.Environment;
 
 /**
  *
@@ -47,6 +49,38 @@ public final class RemoteWorldImpl implements RemoteWorld {
     }
 
     @Override
+    public void getDifficulty(final Callback<Difficulty> cb) {
+        Message args = new Message();
+        args.put("world", name);
+        server.sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(Utils.valueOf(Difficulty.class, m.getString("result")));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "world", "getDifficulty", args);
+    }
+    
+    @Override
+    public void getEnvironment(final Callback<Environment> cb) {
+        Message args = new Message();
+        args.put("world", name);
+        server.sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(Utils.valueOf(Environment.class, m.getString("result")));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "world", "getEnvironment", args);
+    }
+    
+    @Override
     public void getFullTime(final Callback<Long> cb) {
         Message args = new Message();
         args.put("world", name);
@@ -62,6 +96,22 @@ public final class RemoteWorldImpl implements RemoteWorld {
         }, "world", "getFullTime", args);
     }
 
+    @Override
+    public void getSeed(final Callback<Long> cb) {
+        Message args = new Message();
+        args.put("world", name);
+        server.sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(m.getLong("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "world", "getSeed", args);
+    }
+    
     @Override
     public void getTime(final Callback<Long> cb) {
         Message args = new Message();

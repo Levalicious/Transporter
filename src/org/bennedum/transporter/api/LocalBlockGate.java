@@ -21,6 +21,10 @@ package org.bennedum.transporter.api;
  */
 public interface LocalBlockGate extends LocalGate {
     
-    // TODO: add options
+    public String getDesignName();
+    public void rebuild();
+    
+    public boolean getRestoreOnClose();
+    public void setRestoreOnClose(boolean b);
     
 }

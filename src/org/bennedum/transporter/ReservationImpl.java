@@ -20,6 +20,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.bennedum.transporter.api.Gate;
+import org.bennedum.transporter.api.Reservation;
+import org.bennedum.transporter.api.event.EntityArriveEvent;
+import org.bennedum.transporter.api.event.EntityDepartEvent;
 import org.bennedum.transporter.net.Message;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -44,28 +48,28 @@ import org.bukkit.util.Vector;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public final class Reservation {
+public final class ReservationImpl implements Reservation {
 
     private static final Map<Integer,Long> gateLocks = new HashMap<Integer,Long>();
 
     private static long nextId = 1;
-    private static final Map<Long,Reservation> reservations = new HashMap<Long,Reservation>();
+    private static final Map<Long,ReservationImpl> reservations = new HashMap<Long,ReservationImpl>();
 
-    public static Reservation get(long id) {
+    public static ReservationImpl get(long id) {
         return reservations.get(id);
     }
 
-    public static Reservation get(String playerName) {
-        for (Reservation r : reservations.values())
+    public static ReservationImpl get(String playerName) {
+        for (ReservationImpl r : reservations.values())
             if (playerName.equals(r.playerName)) return r;
         return null;
     }
 
-    public static Reservation get(Player player) {
+    public static ReservationImpl get(Player player) {
         return get(player.getName());
     }
 
-    private static boolean put(Reservation r) {
+    private static boolean put(ReservationImpl r) {
         if (reservations.put(r.localId, r) == null) {
             Utils.debug("put reservation %s", r.localId);
             return true;
@@ -73,7 +77,7 @@ public final class Reservation {
         return false;
     }
 
-    private static boolean remove(Reservation r) {
+    private static boolean remove(ReservationImpl r) {
         if (reservations.remove(r.localId) != null) {
             Utils.debug("removed reservation %s", r.localId);
             return true;
@@ -150,42 +154,42 @@ public final class Reservation {
     private boolean createdEntity = false;
 
     // player stepping into gate
-    public Reservation(Player player, LocalGateImpl fromGate) throws ReservationException {
+    public ReservationImpl(Player player, LocalGateImpl fromGate) throws ReservationException {
         addGateLock(player);
         extractPlayer(player);
         extractFromGate(fromGate);
     }
 
     // vehicle moving into gate
-    public Reservation(Vehicle vehicle, LocalGateImpl fromGate) throws ReservationException {
+    public ReservationImpl(Vehicle vehicle, LocalGateImpl fromGate) throws ReservationException {
         addGateLock(vehicle);
         extractVehicle(vehicle);
         extractFromGate(fromGate);
     }
 
     // player direct to gate
-    public Reservation(Player player, GateImpl toGate) throws ReservationException {
+    public ReservationImpl(Player player, GateImpl toGate) throws ReservationException {
         addGateLock(player);
         extractPlayer(player);
         extractToGate(toGate);
     }
 
     // player direct to location on this server
-    public Reservation(Player player, Location location) throws ReservationException {
+    public ReservationImpl(Player player, Location location) throws ReservationException {
         addGateLock(player);
         extractPlayer(player);
         toLocation = location;
     }
 
     // player direct to remote server, default world, spawn location
-    public Reservation(Player player, Server server) throws ReservationException {
+    public ReservationImpl(Player player, Server server) throws ReservationException {
         addGateLock(player);
         extractPlayer(player);
         toServer = server;
     }
 
     // player direct to remote server, specified world, spawn location
-    public Reservation(Player player, Server server, String worldName) throws ReservationException {
+    public ReservationImpl(Player player, Server server, String worldName) throws ReservationException {
         addGateLock(player);
         extractPlayer(player);
         toServer = server;
@@ -193,7 +197,7 @@ public final class Reservation {
     }
 
     // player direct to remote server, specified world, specified location
-    public Reservation(Player player, Server server, String worldName, double x, double y, double z) throws ReservationException {
+    public ReservationImpl(Player player, Server server, String worldName, double x, double y, double z) throws ReservationException {
         addGateLock(player);
         extractPlayer(player);
         toServer = server;
@@ -202,17 +206,17 @@ public final class Reservation {
     }
 
     // reception of reservation from sending server
-    public Reservation(Message in, Server server) throws ReservationException {
+    public ReservationImpl(Message in, Server server) throws ReservationException {
         remoteId = in.getInt("id");
         try {
             entityType = Utils.valueOf(EntityType.class, in.getString("entityType"));
         } catch (IllegalArgumentException e) {
-            throw new ReservationException("unknown or ambiguous entityType '%s'", in.getString("entityType"));
+            throw new ReservationException(e.getMessage() + " entityType '%s'", in.getString("entityType"));
         }
         remoteEntityId = in.getInt("entityId");
         playerName = in.getString("playerName");
         if (playerName != null) {
-            Reservation other = get(playerName);
+            ReservationImpl other = get(playerName);
             if (other != null)
                 remove(other);
                 //throw new ReservationException("a reservation for player '%s' already exists", playerName);
@@ -261,7 +265,7 @@ public final class Reservation {
             try {
                 fromDirection = Utils.valueOf(BlockFace.class, in.getString("fromGateDirection"));
             } catch (IllegalArgumentException e) {
-                throw new ReservationException("unknown or ambiguous fromGateDirection '%s'", in.getString("fromGateDirection"));
+                throw new ReservationException(e.getMessage() + " fromGateDirection '%s'", in.getString("fromGateDirection"));
             }
         }
 
@@ -282,6 +286,25 @@ public final class Reservation {
         }
     }
 
+    /* Reservation interface */
+    
+    @Override
+    public Entity getEntity() {
+        return entity;
+    }
+    
+    @Override
+    public Gate getDepartureGate() {
+        return fromGate;
+    }
+    
+    @Override
+    public Gate getArrivalGate() {
+        return toGate;
+    }
+    
+    /* End Reservation interface */
+    
     private void extractPlayer(Player player) {
         entityType = EntityType.PLAYER;
         entity = player;
@@ -490,6 +513,10 @@ public final class Reservation {
             if (toServer == null) {
                 // staying on this server
                 checkLocalArrivalGate();
+                
+                EntityDepartEvent event = new EntityDepartEvent(this);
+                Global.plugin.getServer().getPluginManager().callEvent(event);
+                
                 arrive();
                 completeLocalDepartureGate();
 
@@ -500,7 +527,7 @@ public final class Reservation {
                     toServer.sendReservation(this);
 
                     // setup delayed task to remove the reservation on this side if it doesn't work out
-                    final Reservation me = this;
+                    final ReservationImpl me = this;
                     Utils.fireDelayed(new Runnable() {
                         @Override
                         public void run() {
@@ -553,7 +580,7 @@ public final class Reservation {
                 }
             } else {
                 // set up a delayed task to cancel the arrival if they never arrive
-                final Reservation res = this;
+                final ReservationImpl res = this;
                 Utils.fireDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -598,7 +625,7 @@ public final class Reservation {
             throw new ReservationException("teleport %s to %s failed", getTraveler(), getDestination());
         }
         commitTraveler();
-
+        
         Utils.debug("%s arrived at %s", getTraveler(), getDestination());
 
         completeLocalArrivalGate();
@@ -642,6 +669,10 @@ public final class Reservation {
         }
         if ((entity != null) && (entity != player))
             entity.remove();
+        
+        EntityDepartEvent event = new EntityDepartEvent(this);
+        Global.plugin.getServer().getPluginManager().callEvent(event);
+        
     }
 
     // called on the sending side to indicate a reservation was denied by the receiving side
@@ -671,6 +702,10 @@ public final class Reservation {
                 player.saveData();
             }
         }
+        
+        EntityArriveEvent event = new EntityArriveEvent(this);
+        Global.plugin.getServer().getPluginManager().callEvent(event);
+
     }
 
     // called on the sending side to indicate an expected arrival never happened on the receiving side
@@ -975,8 +1010,13 @@ public final class Reservation {
             player.setExhaustion(exhaustion);
             if (saturation < 0) saturation = 0;
             player.setSaturation(saturation);
-            if ((toGateLocal != null) && toGateLocal.getReceiveGameMode())
-                player.setGameMode(Utils.valueOf(GameMode.class, gameMode));
+            if (toGateLocal != null) {
+                if (toGateLocal.getGameMode() != null)
+//                    player.setGameMode(Utils.valueOf(GameMode.class, toGateLocal.getGameMode()));
+                    player.setGameMode(toGateLocal.getGameMode());
+                else if (toGateLocal.getReceiveGameMode())
+                    player.setGameMode(Utils.valueOf(GameMode.class, gameMode));
+            }
             if ((toGateLocal != null) && toGateLocal.getReceiveXP()) {
                 if (xp < 0) xp = 0;
                 player.setExp(xp);

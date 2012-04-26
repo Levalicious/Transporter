@@ -420,7 +420,7 @@ public final class Connection {
                         if (f.toString().equals(key)) {
                             Utils.info("server key match detected for '%s' on connection with %s", serv.getName(), getName());
                             if (serv.isEnabled()) {
-                                if (serv.isConnected()) {
+                                if (serv.isConnectionConnected()) {
                                     Utils.warning("server '%s' is already connected", serv.getName());
                                     close();
                                     return;

@@ -22,6 +22,7 @@ import org.bennedum.transporter.api.RemotePlayer;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
 import org.bennedum.transporter.net.Message;
+import org.bukkit.entity.Player;
 
 /**
  *
@@ -42,6 +43,14 @@ public final class RemotePlayerImpl implements RemotePlayer {
         this.displayName = displayName;
         setWorld(worldName);
         this.worldName = worldName;
+    }
+
+    public String format(String f) {
+        if (f == null) return "";
+        f = f.replace("%player%", getDisplayName());
+        f = f.replace("%world%", getRemoteWorld().getName());
+        f = f.replace("%server%", getRemoteServer().getName());
+        return f;
     }
     
     @Override
@@ -139,6 +148,11 @@ public final class RemotePlayerImpl implements RemotePlayer {
                 if (cb != null) cb.onFailure(re);
             }
         }, "player", "sendRawMessage", args);
+    }
+    
+    @Override
+    public void sendPM(Player fromPlayer, String message) {
+        server.sendPrivateMessage(fromPlayer, this, message);
     }
     
 }

@@ -15,6 +15,8 @@
  */
 package org.bennedum.transporter.api;
 
+import org.bukkit.entity.Player;
+
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
@@ -36,5 +38,7 @@ public interface RemotePlayer {
     public void sendMessage(Callback<Void> cb, String msg);
     
     public void sendRawMessage(Callback<Void> cb, String msg);
+    
+    public void sendPM(Player fromPlayer, String message);
     
 }

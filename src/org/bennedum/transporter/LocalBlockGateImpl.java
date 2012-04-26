@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.GateType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -119,6 +120,7 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
         deleteInventory = design.getDeleteInventory();
         receiveGameMode = design.getReceiveGameMode();
         allowGameModes = design.getAllowGameModes();
+        gameMode = design.getGameMode();
         receiveXP = design.getReceiveXP();
         randomNextLink = design.getRandomNextLink();
         sendNextLink = design.getSendNextLink();
@@ -237,6 +239,7 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
             Gates.addPortalVolume(getPortalVolume());
         if (protect)
             Gates.addProtectionVolume(getBuildVolume());
+        updateScreens();
     }
     
     @Override
@@ -326,10 +329,12 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     
     // Custom methods
     
+    @Override
     public String getDesignName() {
         return designName;
     }
     
+    @Override
     public void rebuild() {
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isBuildable()) continue;
@@ -508,10 +513,12 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     
     /* Begin options */
     
+    @Override
     public boolean getRestoreOnClose() {
         return restoreOnClose;
     }
 
+    @Override
     public void setRestoreOnClose(boolean b) {
         restoreOnClose = b;
         dirty = true;

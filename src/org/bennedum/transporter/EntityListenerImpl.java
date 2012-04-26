@@ -28,7 +28,7 @@ public final class EntityListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onEntityDamage(EntityDamageEvent event) {
-        if (Reservation.isGateLocked(event.getEntity()))
+        if (ReservationImpl.isGateLocked(event.getEntity()))
             event.setCancelled(true);
     }
 

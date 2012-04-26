@@ -108,6 +108,9 @@ public final class GateMap {
             set(p1);
             expand(p2);
         }
+        public Bounds(Location l1, Location l2) {
+            this(new Point(l1), new Point(l2));
+        }
         public void set(Point p) {
             min.x = max.x = p.x;
             min.y = max.y = p.y;
@@ -150,6 +153,12 @@ public final class GateMap {
                 default:
                     return null;
             }
+        }
+        public Location getMinLocation(World w) {
+            return new Location(w, min.x, min.y, min.z);
+        }
+        public Location getMaxLocation(World w) {
+            return new Location(w, max.x, max.y, max.z);
         }
         @Override
         public String toString() {

@@ -84,7 +84,7 @@ public final class Servers {
 
     public static void connectAll() {
         for (final Server server : servers.values()) {
-            if ((! server.isConnected()) && server.isEnabled())
+            if ((! server.isConnectionConnected()) && server.isEnabled())
                 Utils.fireDelayed(new Runnable() {
                     @Override
                     public void run() {

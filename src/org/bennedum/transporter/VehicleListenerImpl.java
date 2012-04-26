@@ -33,13 +33,13 @@ public class VehicleListenerImpl implements Listener {
         Vehicle vehicle = event.getVehicle();
         LocalGateImpl fromGate = Gates.findGateForPortal(event.getTo());
         if (fromGate == null) {
-            Reservation.removeGateLock(vehicle);
+            ReservationImpl.removeGateLock(vehicle);
             return;
         }
-        if (Reservation.isGateLocked(vehicle)) return;
+        if (ReservationImpl.isGateLocked(vehicle)) return;
 
         try {
-            Reservation r = new Reservation(vehicle, fromGate);
+            ReservationImpl r = new ReservationImpl(vehicle, fromGate);
             r.depart();
         } catch (ReservationException re) {
             if (vehicle.getPassenger() instanceof Player) {

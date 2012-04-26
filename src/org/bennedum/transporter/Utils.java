@@ -68,7 +68,7 @@ public class Utils {
 
     public static final File BukkitBaseFolder = new File(".");
 
-    private static final Logger logger = Logger.getLogger("Minecraft");
+    public static final Logger logger = Logger.getLogger("Minecraft");
 
     private static final String DEBUG_BOUNDARY = "*****";
     private static final int DEBUG_LOG_BYTES = 20 * 1024;
@@ -319,6 +319,7 @@ public class Utils {
     }
 
     public static <T extends Enum<T>> T valueOf(Class<T> cls, String s) {
+        if ((s == null) || s.isEmpty() || s.equals("*") || s.equals("-")) return null;
         try {
             return Enum.valueOf(cls, s);
         } catch (IllegalArgumentException e) {}
@@ -329,9 +330,11 @@ public class Utils {
                 if (theOne == null)
                     theOne = value;
                 else
-                    throw new IllegalArgumentException("ambiguous value");
+                    throw new IllegalArgumentException("ambiguous");
             }
         }
+        if (theOne == null)
+            throw new IllegalArgumentException("invalid");
         return theOne;
     }
 
@@ -476,7 +479,7 @@ public class Utils {
                             server.getPluginAddress(),
                             server.getKey(),
                             (server.isEnabled() ? "up" : "down"),
-                            (! server.isConnected() ? "down" :
+                            (! server.isConnectionConnected() ? "down" :
                                 String.format("up %s %s v%s",
                                     server.isIncoming() ? "incoming" : "outgoing",
                                     server.getConnection().getName(),
@@ -493,7 +496,7 @@ public class Utils {
                                 server.getPrivateAddress(),
                                 server.getNormalizedPrivateAddress().getAddress().getHostAddress(),
                                 server.getNormalizedPrivateAddress().getPort()));
-                if (server.isConnected()) {
+                if (server.isConnectionConnected()) {
                     writer.format("    remotePublicAddress:  %s\n",
                             server.getRemotePublicAddress());
                     writer.format("    remotePrivateAddress: %s\n",

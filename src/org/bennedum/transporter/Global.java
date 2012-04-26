@@ -16,9 +16,8 @@
 package org.bennedum.transporter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import org.bennedum.transporter.command.APICommand;
 import org.bennedum.transporter.command.CommandProcessor;
 import org.bennedum.transporter.command.DebugCommand;
 import org.bennedum.transporter.command.DesignCommand;
@@ -31,7 +30,6 @@ import org.bennedum.transporter.command.ReloadCommand;
 import org.bennedum.transporter.command.SaveCommand;
 import org.bennedum.transporter.command.ServerCommand;
 import org.bennedum.transporter.command.WorldCommand;
-import org.bukkit.entity.Player;
 
 /**
  *
@@ -62,6 +60,7 @@ public final class Global {
         commands.add(new ServerCommand());
         commands.add(new NetworkCommand());
         commands.add(new WorldCommand());
+        commands.add(new APICommand());
 
         commands.add(new DebugCommand());
     }

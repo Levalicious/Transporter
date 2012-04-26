@@ -58,6 +58,7 @@ public class Configuration extends ConfigurationNode {
         try {
             OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), "UTF-8");
             yaml.dump(this, writer);
+            writer.close();
         } catch (IOException e) {}
     }
     

@@ -25,7 +25,6 @@ import java.util.Set;
 import org.bennedum.transporter.config.Configuration;
 import org.bennedum.transporter.config.ConfigurationNode;
 import org.bennedum.transporter.net.Network;
-import org.bukkit.ChatColor;
 
 /**
  *
@@ -56,18 +55,20 @@ public final class Config {
         OPTIONS.add("serverJoinFormat");
         OPTIONS.add("serverQuitFormat");
         OPTIONS.add("serverKickFormat");
+        OPTIONS.add("serverDeathFormat");
+        OPTIONS.add("consolePMFormat");
+        OPTIONS.add("localPMFormat");
+        OPTIONS.add("worldPMFormat");
+        OPTIONS.add("serverPMFormat");
         OPTIONS.add("useVaultEconomy");
         OPTIONS.add("useRegisterEconomy");
-//        OPTIONS.add("useBOSEconomy");
         OPTIONS.add("useDynmap");
-//        OPTIONS.add("useSuperPermissions");
         OPTIONS.add("useVaultPermissions");
         OPTIONS.add("usePermissions");
         OPTIONS.add("usePermissionsEx");
         OPTIONS.add("dynmapMarkerSetLabel");
         OPTIONS.add("exportedGatesFile");
         OPTIONS.add("worldLoadDelay");
-        OPTIONS.add("apiTimeout");
         OPTIONS.add("httpProxyHost");
         OPTIONS.add("httpProxyType");
         OPTIONS.add("httpProxyPort");
@@ -135,6 +136,7 @@ public final class Config {
         Worlds.onConfigLoad(ctx);
         Servers.onConfigLoad(ctx);
         Network.onConfigLoad(ctx);
+        APIBackend.onConfigLoad(ctx);
         Pins.onConfigLoad(ctx);
     }
 
@@ -142,11 +144,13 @@ public final class Config {
         Network.onConfigSave();
         Worlds.onConfigSave();
         Servers.onConfigSave();
+        APIBackend.onConfigSave();
         Pins.onConfigSave();
         File configDir = Global.plugin.getDataFolder();
         if (! configDir.exists()) configDir.mkdirs();
         config.save();
-        ctx.sendLog("saved configuration");
+        if (ctx != null)
+            ctx.sendLog("saved configuration");
     }
 
     public static String getStringDirect(String path) {
@@ -294,7 +298,7 @@ public final class Config {
     }
 
     public static String getServerChatFormat() {
-        return config.getString("global.serverChatFormat", "<%player%@%world%@%server%> %message%");
+        return config.getString("global.serverChatFormat", "<%player%/%world%@%server%> %message%");
     }
 
     public static void setServerChatFormat(String s) {
@@ -306,7 +310,7 @@ public final class Config {
     }
 
     public static String getServerJoinFormat() {
-        return config.getString("global.serverJoinFormat", ChatColor.YELLOW + "%player%@%world%@%server% joined the game.");
+        return config.getString("global.serverJoinFormat", "%YELLOW%%player%/%world%@%server% joined the game.");
     }
 
     public static void setServerJoinFormat(String s) {
@@ -318,7 +322,7 @@ public final class Config {
     }
 
     public static String getServerQuitFormat() {
-        return config.getString("global.serverQuitFormat", ChatColor.YELLOW + "%player%@%world%@%server% left the game.");
+        return config.getString("global.serverQuitFormat", "%YELLOW%%player%/%world%@%server% left the game.");
     }
 
     public static void setServerQuitFormat(String s) {
@@ -330,7 +334,7 @@ public final class Config {
     }
 
     public static String getServerKickFormat() {
-        return config.getString("global.serverKickFormat", ChatColor.YELLOW + "%player%@%world%@%server% was kicked.");
+        return config.getString("global.serverKickFormat", "%YELLOW%%player%/%world%@%server% was kicked.");
     }
 
     public static void setServerKickFormat(String s) {
@@ -341,6 +345,67 @@ public final class Config {
         setPropertyDirect("global.serverKickFormat", s);
     }
 
+    public static String getServerDeathFormat() {
+        return config.getString("global.serverDeathFormat", "%YELLOW%%player%/%world%@%server% died.");
+    }
+
+    public static void setServerDeathFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        setPropertyDirect("global.serverDeathFormat", s);
+    }
+
+    public static String getConsolePMFormat() {
+        return config.getString("global.consolePMFormat", "[console] %GREEN%%message%");
+    }
+
+    public static void setConsolePMFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        setPropertyDirect("global.consolePMFormat", s);
+    }
+
+    public static String getLocalPMFormat() {
+        return config.getString("global.localPMFormat", "[%fromPlayer%] %GREEN%%message%");
+    }
+
+    public static void setLocalPMFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        setPropertyDirect("global.localPMFormat", s);
+    }
+
+    public static String getWorldPMFormat() {
+        return config.getString("global.worldPMFormat", "[%fromPlayer%/%fromWorld%] %GREEN%%message%");
+    }
+
+    public static void setWorldPMFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        setPropertyDirect("global.worldPMFormat", s);
+    }
+
+    public static String getServerPMFormat() {
+        return config.getString("global.serverPMFormat", "[%fromPlayer%/%fromWorld%@%fromServer%] %GREEN%%message%");
+    }
+
+    public static void setServerPMFormat(String s) {
+        if (s != null) {
+            if (s.equals("-")) s = "";
+            else if (s.equals("*")) s = null;
+        }
+        setPropertyDirect("global.serverPMFormat", s);
+    }
+
+    
     public static boolean getUseVaultEconomy() {
         return config.getBoolean("global.useVaultEconomy", false);
     }
@@ -416,15 +481,6 @@ public final class Config {
         setPropertyDirect("global.worldLoadDelay", i);
     }
     
-    public static int getAPITimeout() {
-        return config.getInt("global.apiTimeout", 5000);
-    }
-    
-    public static void setAPITimeout(int i) {
-        if (i < 1000) i = 1000;
-        setPropertyDirect("global.apiTimeout", i);
-    }
-    
     public static String getHttpProxyHost() {
         return config.getString("global.httpProxy.host", null);
     }
@@ -444,7 +500,7 @@ public final class Config {
             try {
                 Utils.valueOf(Proxy.Type.class, s);
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("proxy type is ambiguous or invalid");
+                throw new IllegalArgumentException(e.getMessage() + " proxy type");
             }
         }
         setPropertyDirect("global.httpProxy.type", s);
@@ -481,7 +537,6 @@ public final class Config {
 
 
 
-
     public static void getOptions(Context ctx, String name) throws OptionsException, PermissionsException {
         options.getOptions(ctx, name);
     }
@@ -493,7 +548,7 @@ public final class Config {
     public static void setOption(Context ctx, String name, String value) throws OptionsException, PermissionsException {
         options.setOption(ctx, name, value);
     }
-
+    
     /* End options */
 
 }

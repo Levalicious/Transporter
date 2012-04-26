@@ -15,7 +15,10 @@
  */
 package org.bennedum.transporter.api;
 
+import java.net.InetSocketAddress;
 import java.util.Set;
+import org.bukkit.GameMode;
+import org.bukkit.command.CommandSender;
 
 /**
  *
@@ -37,6 +40,37 @@ public interface RemoteServer {
     
     public RemoteGate getRemoteGate(String name);
     
+    public void broadcast(Callback<Integer> cb, String message, String permission);
+    
+    public void broadcastMessage(Callback<Integer> cb, String message);
+    
+    public void dispatchCommand(Callback<Boolean> cb, CommandSender sender, String commandLine);
+    
+    public void getDefaultGameMode(Callback<GameMode> cb);
+
+    public void getName(Callback<String> cb);
+    
+    public void getServerId(Callback<String> cb);
+    
     public void getVersion(Callback<String> cb);
     
+    /* Options */
+    
+    public String getKey();
+    public void setKey(String key);
+    public boolean isEnabled();
+    public void setEnabled(boolean en);
+    public String getPublicAddress();
+    public void setPublicAddress(String address);
+    public String getPrivateAddress();
+    public void setPrivateAddress(String address);
+    public boolean getSendChat();
+    public void setSendChat(boolean b);
+    public boolean getReceiveChat();
+    public void setReceiveChat(boolean b);
+    public boolean getAnnouncePlayers();
+    public void setAnnouncePlayers(boolean b);
+
+    /* End Options */
+        
 }

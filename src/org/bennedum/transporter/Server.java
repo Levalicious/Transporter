@@ -15,6 +15,8 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.GateType;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -34,12 +36,24 @@ import org.bennedum.transporter.api.RemoteGate;
 import org.bennedum.transporter.api.RemotePlayer;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
+import org.bennedum.transporter.api.event.RemoteGateCreateEvent;
+import org.bennedum.transporter.api.event.RemoteGateDestroyEvent;
+import org.bennedum.transporter.api.event.RemotePlayerChangeWorldEvent;
+import org.bennedum.transporter.api.event.RemotePlayerDeathEvent;
+import org.bennedum.transporter.api.event.RemotePlayerJoinEvent;
+import org.bennedum.transporter.api.event.RemotePlayerKickEvent;
+import org.bennedum.transporter.api.event.RemotePlayerQuitEvent;
+import org.bennedum.transporter.api.event.RemoteServerConnectEvent;
+import org.bennedum.transporter.api.event.RemoteServerDisconnectEvent;
 import org.bennedum.transporter.config.ConfigurationNode;
 import org.bennedum.transporter.net.Connection;
 import org.bennedum.transporter.net.Network;
 import org.bennedum.transporter.net.Message;
-import org.bukkit.Location;
+import org.bukkit.GameMode;
 import org.bukkit.World;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.entity.Player;
 
 /**
@@ -54,7 +68,8 @@ public final class Server implements OptionsListener, RemoteServer {
     private static final int RECV_KEEPALIVE_INTERVAL = 90000;
 
     private static final Set<String> OPTIONS = new HashSet<String>();
-
+    private static final Map<String,Method> MESSAGE_HANDLERS = new HashMap<String,Method>();
+    
     static {
         OPTIONS.add("pluginAddress");
         OPTIONS.add("key");
@@ -63,8 +78,49 @@ public final class Server implements OptionsListener, RemoteServer {
         OPTIONS.add("sendChat");
         OPTIONS.add("receiveChat");
         OPTIONS.add("announcePlayers");
+        
+        MESSAGE_HANDLERS.put("nop", null);
+        MESSAGE_HANDLERS.put("error", null);
+        addMessageHandler("ping");
+        addMessageHandler("pong");
+        addMessageHandler("refresh");
+        addMessageHandler("refreshData");
+        addMessageHandler("gateCreated");
+        addMessageHandler("gateAdded");
+        addMessageHandler("gateRenamed");
+        addMessageHandler("gateRemoved");
+        addMessageHandler("gateDestroyed");
+        addMessageHandler("gateAttach");
+        addMessageHandler("gateDetach");
+        addMessageHandler("reservation");
+        addMessageHandler("reservationApproved");
+        addMessageHandler("reservationDenied");
+        addMessageHandler("reservationArrived");
+        addMessageHandler("reservationTimeout");
+        addMessageHandler("linkAdd");
+        addMessageHandler("linkAddComplete");
+        addMessageHandler("linkRemove");
+        addMessageHandler("linkRemoveComplete");
+        addMessageHandler("playerChangeWorld");
+        addMessageHandler("playerJoin");
+        addMessageHandler("playerQuit");
+        addMessageHandler("playerKick");
+        addMessageHandler("playerDeath");
+        addMessageHandler("chat");
+        addMessageHandler("privateMessage");
+        addMessageHandler("apiRequest");
+        addMessageHandler("apiResult");
     }
 
+    private static void addMessageHandler(String name) {
+        try {
+            String mname = "receive" + name.substring(0, 1).toUpperCase() + name.substring(1);
+            MESSAGE_HANDLERS.put(name, Server.class.getDeclaredMethod(mname, Message.class));
+        } catch (NoSuchMethodException nsme) {
+            nsme.printStackTrace(System.err);
+        }
+    }
+    
     public static boolean isValidName(String name) {
         if ((name.length() == 0) || (name.length() > 15)) return false;
         return ! (name.contains(".") || name.contains("*"));
@@ -122,6 +178,8 @@ public final class Server implements OptionsListener, RemoteServer {
     private String remotePrivateAddress = null;
     private String remoteCluster = null;
 
+    private boolean readyForAPI = false;
+    
     private Map<String,RemotePlayerImpl> remotePlayers = new HashMap<String,RemotePlayerImpl>();
     private Map<String,RemoteWorldImpl> remoteWorlds = new HashMap<String,RemoteWorldImpl>();
     private Map<String,RemoteGateImpl> remoteGates = new HashMap<String,RemoteGateImpl>();
@@ -194,8 +252,107 @@ public final class Server implements OptionsListener, RemoteServer {
     
     @Override
     public boolean isConnected() {
-        if (connection == null) return false;
-        return connection.isOpen();
+        return readyForAPI;
+    }
+    
+    @Override
+    public void broadcast(final Callback<Integer> cb, String message, String permission) {
+        Message args = new Message();
+        args.put("message", message);
+        args.put("permission", permission);
+        sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(m.getInt("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "server", "broadcast", args);
+    }
+    
+    @Override
+    public void broadcastMessage(final Callback<Integer> cb, String message) {
+        Message args = new Message();
+        args.put("message", message);
+        sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(m.getInt("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "server", "broadcastMessage", args);
+    }
+    
+    @Override
+    public void dispatchCommand(final Callback<Boolean> cb, CommandSender sender, String commandLine) {
+        Message args = new Message();
+        if ((sender instanceof ConsoleCommandSender) || (sender instanceof RemoteConsoleCommandSender))
+            args.put("sender", "console");
+        else if (sender instanceof Player) {
+            args.put("sender", "player");
+            args.put("name", sender.getName());
+        }
+        args.put("commandLine", commandLine);
+        sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(m.getBoolean("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "server", "dispatchCommand", args);
+    }
+    
+    @Override
+    public void getDefaultGameMode(final Callback<GameMode> cb) {
+        Message args = new Message();
+        sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(Utils.valueOf(GameMode.class, m.getString("result")));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "server", "getDefaultGameMode", args);
+    }
+
+    @Override
+    public void getName(final Callback<String> cb) {
+        Message args = new Message();
+        sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(m.getString("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "server", "getName", args);
+    }
+    
+    @Override
+    public void getServerId(final Callback<String> cb) {
+        Message args = new Message();
+        sendAPIRequest(new Callback<Message>() {
+            @Override
+            public void onSuccess(Message m) {
+                if (cb != null) cb.onSuccess(m.getString("result"));
+            }
+            @Override
+            public void onFailure(RemoteException re) {
+                if (cb != null) cb.onFailure(re);
+            }
+        }, "server", "getServerId", args);
     }
     
     @Override
@@ -238,34 +395,26 @@ public final class Server implements OptionsListener, RemoteServer {
         pluginAddress = addr;
     }
 
+    /* Begin options */
+
+    @Override
     public String getKey() {
         return key;
     }
 
+    @Override
     public void setKey(String key) {
         if ((key == null) || key.isEmpty())
             throw new IllegalArgumentException("key is required");
         this.key = key;
     }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean en) {
-        enabled = en;
-        if (enabled)
-            connect();
-        else
-            disconnect(false);
-    }
-
-    /* Begin options */
-
+    
+    @Override
     public String getPublicAddress() {
         return publicAddress;
     }
 
+    @Override
     public void setPublicAddress(String address) {
         if (address == null)
             throw new IllegalArgumentException("publicAddress is required");
@@ -277,14 +426,12 @@ public final class Server implements OptionsListener, RemoteServer {
         publicAddress = address;
     }
 
-    public String getNormalizedPublicAddress() {
-        return normalizedPublicAddress;
-    }
-
+    @Override
     public String getPrivateAddress() {
         return privateAddress;
     }
 
+    @Override
     public void setPrivateAddress(String address) {
         if (address == null)
             throw new IllegalArgumentException("privateAddress is required");
@@ -296,30 +443,32 @@ public final class Server implements OptionsListener, RemoteServer {
         privateAddress = address;
     }
 
-    public InetSocketAddress getNormalizedPrivateAddress() {
-        return normalizedPrivateAddress;
-    }
-
+    @Override
     public boolean getSendChat() {
         return sendChat;
     }
 
+    @Override
     public void setSendChat(boolean b) {
         sendChat = b;
     }
 
+    @Override
     public boolean getReceiveChat() {
         return receiveChat;
     }
 
+    @Override
     public void setReceiveChat(boolean b) {
         receiveChat = b;
     }
 
+    @Override
     public boolean getAnnouncePlayers() {
         return announcePlayers;
     }
 
+    @Override
     public void setAnnouncePlayers(boolean b) {
         announcePlayers = b;
     }
@@ -348,6 +497,30 @@ public final class Server implements OptionsListener, RemoteServer {
 
     /* End options */
 
+    /* Custom methods */
+    
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public void setEnabled(boolean en) {
+        enabled = en;
+        if (enabled)
+            connect();
+        else
+            disconnect(false);
+    }
+
+    public String getNormalizedPublicAddress() {
+        return normalizedPublicAddress;
+    }
+
+    public InetSocketAddress getNormalizedPrivateAddress() {
+        return normalizedPrivateAddress;
+    }
+    
     public String getRemotePublicAddress() {
         return remotePublicAddress;
     }
@@ -421,7 +594,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void connect() {
-        if (isConnected() || Network.isStopped() || isIncoming()) return;
+        if (isConnectionConnected() || Network.isStopped() || isIncoming()) return;
         allowReconnect = true;
         fastReconnect = false;
         cancelOutbound();
@@ -445,6 +618,10 @@ public final class Server implements OptionsListener, RemoteServer {
         return (reconnectTask != -1);
     }
 
+    public boolean isConnectionConnected() {
+        if (connection == null) return false;
+        return connection.isOpen();
+    }
 
     private void cancelOutbound() {
         if (reconnectTask != -1) {
@@ -457,7 +634,7 @@ public final class Server implements OptionsListener, RemoteServer {
     private void reconnect() {
         cancelOutbound();
         if (! allowReconnect) return;
-        if (isConnected() || Network.isStopped() || isIncoming()) return;
+        if (isConnectionConnected() || Network.isStopped() || isIncoming()) return;
         if (fastReconnect)
             connect();
         else {
@@ -485,7 +662,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void refresh() {
-        if (! isConnected())
+        if (! isConnectionConnected())
             connect();
         else {
             Message message = createMessage("refresh");
@@ -494,7 +671,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void checkKeepAlive() {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         if ((System.currentTimeMillis() - connection.getLastMessageReceivedTime()) < RECV_KEEPALIVE_INTERVAL) return;
         Utils.warning("no keepalive received from server '%s'", name);
         fastReconnect = true;
@@ -514,7 +691,7 @@ public final class Server implements OptionsListener, RemoteServer {
         Utils.fire(new Runnable() {
             @Override
             public void run() {
-                receiveRefresh();
+                receiveRefresh(null);
             }
         });
     }
@@ -524,18 +701,28 @@ public final class Server implements OptionsListener, RemoteServer {
             Utils.info("disconnected from '%s' (%s)", getName(), connection.getName());
             connected = false;
         }
+        readyForAPI = false;
         connection = null;
-        reconnect();
-        final Server me = this;
-        Utils.fire(new Runnable() {
-            @Override
-            public void run() {
-                remotePlayers.clear();
-                remoteGates.clear();
-                remoteWorlds.clear();
-                Gates.removeGatesForServer(me);
-            }
-        });
+        if (Network.isStopped()) {
+            Gates.removeGatesForServer(this);
+            remotePlayers.clear();
+            remoteGates.clear();
+            remoteWorlds.clear();
+        } else {
+            reconnect();
+            final Server me = this;
+            Utils.fire(new Runnable() {
+                @Override
+                public void run() {
+                    RemoteServerDisconnectEvent event = new RemoteServerDisconnectEvent(me);
+                    Global.plugin.getServer().getPluginManager().callEvent(event);        
+                    Gates.removeGatesForServer(me);
+                    remotePlayers.clear();
+                    remoteGates.clear();
+                    remoteWorlds.clear();
+                }
+            });
+        }
     }
 
     public void onMessage(final Message message) {
@@ -562,7 +749,7 @@ public final class Server implements OptionsListener, RemoteServer {
     // Remote commands
     
     public void sendKeepAlive() {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         if ((System.currentTimeMillis() - connection.getLastMessageSentTime()) < SEND_KEEPALIVE_INTERVAL) return;
         Utils.debug("sending keepalive to '%s'", name);
         Message message = createMessage("nop");
@@ -570,15 +757,23 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendPing(Player player) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         final Message message = createMessage("ping");
         message.put("time", System.currentTimeMillis());
         message.put("player", (player == null) ? null : player.getName());
         sendMessage(message);
     }
 
+    public void sendGateCreated(LocalGateImpl gate) {
+        if (! isConnectionConnected()) return;
+        Message message = createMessage("gateCreated");
+        message.put("type", gate.getType().toString());
+        message.put("name", gate.getLocalName());
+        sendMessage(message);
+    }
+    
     public void sendGateAdded(LocalGateImpl gate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("gateAdded");
         message.put("type", gate.getType().toString());
         message.put("name", gate.getLocalName());
@@ -586,7 +781,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendGateRenamed(String oldLocalName, String newName) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("gateRenamed");
         message.put("oldName", oldLocalName);
         message.put("newName", newName);
@@ -594,21 +789,21 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendGateRemoved(LocalGateImpl gate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("gateRemoved");
         message.put("name", gate.getLocalName());
         sendMessage(message);
     }
 
     public void sendGateDestroyed(LocalGateImpl gate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("gateDestroyed");
         message.put("name", gate.getLocalName());
         sendMessage(message);
     }
 
     public void sendGateAttach(RemoteGateImpl toGate, LocalGateImpl fromGate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("gateAttach");
         message.put("to", toGate.getLocalName());
         message.put("from", fromGate.getLocalName());
@@ -616,15 +811,15 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendGateDetach(RemoteGateImpl toGate, LocalGateImpl fromGate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("gateDetach");
         message.put("to", toGate.getLocalName());
         message.put("from", fromGate.getLocalName());
         sendMessage(message);
     }
 
-    public void sendReservation(Reservation res) throws ServerException {
-        if (! isConnected())
+    public void sendReservation(ReservationImpl res) throws ServerException {
+        if (! isConnectionConnected())
             throw new ServerException("server '%s' is offline", name);
         Message message = createMessage("reservation");
         message.put("reservation", res.encode());
@@ -632,7 +827,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendReservationApproved(long id) throws ServerException {
-        if (! isConnected())
+        if (! isConnectionConnected())
             throw new ServerException("server '%s' is offline", name);
         Message message = createMessage("reservationApproved");
         message.put("id", id);
@@ -640,7 +835,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendReservationDenied(long id, String reason) throws ServerException {
-        if (! isConnected())
+        if (! isConnectionConnected())
             throw new ServerException("server '%s' is offline", name);
         Message message = createMessage("reservationDenied");
         message.put("id", id);
@@ -649,7 +844,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendReservationArrived(long id) throws ServerException {
-        if (! isConnected())
+        if (! isConnectionConnected())
             throw new ServerException("server '%s' is offline", name);
         Message message = createMessage("reservationArrived");
         message.put("id", id);
@@ -657,7 +852,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendReservationTimeout(long id) throws ServerException {
-        if (! isConnected())
+        if (! isConnectionConnected())
             throw new ServerException("server '%s' is offline", name);
         Message message = createMessage("reservationTimeout");
         message.put("id", id);
@@ -665,7 +860,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendChat(Player player, String msg, Set<RemoteGateImpl> toGates) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("chat");
         message.put("player", player.getName());
         message.put("message", msg);
@@ -679,7 +874,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendLinkAdd(Player player, LocalGateImpl fromGate, RemoteGateImpl toGate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("linkAdd");
         message.put("from", fromGate.getLocalName());
         message.put("to", toGate.getLocalName());
@@ -688,7 +883,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendLinkAddComplete(String playerName, LocalGateImpl fromGate, RemoteGateImpl toGate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("linkAddComplete");
         message.put("from", fromGate.getLocalName());
         message.put("to", toGate.getLocalName());
@@ -697,7 +892,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendLinkRemove(Player player, LocalGateImpl fromGate, RemoteGateImpl toGate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("linkRemove");
         message.put("from", fromGate.getLocalName());
         message.put("to", toGate.getLocalName());
@@ -706,7 +901,7 @@ public final class Server implements OptionsListener, RemoteServer {
     }
 
     public void sendLinkRemoveComplete(String playerName, LocalGateImpl fromGate, RemoteGateImpl toGate) {
-        if (! isConnected()) return;
+        if (! isConnectionConnected()) return;
         Message message = createMessage("linkRemoveComplete");
         message.put("from", fromGate.getLocalName());
         message.put("to", toGate.getLocalName());
@@ -714,42 +909,59 @@ public final class Server implements OptionsListener, RemoteServer {
         sendMessage(message);
     }
 
-    public void sendPlayerChangedWorld(Player player) {
-        if (! isConnected()) return;
-        Message message = createMessage("playerChangedWorld");
+    public void sendPlayerChangeWorld(Player player) {
+        if (! isConnectionConnected()) return;
+        Message message = createMessage("playerChangeWorld");
         message.put("player", player.getName());
         message.put("world", player.getWorld().getName());
         sendMessage(message);
     }
 
-    public void sendPlayerJoined(Player player, boolean announce) {
-        if (! isConnected()) return;
-        Message message = createMessage("playerJoined");
+    public void sendPlayerJoin(Player player, boolean hasReservation) {
+        if (! isConnectionConnected()) return;
+        Message message = createMessage("playerJoin");
         message.put("name", player.getName());
         message.put("displayName", player.getDisplayName());
         message.put("world", player.getWorld().getName());
-        message.put("announce", announce);
+        message.put("hasReservation", hasReservation);
         sendMessage(message);
     }
 
-    public void sendPlayerQuit(Player player, boolean announce) {
-        if (! isConnected()) return;
+    public void sendPlayerQuit(Player player, boolean hasReservation) {
+        if (! isConnectionConnected()) return;
         Message message = createMessage("playerQuit");
         message.put("name", player.getName());
-        message.put("announce", announce);
+        message.put("hasReservation", hasReservation);
         sendMessage(message);
     }
 
-    public void sendPlayerKicked(Player player, boolean announce) {
-        if (! isConnected()) return;
-        Message message = createMessage("playerKicked");
+    public void sendPlayerKick(Player player, boolean hasReservation) {
+        if (! isConnectionConnected()) return;
+        Message message = createMessage("playerKick");
         message.put("name", player.getName());
-        message.put("announce", announce);
+        message.put("hasReservation", hasReservation);
         sendMessage(message);
     }
 
+    public void sendPlayerDeath(Player player) {
+        if (! isConnectionConnected()) return;
+        Message message = createMessage("playerDeath");
+        message.put("name", player.getName());
+        sendMessage(message);
+    }
+
+    public void sendPrivateMessage(Player fromPlayer, RemotePlayer toPlayer, String msg) {
+        if (! isConnectionConnected()) return;
+        Message message = createMessage("privateMessage");
+        if (fromPlayer != null)
+            message.put("from", fromPlayer.getName());
+        message.put("to", toPlayer.getName());
+        message.put("message", msg);
+        sendMessage(message);
+    }
+    
     public void sendAPIRequest(Callback<Message> cb, String target, String method, Message args) {
-        if (! isConnected()) {
+        if (! isConnectionConnected()) {
             cb.onFailure(new RemoteException("not connected"));
             return;
         }
@@ -774,7 +986,7 @@ public final class Server implements OptionsListener, RemoteServer {
                     Utils.debug("api request %s to %s timed out", rid, name);
                 }
             }
-        }, Config.getAPITimeout());
+        }, APIBackend.getTimeout());
         
     }
     
@@ -785,77 +997,31 @@ public final class Server implements OptionsListener, RemoteServer {
     // run in the main thread
     private void receiveMessage(Message message, String command) {
         try {
-            if (command.equals("nop")) return;
-            if (command.equals("error")) return;
-            if (command.equals("ping"))
-                receivePing(message);
-            else if (command.equals("pong"))
-                receivePong(message);
-            else if (command.equals("refresh"))
-                receiveRefresh();
-            else if (command.equals("refreshData"))
-                receiveRefreshData(message);
-            else if (command.equals("gateAdded"))
-                receiveGateAdded(message);
-            else if (command.equals("gateRenamed"))
-                receiveGateRenamed(message);
-            else if (command.equals("gateRemoved"))
-                receiveGateRemoved(message);
-            else if (command.equals("gateDestroyed"))
-                receiveGateDestroyed(message);
-            else if (command.equals("gateAttach"))
-                receiveGateAttach(message);
-            else if (command.equals("gateDetach"))
-                receiveGateDetach(message);
-            else if (command.equals("reservation"))
-                receiveReservation(message);
-            else if (command.equals("reservationApproved"))
-                receiveReservationApproved(message);
-            else if (command.equals("reservationDenied"))
-                receiveReservationDenied(message);
-            else if (command.equals("reservationArrived"))
-                receiveReservationArrived(message);
-            else if (command.equals("reservationTimeout"))
-                receiveReservationTimeout(message);
-            else if (command.equals("chat"))
-                receiveChat(message);
-            else if (command.equals("linkAdd"))
-                receiveLinkAdd(message);
-            else if (command.equals("linkAddComplete"))
-                receiveLinkAddComplete(message);
-            else if (command.equals("linkRemove"))
-                receiveLinkRemove(message);
-            else if (command.equals("linkRemoveComplete"))
-                receiveLinkRemoveComplete(message);
-            else if (command.equals("playerChangedWorld"))
-                receivePlayerChangedWorld(message);
-            else if (command.equals("playerJoined"))
-                receivePlayerJoined(message);
-            else if (command.equals("playerQuit"))
-                receivePlayerQuit(message);
-            else if (command.equals("playerKicked"))
-                receivePlayerKicked(message);
-            else if (command.equals("apiRequest"))
-                receiveAPIRequest(message);
-            else if (command.equals("apiResult"))
-                receiveAPIResult(message);
-            else
+            if (! MESSAGE_HANDLERS.containsKey(command)) {
                 Utils.warning("receive unrecognized command '%s' from '%s'", command, getName());
-        } catch (TransporterException te) {
-            Utils.warning( "while processing command '%s' from '%s': %s", command, getName(), te.getMessage());
-            if (isConnected()) {
-                Message response = createMessage("error");
-                response.put("success", false);
-                response.put("error", te.getMessage());
-                sendMessage(response);
+                return;
             }
+            Method handler = MESSAGE_HANDLERS.get(command);
+            if (handler == null) return;
+            handler.invoke(this, message);
         } catch (Throwable t) {
-            Utils.severe(t, "while processing command '%s' from '%s': %s", command, getName(), t.getMessage());
-            if (isConnected()) {
-                Message response = createMessage("error");
-                response.put("success", false);
-                response.put("error", t.getMessage());
-                sendMessage(response);
+            Throwable c = t.getCause();
+            if (c instanceof TransporterException) {
+                Utils.warning( "while processing command '%s' from '%s': %s", command, getName(), c.getMessage());
+                if (isConnectionConnected()) {
+                    Message response = createMessage("error");
+                    response.put("success", false);
+                    response.put("error", c.getMessage());
+                    sendMessage(response);
+                }
+            } else {
+                Utils.severe(t, "while processing command '%s' from '%s': %s", command, getName(), t.getMessage());
+                if (isConnectionConnected()) {
+                    Message response = createMessage("error");
+                    response.put("success", false);
+                    response.put("error", t.getMessage());
+                    sendMessage(response);
+                }
             }
         }
     }
@@ -872,8 +1038,8 @@ public final class Server implements OptionsListener, RemoteServer {
         ctx.send("ping to '%s' took %d millis", name, diff);
     }
     
-    private void receiveRefresh() {
-        if (! isConnected()) return;
+    private void receiveRefresh(Message message) {
+        if (! isConnectionConnected()) return;
         
         Message out = createMessage("refreshData");
 
@@ -975,7 +1141,7 @@ public final class Server implements OptionsListener, RemoteServer {
                 RemoteGateImpl gate = RemoteGateImpl.create(this, gType, gName);
                 remoteGates.put(gate.getLocalName(), gate);
                 try {
-                    Gates.add(gate);
+                    Gates.add(gate, false);
                 } catch (GateException ge) {
                     remoteGates.remove(gate.getLocalName());
                     throw new IllegalArgumentException();
@@ -987,8 +1153,41 @@ public final class Server implements OptionsListener, RemoteServer {
             }
         }
         Utils.debug("received %d gates from '%s'", remoteGates.size(), getName());
+        
+        if (! readyForAPI) {
+            readyForAPI = true;
+            RemoteServerConnectEvent event = new RemoteServerConnectEvent(this);
+            Global.plugin.getServer().getPluginManager().callEvent(event);        
+        }
     }
 
+    private void receiveGateCreated(Message message) {
+        if (remoteWorlds.isEmpty()) {
+            Utils.debug("ignored premature gateCreated command");
+            return;
+        }
+        try {
+            String gTypeStr = message.getString("type");
+            GateType gType = Utils.valueOf(GateType.class, gTypeStr);
+            String gName = message.getString("name");
+            RemoteGateImpl gate = RemoteGateImpl.create(this, gType, gName);
+            remoteGates.put(gate.getLocalName(), gate);
+            try {
+                Gates.add(gate, false);
+            } catch (GateException ge) {
+                remoteGates.remove(gate.getLocalName());
+                throw new IllegalArgumentException();
+            }
+            Utils.debug("received gate '%s' from '%s'", gate.getLocalName(), getName());
+            RemoteGateCreateEvent event = new RemoteGateCreateEvent(gate);
+            Global.plugin.getServer().getPluginManager().callEvent(event);        
+        } catch (GateException ge) {
+            Utils.warning("received bad gate from '%s'", getName());
+        } catch (IllegalArgumentException iae) {
+            Utils.warning("received bad gate from '%s'", getName());
+        }
+    }
+    
     private void receiveGateAdded(Message message) {
         if (remoteWorlds.isEmpty()) {
             Utils.debug("ignored premature gateAdded command");
@@ -999,9 +1198,10 @@ public final class Server implements OptionsListener, RemoteServer {
             GateType gType = Utils.valueOf(GateType.class, gTypeStr);
             String gName = message.getString("name");
             RemoteGateImpl gate = RemoteGateImpl.create(this, gType, gName);
+            if (remoteGates.containsKey(gate.getLocalName())) return;
             remoteGates.put(gate.getLocalName(), gate);
             try {
-                Gates.add(gate);
+                Gates.add(gate, false);
             } catch (GateException ge) {
                 remoteGates.remove(gate.getLocalName());
                 throw new IllegalArgumentException();
@@ -1053,6 +1253,8 @@ public final class Server implements OptionsListener, RemoteServer {
         if (gate == null)
             throw new ServerException("unknown gate '%s'", lname);
         remoteGates.remove(lname);
+        RemoteGateDestroyEvent event = new RemoteGateDestroyEvent(gate);
+        Global.plugin.getServer().getPluginManager().callEvent(event);        
         Gates.destroy(gate, false);
     }
 
@@ -1092,9 +1294,9 @@ public final class Server implements OptionsListener, RemoteServer {
         Message resMsg = message.getMessage("reservation");
         if (resMsg == null)
             throw new ServerException("missing reservation");
-        Reservation res;
+        ReservationImpl res;
         try {
-            res = new Reservation(resMsg, this);
+            res = new ReservationImpl(resMsg, this);
             res.receive();
         } catch (ReservationException e) {
             throw new ServerException("invalid reservation: %s", e.getMessage());
@@ -1103,7 +1305,7 @@ public final class Server implements OptionsListener, RemoteServer {
 
     private void receiveReservationApproved(Message message) throws ServerException {
         long id = message.getLong("id");
-        Reservation res = Reservation.get(id);
+        ReservationImpl res = ReservationImpl.get(id);
         if (res == null)
             throw new ServerException("unknown reservation id %s", id);
         res.approved();
@@ -1111,7 +1313,7 @@ public final class Server implements OptionsListener, RemoteServer {
 
     private void receiveReservationDenied(Message message) throws ServerException {
         long id = message.getLong("id");
-        Reservation res = Reservation.get(id);
+        ReservationImpl res = ReservationImpl.get(id);
         if (res == null)
             throw new ServerException("unknown reservation id %s", id);
         String reason = message.getString("reason");
@@ -1122,7 +1324,7 @@ public final class Server implements OptionsListener, RemoteServer {
 
     private void receiveReservationArrived(Message message) throws ServerException {
         long id = message.getLong("id");
-        Reservation res = Reservation.get(id);
+        ReservationImpl res = ReservationImpl.get(id);
         if (res == null)
             throw new ServerException("unknown reservation id %s", id);
         res.arrived();
@@ -1130,24 +1332,10 @@ public final class Server implements OptionsListener, RemoteServer {
 
     private void receiveReservationTimeout(Message message) throws ServerException {
         long id = message.getLong("id");
-        Reservation res = Reservation.get(id);
+        ReservationImpl res = ReservationImpl.get(id);
         if (res == null)
             throw new ServerException("unknown reservation id %s", id);
         res.timeout();
-    }
-
-    private void receiveChat(Message message) throws ServerException {
-        String playerName = message.getString("player");
-        if (playerName == null)
-            throw new ServerException("missing player");
-        String msg = message.getString("message");
-        if (msg == null)
-            throw new ServerException("missing message");
-        List<String> toGates = message.getStringList("toGates");
-        RemotePlayerImpl player = remotePlayers.get(playerName);
-        if (player == null)
-            throw new ServerException("unknown player '%s'", playerName);
-        Chat.receive(player, msg, toGates);
     }
 
     private void receiveLinkAdd(Message message) throws TransporterException {
@@ -1250,7 +1438,7 @@ public final class Server implements OptionsListener, RemoteServer {
         ctx.sendLog("removed link from '%s' to '%s'", toGate.getName(ctx), fromGate.getName(ctx));
     }
 
-    private void receivePlayerChangedWorld(Message message) throws ServerException {
+    private void receivePlayerChangeWorld(Message message) throws ServerException {
         String playerName = message.getString("player");
         if (playerName == null)
             throw new ServerException("missing player");
@@ -1259,11 +1447,12 @@ public final class Server implements OptionsListener, RemoteServer {
             throw new ServerException("missing world");
         RemotePlayerImpl player = remotePlayers.get(playerName);
         if (player == null) return;
-            //throw new ServerException("unknown player '%s'", playerName);
         player.setWorld(worldName);
+        RemotePlayerChangeWorldEvent event = new RemotePlayerChangeWorldEvent(player);
+        Global.plugin.getServer().getPluginManager().callEvent(event);        
     }
 
-    private void receivePlayerJoined(Message message) throws ServerException {
+    private void receivePlayerJoin(Message message) throws ServerException {
         String playerName = message.getString("name");
         if (playerName == null)
             throw new ServerException("missing name");
@@ -1273,15 +1462,14 @@ public final class Server implements OptionsListener, RemoteServer {
         String worldName = message.getString("world");
         if (worldName == null)
             throw new ServerException("missing world");
-        boolean announce = message.getBoolean("announce");
+        boolean hasReservation = message.getBoolean("hasReservation");
         RemotePlayerImpl player = new RemotePlayerImpl(this, playerName, displayName, worldName);
         remotePlayers.put(playerName, player);
-        if (announce && getAnnouncePlayers()) {
-            String format = Config.getServerJoinFormat();
-            format = format.replace("%player%", player.getDisplayName());
-            format = format.replace("%world%", player.getRemoteWorld().getName());
-            format = format.replace("%server%", getName());
-            Global.plugin.getServer().broadcastMessage(format);
+        if (! hasReservation) {
+            RemotePlayerJoinEvent event = new RemotePlayerJoinEvent(player);
+            Global.plugin.getServer().getPluginManager().callEvent(event);        
+            if (getAnnouncePlayers())
+                Global.plugin.getServer().broadcastMessage(Chat.colorize(player.format(Config.getServerJoinFormat())));
         }
     }
 
@@ -1289,39 +1477,77 @@ public final class Server implements OptionsListener, RemoteServer {
         String playerName = message.getString("name");
         if (playerName == null)
             throw new ServerException("missing name");
-        boolean announce = message.getBoolean("announce");
+        boolean hasReservation = message.getBoolean("hasReservation");
         RemotePlayerImpl player = remotePlayers.get(playerName);
         if (player == null) return;
             //throw new ServerException("unknown player '%s'", playerName);
         remotePlayers.remove(playerName);
-        if (announce && getAnnouncePlayers()) {
-            String format = Config.getServerQuitFormat();
-            format = format.replace("%player%", player.getDisplayName());
-            format = format.replace("%world%", player.getRemoteWorld().getName());
-            format = format.replace("%server%", getName());
-            Global.plugin.getServer().broadcastMessage(format);
+        if (! hasReservation) {
+            RemotePlayerQuitEvent event = new RemotePlayerQuitEvent(player);
+            Global.plugin.getServer().getPluginManager().callEvent(event);        
+            if (getAnnouncePlayers())
+                Global.plugin.getServer().broadcastMessage(Chat.colorize(player.format(Config.getServerQuitFormat())));
         }
     }
 
-    private void receivePlayerKicked(Message message) throws ServerException {
+    private void receivePlayerKick(Message message) throws ServerException {
         String playerName = message.getString("name");
         if (playerName == null)
             throw new ServerException("missing name");
-        boolean announce = message.getBoolean("announce");
+        boolean hasReservation = message.getBoolean("hasReservation");
         RemotePlayerImpl player = remotePlayers.get(playerName);
         if (player == null) return;
-            //throw new ServerException("unknown player '%s'", playerName);
         remotePlayers.remove(playerName);
-        if (announce && getAnnouncePlayers()) {
-            String format = Config.getServerKickFormat();
-            format = format.replace("%player%", player.getDisplayName());
-            format = format.replace("%world%", player.getRemoteWorld().getName());
-            format = format.replace("%server%", getName());
-            Global.plugin.getServer().broadcastMessage(format);
+        if (! hasReservation) {
+            RemotePlayerKickEvent event = new RemotePlayerKickEvent(player);
+            Global.plugin.getServer().getPluginManager().callEvent(event);        
+            if (getAnnouncePlayers())
+                Global.plugin.getServer().broadcastMessage(Chat.colorize(player.format(Config.getServerKickFormat())));
         }
     }
 
-    private void receiveAPIRequest(Message message) throws ServerException {
+    private void receivePlayerDeath(Message message) throws ServerException {
+        String playerName = message.getString("name");
+        if (playerName == null)
+            throw new ServerException("missing name");
+        RemotePlayerImpl player = remotePlayers.get(playerName);
+        if (player == null) return;
+        RemotePlayerDeathEvent event = new RemotePlayerDeathEvent(player);
+        Global.plugin.getServer().getPluginManager().callEvent(event);        
+        if (getAnnouncePlayers())
+            Global.plugin.getServer().broadcastMessage(Chat.colorize(player.format(Config.getServerDeathFormat())));
+    }
+    
+    private void receiveChat(Message message) throws ServerException {
+        String playerName = message.getString("player");
+        if (playerName == null)
+            throw new ServerException("missing player");
+        String msg = message.getString("message");
+        if (msg == null)
+            throw new ServerException("missing message");
+        List<String> toGates = message.getStringList("toGates");
+        RemotePlayerImpl player = remotePlayers.get(playerName);
+        if (player == null) return;
+        Chat.receive(player, msg, toGates);
+    }
+
+    private void receivePrivateMessage(Message message) throws ServerException {
+        String fromPlayerName = message.getString("from");
+        String toPlayerName = message.getString("to");
+        if (toPlayerName == null)
+            throw new ServerException("missing to player");
+        String msg = message.getString("message");
+        if (msg == null)
+            throw new ServerException("missing message");
+        RemotePlayerImpl fromPlayer = null;
+        if (fromPlayerName != null) {
+            fromPlayer = remotePlayers.get(fromPlayerName);
+            if (fromPlayer == null) return;
+        }
+        Chat.receivePrivateMessage(fromPlayer, toPlayerName, msg);
+    }
+
+    private void receiveApiRequest(Message message) throws ServerException {
         String target = message.getString("target");
         if (target == null)
             throw new ServerException("missing target");
@@ -1341,7 +1567,7 @@ public final class Server implements OptionsListener, RemoteServer {
         sendMessage(out);
     }
     
-    private void receiveAPIResult(Message message) throws ServerException {
+    private void receiveApiResult(Message message) throws ServerException {
         long rid = message.getLong("requestId");
         Callback<Message> cb = requests.remove(rid);
         if (cb == null) {

@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.api.RemoteBlockGate;
 
 /**

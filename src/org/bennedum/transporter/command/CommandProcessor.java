@@ -39,4 +39,16 @@ public abstract class CommandProcessor {
      * 
      */
     
+    protected String rebuildCommandArgs(List<String> args) {
+        StringBuilder b = new StringBuilder();
+        for (String arg : args) {
+            if (arg.contains(" "))
+                b.append("\"").append(arg).append("\"");
+            else
+                b.append(arg);
+            b.append(" ");
+        }
+        return b.toString().trim();
+    }
+    
 }

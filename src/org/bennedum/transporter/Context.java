@@ -51,9 +51,10 @@ public class Context {
         if (msg.isEmpty()) return;
         if (sender == null)
             Utils.info(msg);
-        else if (isPlayer())
+        else if (isPlayer()) {
+            msg = Chat.colorize(msg);
             sender.sendMessage(HL_ON + "[" + Global.pluginName + "] " + HL_OFF + msg);
-        else {
+        } else {
             msg = ChatColor.stripColor(msg);
             sender.sendMessage("[" + Global.pluginName + "] " + msg);
         }

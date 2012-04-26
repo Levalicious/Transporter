@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.GateType;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +27,6 @@ import java.util.Set;
 import org.bennedum.transporter.api.LocalGate;
 import org.bennedum.transporter.command.CommandException;
 import org.bennedum.transporter.config.Configuration;
-import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -55,7 +55,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         try {
             type = Utils.valueOf(GateType.class, typeStr);
         } catch (IllegalArgumentException iae) {
-            throw new GateException("invalid gate type '%s'", typeStr);
+            throw new GateException(iae.getMessage() + " gate type '%s'", typeStr);
         }
         
         switch (type) {
@@ -82,7 +82,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         BASEOPTIONS.add("linkServerFormat");
         BASEOPTIONS.add("multiLink");
         BASEOPTIONS.add("protect");
-        BASEOPTIONS.add("restoreOnClose");
         BASEOPTIONS.add("requirePin");
         BASEOPTIONS.add("requireValidPin");
         BASEOPTIONS.add("invalidPinDamage");
@@ -96,6 +95,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         BASEOPTIONS.add("deleteInventory");
         BASEOPTIONS.add("receiveGameMode");
         BASEOPTIONS.add("allowGameModes");
+        BASEOPTIONS.add("gameMode");
         BASEOPTIONS.add("receiveXP");
         BASEOPTIONS.add("randomNextLink");
         BASEOPTIONS.add("sendNextLink");
@@ -147,6 +147,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     protected boolean deleteInventory;
     protected boolean receiveGameMode;
     protected String allowGameModes;
+    protected GameMode gameMode;
     protected boolean receiveXP;
     protected boolean randomNextLink;
     protected boolean sendNextLink;
@@ -189,7 +190,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         try {
             direction = Utils.valueOf(BlockFace.class, conf.getString("direction", "NORTH"));
         } catch (IllegalArgumentException iae) {
-            throw new GateException("invalid or ambiguous direction");
+            throw new GateException(iae.getMessage() + " direction");
         }
         duration = conf.getInt("duration", -1);
         linkLocal = conf.getBoolean("linkLocal", true);
@@ -208,6 +209,17 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         pins.addAll(conf.getStringList("pins", new ArrayList<String>()));
         portalOpen = conf.getBoolean("portalOpen", false);
 
+        String gameModeStr = conf.getString("gameMode", null);
+        if (gameModeStr == null)
+            gameMode = null;
+        else {
+            try {
+                gameMode = Utils.valueOf(GameMode.class, gameModeStr);
+            } catch (IllegalArgumentException iae) {
+                throw new GateException(iae.getMessage() + " game mode '%s'", gameModeStr);
+            }
+        }
+        
         List<String> items = conf.getStringList("bannedItems", new ArrayList<String>());
         for (String item : items) {
             String i = Inventory.normalizeItem(item);
@@ -255,11 +267,11 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         receiveXP = conf.getBoolean("receiveXP", false);
         randomNextLink = conf.getBoolean("randomNextLink", false);
         sendNextLink = conf.getBoolean("sendNextLink", false);
-        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
+        teleportFormat = conf.getString("teleportFormat", "%GOLD%teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
         invalidLinkFormat = conf.getString("invalidLinkFormat", "invalid link selected");
-        unknownLinkFormat = conf.getString("unknownLinkFormat", "unknown or offline destination endpoint");
+        unknownLinkFormat = conf.getString("unknownLinkFormat", "unknown or offline destination gate");
         markerFormat = conf.getString("markerFormat", "%name%");
 
         incoming.addAll(conf.getStringList("incoming", new ArrayList<String>()));
@@ -307,6 +319,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         setDeleteInventory(false);
         setReceiveGameMode(false);
         setAllowGameModes("*");
+        setGameMode(null);
         setReceiveXP(false);
         setRandomNextLink(false);
         setSendNextLink(false);
@@ -436,8 +449,8 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         else {
             String gateName = gate.getFullName();
             if (gateName.equals(outgoing)) {
-                outgoing = null;
-                dirty = true;
+                //outgoing = null;
+                //dirty = true;
                 onDestinationChanged();
             }
             closeIfAllowed();
@@ -547,7 +560,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         }
     }
 
-    
+    @Override
     public void save(boolean force) {
         if ((! dirty) && (! force)) return;
         if (file == null) return;
@@ -589,6 +602,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         conf.setProperty("deleteInventory", deleteInventory);
         conf.setProperty("receiveGameMode", receiveGameMode);
         conf.setProperty("allowGameModes", allowGameModes);
+        conf.setProperty("gameMode", gameMode);
         conf.setProperty("receiveXP", receiveXP);
         conf.setProperty("randomNextLink", randomNextLink);
         conf.setProperty("sendNextLink", sendNextLink);
@@ -645,46 +659,56 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     /* Begin options */
 
+    @Override
     public int getDuration() {
         return duration;
     }
 
+    @Override
     public void setDuration(int i) {
         duration = i;
         dirty = true;
     }
 
+    @Override
     public boolean getLinkLocal() {
         return linkLocal;
     }
 
+    @Override
     public void setLinkLocal(boolean b) {
         linkLocal = b;
         dirty = true;
     }
 
+    @Override
     public boolean getLinkWorld() {
         return linkWorld;
     }
 
+    @Override
     public void setLinkWorld(boolean b) {
         linkWorld = b;
         dirty = true;
     }
 
+    @Override
     public boolean getLinkServer() {
         return linkServer;
     }
 
+    @Override
     public void setLinkServer(boolean b) {
         linkServer = b;
         dirty = true;
     }
 
+    @Override
     public String getLinkNoneFormat() {
         return linkNoneFormat;
     }
     
+    @Override
     public void setLinkNoneFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -695,10 +719,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getLinkUnselectedFormat() {
         return linkUnselectedFormat;
     }
     
+    @Override
     public void setLinkUnselectedFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -709,10 +735,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getLinkOfflineFormat() {
         return linkOfflineFormat;
     }
     
+    @Override
     public void setLinkOfflineFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -723,10 +751,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getLinkLocalFormat() {
         return linkLocalFormat;
     }
     
+    @Override
     public void setLinkLocalFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -737,10 +767,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getLinkWorldFormat() {
         return linkWorldFormat;
     }
     
+    @Override
     public void setLinkWorldFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -751,10 +783,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getLinkServerFormat() {
         return linkServerFormat;
     }
     
+    @Override
     public void setLinkServerFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -765,46 +799,56 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
         
+    @Override
     public boolean getMultiLink() {
         return multiLink;
     }
 
+    @Override
     public void setMultiLink(boolean b) {
         multiLink = b;
         dirty = true;
     }
 
+    @Override
     public boolean getProtect() {
         return protect;
     }
 
+    @Override
     public void setProtect(boolean b) {
         protect = b;
         dirty = true;
     }
 
+    @Override
     public boolean getRequirePin() {
         return requirePin;
     }
 
+    @Override
     public void setRequirePin(boolean b) {
         requirePin = b;
         dirty = true;
     }
 
+    @Override
     public boolean getRequireValidPin() {
         return requireValidPin;
     }
 
+    @Override
     public void setRequireValidPin(boolean b) {
         requireValidPin = b;
         dirty = true;
     }
 
+    @Override
     public int getInvalidPinDamage() {
         return invalidPinDamage;
     }
 
+    @Override
     public void setInvalidPinDamage(int i) {
         if (i < 0)
             throw new IllegalArgumentException("invalidPinDamage must be at least 0");
@@ -812,91 +856,111 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public boolean getSendChat() {
         return sendChat;
     }
 
+    @Override
     public void setSendChat(boolean b) {
         sendChat = b;
         dirty = true;
     }
 
+    @Override
     public int getSendChatDistance() {
         return sendChatDistance;
     }
 
+    @Override
     public void setSendChatDistance(int i) {
         sendChatDistance = i;
         dirty = true;
     }
 
+    @Override
     public boolean getReceiveChat() {
         return receiveChat;
     }
 
+    @Override
     public void setReceiveChat(boolean b) {
         receiveChat = b;
         dirty = true;
     }
 
+    @Override
     public int getReceiveChatDistance() {
         return receiveChatDistance;
     }
 
+    @Override
     public void setReceiveChatDistance(int i) {
         receiveChatDistance = i;
         dirty = true;
     }
 
+    @Override
     public boolean getRequireAllowedItems() {
         return requireAllowedItems;
     }
 
+    @Override
     public void setRequireAllowedItems(boolean b) {
         requireAllowedItems = b;
         dirty = true;
     }
 
+    @Override
     public boolean getSendInventory() {
         return sendInventory;
     }
 
+    @Override
     public void setSendInventory(boolean b) {
         sendInventory = b;
         dirty = true;
     }
 
+    @Override
     public boolean getReceiveInventory() {
         return receiveInventory;
     }
 
+    @Override
     public void setReceiveInventory(boolean b) {
         receiveInventory = b;
         dirty = true;
     }
 
+    @Override
     public boolean getDeleteInventory() {
         return deleteInventory;
     }
 
+    @Override
     public void setDeleteInventory(boolean b) {
         deleteInventory = b;
         dirty = true;
     }
 
+    @Override
     public boolean getReceiveGameMode() {
         return receiveGameMode;
     }
 
+    @Override
     public void setReceiveGameMode(boolean b) {
         receiveGameMode = b;
         dirty = true;
     }
 
+    @Override
     public String getAllowGameModes() {
         return allowGameModes;
     }
 
+    @Override
     public void setAllowGameModes(String s) {
         if (s != null) {
             if (s.equals("*")) s = null;
@@ -913,58 +977,79 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
                 GameMode mode = Utils.valueOf(GameMode.class, part);
                 modes += mode.toString() + ",";
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("allowGameModes: " + e.getMessage());
+                throw new IllegalArgumentException(e.getMessage() + " game mode '" + part + "'");
             }
         }
         allowGameModes = modes.substring(0, modes.length() - 1);
         dirty = true;
     }
 
+    @Override
+    public GameMode getGameMode() {
+        return gameMode;
+    }
+    
+    @Override
+    public void setGameMode(GameMode m) {
+        gameMode = m;
+        dirty = true;
+    }
+    
+    @Override
     public boolean getReceiveXP() {
         return receiveXP;
     }
 
+    @Override
     public void setReceiveXP(boolean b) {
         receiveXP = b;
         dirty = true;
     }
     
+    @Override
     public boolean getRandomNextLink() {
         return randomNextLink;
     }
 
+    @Override
     public void setRandomNextLink(boolean b) {
         randomNextLink = b;
         dirty = true;
     }
     
+    @Override
     public boolean getSendNextLink() {
         return sendNextLink;
     }
 
+    @Override
     public void setSendNextLink(boolean b) {
         sendNextLink = b;
         dirty = true;
     }
     
+    @Override
     public String getTeleportFormat() {
         return teleportFormat;
     }
 
+    @Override
     public void setTeleportFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = ChatColor.GOLD + "teleported to '%toNameCtx%'";
+        if (s == null) s = "%GOLD%teleported to '%toNameCtx%'";
         teleportFormat = s;
         dirty = true;
     }
 
+    @Override
     public String getNoLinksFormat() {
         return noLinksFormat;
     }
 
+    @Override
     public void setNoLinksFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -975,10 +1060,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getNoLinkSelectedFormat() {
         return noLinkSelectedFormat;
     }
 
+    @Override
     public void setNoLinkSelectedFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -989,10 +1076,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getInvalidLinkFormat() {
         return invalidLinkFormat;
     }
 
+    @Override
     public void setInvalidLinkFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -1003,10 +1092,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getUnknownLinkFormat() {
         return unknownLinkFormat;
     }
 
+    @Override
     public void setUnknownLinkFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -1017,10 +1108,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public String getMarkerFormat() {
         return markerFormat;
     }
 
+    @Override
     public void setMarkerFormat(String s) {
         if (s != null) {
             if (s.equals("-")) s = "";
@@ -1031,10 +1124,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getLinkLocalCost() {
         return linkLocalCost;
     }
 
+    @Override
     public void setLinkLocalCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("linkLocalCost must be at least 0");
@@ -1042,10 +1137,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getLinkWorldCost() {
         return linkWorldCost;
     }
 
+    @Override
     public void setLinkWorldCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("linkWorldCost must be at least 0");
@@ -1053,10 +1150,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getLinkServerCost() {
         return linkServerCost;
     }
 
+    @Override
     public void setLinkServerCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("linkServerCost must be at least 0");
@@ -1064,10 +1163,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getSendLocalCost() {
         return sendLocalCost;
     }
 
+    @Override
     public void setSendLocalCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("sendLocalCost must be at least 0");
@@ -1075,10 +1176,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getSendWorldCost() {
         return sendWorldCost;
     }
 
+    @Override
     public void setSendWorldCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("sendWorldCost must be at least 0");
@@ -1086,10 +1189,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getSendServerCost() {
         return sendServerCost;
     }
 
+    @Override
     public void setSendServerCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("sendServerCost must be at least 0");
@@ -1097,10 +1202,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getReceiveLocalCost() {
         return receiveLocalCost;
     }
 
+    @Override
     public void setReceiveLocalCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("receiveLocalCost must be at least 0");
@@ -1108,10 +1215,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getReceiveWorldCost() {
         return receiveWorldCost;
     }
 
+    @Override
     public void setReceiveWorldCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("receiveWorldCost must be at least 0");
@@ -1119,10 +1228,12 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         dirty = true;
     }
 
+    @Override
     public double getReceiveServerCost() {
         return receiveServerCost;
     }
 
+    @Override
     public void setReceiveServerCost(double cost) {
         if (cost < 0)
             throw new IllegalArgumentException("receiveServerCost must be at least 0");
@@ -1188,7 +1299,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (isLinked() && (! getMultiLink()))
             throw new GateException("gate '%s' cannot accept multiple links", getName(ctx));
 
-        GateImpl toGate = Gates.find(toGateName);
+        GateImpl toGate = Gates.find(ctx, toGateName);
         if (toGate == null)
             throw new GateException("gate '%s' cannot be found", toGateName);
         
@@ -1308,6 +1419,10 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             GateImpl gate = Gates.get(outgoing);
             if (gate != null)
                 gate.attach(this);
+            else {
+                Utils.debug("closing if allowed");
+                closeIfAllowed();
+            }
         }
         getDestinationGate();
     }
@@ -1523,13 +1638,13 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     private boolean canClose() {
         if (duration < 1)
-            return (outgoing == null) && incoming.isEmpty();
+            return (! hasValidDestination()) && incoming.isEmpty();
 
         // temporary gate
         boolean expired = ((System.currentTimeMillis() - portalOpenTime) + 50) > duration;
 
         // handle mutually paired gates
-        if ((outgoing != null) && incoming.contains(outgoing) && (incoming.size() == 1)) return expired;
+        if ((outgoing != null) && hasValidDestination() && incoming.contains(outgoing) && (incoming.size() == 1)) return expired;
 
         if (incoming.isEmpty())
             return (outgoing == null) || expired;

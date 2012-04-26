@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.bennedum.transporter.GateMap.Volume;
+import org.bennedum.transporter.api.event.LocalGateCreateEvent;
+import org.bennedum.transporter.api.event.LocalGateDestroyEvent;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -71,7 +73,7 @@ public final class Gates {
             try {
                 LocalGateImpl gate = LocalGateImpl.load(world, gateFile);
                 try {
-                    add(gate);
+                    add(gate, false);
                     ctx.sendLog("loaded gate '%s' for world '%s'", gate.getName(), world.getName());
                     loadedCount++;
                 } catch (GateException ee) {
@@ -91,7 +93,8 @@ public final class Gates {
         if (gates.isEmpty()) return;
         for (LocalGateImpl gate : getLocalGates()) {
             gate.save(true);
-            ctx.sendLog("saved '%s'", gate.getLocalName());
+            if (ctx != null)
+                ctx.sendLog("saved '%s'", gate.getLocalName());
         }
     }
     
@@ -122,7 +125,7 @@ public final class Gates {
         return gates.get(name);
     }
     
-    public static void add(GateImpl gate) throws GateException {
+    public static void add(GateImpl gate, boolean created) throws GateException {
         if (gates.containsKey(gate.getFullName()))
             throw new GateException("a gate with the same name already exists here");
         gates.put(gate.getFullName(), gate);
@@ -130,13 +133,15 @@ public final class Gates {
             lg.onGateAdded(gate);
         if (gate instanceof LocalGateImpl) {
             LocalGateImpl lg = (LocalGateImpl)gate;
+            LocalGateCreateEvent event = new LocalGateCreateEvent(lg);
+            Global.plugin.getServer().getPluginManager().callEvent(event);        
             for (Server server : Servers.getAll())
                 server.sendGateAdded(lg);
             Markers.update();
             World world = lg.getWorld();
             if (Config.getAutoAddWorlds())
                 try {
-                    WorldProxy wp = Worlds.add(world);
+                    LocalWorldImpl wp = Worlds.add(world);
                     if (wp != null)
                         Utils.info("automatically added world '%s' for new gate '%s'", wp.getName(), gate.getName());
                 } catch (WorldException we) {}
@@ -168,6 +173,8 @@ public final class Gates {
         if (gate instanceof LocalGateImpl) {
             LocalGateImpl lg = (LocalGateImpl)gate;
             deselectGate(lg);
+            LocalGateDestroyEvent event = new LocalGateDestroyEvent(lg);
+            Global.plugin.getServer().getPluginManager().callEvent(event);        
             lg.destroy(unbuild);
             for (Server server : Servers.getAll())
                 server.sendGateDestroyed(lg);

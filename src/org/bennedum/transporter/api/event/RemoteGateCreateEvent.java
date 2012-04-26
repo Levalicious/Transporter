@@ -13,15 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bennedum.transporter;
+package org.bennedum.transporter.api.event;
+
+import org.bennedum.transporter.api.RemoteGate;
+import org.bukkit.event.Event;
+import org.bukkit.event.HandlerList;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public enum GateType {
+public final class RemoteGateCreateEvent extends Event {
     
-    BLOCK,
-    AREA;
+    private static final HandlerList handlers = new HandlerList();
+
+    public static HandlerList getHandlerList() {
+        return handlers;
+    }    
     
+    private RemoteGate gate;
+    
+    public RemoteGateCreateEvent(RemoteGate gate) {
+        this.gate = gate;
+    }
+ 
+    public RemoteGate getRemoteGate() {
+        return gate;
+    }
+ 
+    @Override
+    public HandlerList getHandlers() {
+        return handlers;
+    }
+ 
 }

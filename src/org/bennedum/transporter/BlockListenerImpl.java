@@ -28,6 +28,13 @@ import org.bukkit.event.block.*;
 public class BlockListenerImpl implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
+    public void onBlockCanBuild(BlockCanBuildEvent event) {
+        LocalGateImpl gate = Gates.findGateForPortal(event.getBlock().getLocation());
+        if ((gate != null) && gate.isOpen())
+            event.setBuildable(false);
+    }
+    
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockDamage(BlockDamageEvent event) {
         LocalGateImpl gate = Gates.findGateForProtection(event.getBlock().getLocation());
         if (gate != null) {
@@ -85,7 +92,7 @@ public class BlockListenerImpl implements Listener {
             Economy.requireFunds(ctx.getPlayer(), match.design.getCreateCost());
             
             gate = match.design.create(match, ctx.getPlayer().getName(), gateName);
-            Gates.add(gate);
+            Gates.add(gate, true);
             ctx.sendLog("created gate '%s'", gate.getName());
             Gates.setSelectedGate(ctx.getPlayer(), gate);
             

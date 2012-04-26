@@ -233,6 +233,7 @@ public final class Network {
             } catch (InterruptedException ie) {}
         }
         networkThread = null;
+        ctx.send("network manager stopped");
     }
 
     public static void onConfigLoad(Context ctx) {

@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.SpawnDirection;
 import java.util.HashMap;
 import java.util.Map;
 import org.bennedum.transporter.config.ConfigurationNode;
@@ -98,7 +99,7 @@ public final class DesignBlockDetail {
             try {
                 spawn = Utils.valueOf(SpawnDirection.class, str);
             } catch (IllegalArgumentException iae) {
-                throw new BlockException("invalid or ambiguous spawn '%s'", str);
+                throw new BlockException(iae.getMessage() + " spawn '%s'", str);
             }
         }
 
@@ -106,14 +107,14 @@ public final class DesignBlockDetail {
         try {
             sendLightningMode = Utils.valueOf(LightningMode.class, str);
         } catch (IllegalArgumentException iae) {
-            throw new BlockException("invalid or ambiguous sendLightningMode '%s'", str);
+            throw new BlockException(iae.getMessage() + " sendLightningMode '%s'", str);
         }
         
         str = node.getString("receiveLightningMode", "NONE");
         try {
             receiveLightningMode = Utils.valueOf(LightningMode.class, str);
         } catch (IllegalArgumentException iae) {
-            throw new BlockException("invalid or ambiguous receiveLightningMode '%s'", str);
+            throw new BlockException(iae.getMessage() + " receiveLightningMode '%s'", str);
         }
 
         // backwards compatibility in v7.8, remove someday
@@ -136,21 +137,21 @@ public final class DesignBlockDetail {
         try {
             triggerOpenMode = Utils.valueOf(RedstoneMode.class, str);
         } catch (IllegalArgumentException iae) {
-            throw new BlockException("invalid or ambiguous triggerOpenMode '%s'", str);
+            throw new BlockException(iae.getMessage() + " triggerOpenMode '%s'", str);
         }
         
         str = node.getString("triggerCloseMode", "LOW");
         try {
             triggerCloseMode = Utils.valueOf(RedstoneMode.class, str);
         } catch (IllegalArgumentException iae) {
-            throw new BlockException("invalid or ambiguous triggerCloseMode '%s'", str);
+            throw new BlockException(iae.getMessage() + " triggerCloseMode '%s'", str);
         }
         
         str = node.getString("switchMode", "HIGH");
         try {
             switchMode = Utils.valueOf(RedstoneMode.class, str);
         } catch (IllegalArgumentException iae) {
-            throw new BlockException("invalid or ambiguous switchMode '%s'", str);
+            throw new BlockException(iae.getMessage() + " switchMode '%s'", str);
         }
 
         if (isScreen && ((buildBlock == null) || (! buildBlock.isSign())))

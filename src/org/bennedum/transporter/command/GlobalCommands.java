@@ -19,16 +19,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import org.bennedum.transporter.Chat;
 import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.GateImpl;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
 import org.bennedum.transporter.Permissions;
+import org.bennedum.transporter.Players;
 import org.bennedum.transporter.RemotePlayerImpl;
-import org.bennedum.transporter.Reservation;
+import org.bennedum.transporter.ReservationImpl;
 import org.bennedum.transporter.ReservationException;
+import org.bennedum.transporter.Server;
 import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.api.event.LocalPlayerPMEvent;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
 
@@ -128,7 +132,7 @@ public final class GlobalCommands extends TrpCommandProcessor {
 
             Permissions.require(ctx.getPlayer(), "trp.go." + gate.getFullName());
             try {
-                Reservation r = new Reservation(ctx.getPlayer(), gate);
+                ReservationImpl r = new ReservationImpl(ctx.getPlayer(), gate);
                 r.depart();
             } catch (ReservationException e) {
                 ctx.warnLog(e.getMessage());
@@ -142,8 +146,48 @@ public final class GlobalCommands extends TrpCommandProcessor {
         }
         
         if ("pm".startsWith(subCmd)) {
-            // TODO: add pm command
-            return;
+            if (args.isEmpty())
+                throw new CommandException("player name required");
+            String playerName = args.remove(0);
+            if (args.isEmpty())
+                throw new CommandException("message required");
+            String message = "";
+            for (String arg : args) {
+                if (message.length() > 0) message += " ";
+                message += arg;
+            }
+            Player localPlayer = Players.findLocal(playerName);
+            if (localPlayer != null) {
+                LocalPlayerPMEvent event = new LocalPlayerPMEvent(ctx.getPlayer(), localPlayer, message);
+                Global.plugin.getServer().getPluginManager().callEvent(event);
+                if (event.isCancelled()) return;
+                String format;
+                if (ctx.isConsole()) {
+                    format = Config.getConsolePMFormat();
+                    if (format == null) return;
+                } else {
+                    if (ctx.getPlayer().getWorld() == localPlayer.getWorld())
+                        format = Config.getLocalPMFormat();
+                    else
+                        format = Config.getWorldPMFormat();
+                    if (format == null) return;
+                    format = format.replaceAll("%fromPlayer%", ctx.getPlayer().getDisplayName());
+                    format = format.replaceAll("%fromWorld%", ctx.getPlayer().getWorld().getName());
+                    format = format.replaceAll("%toPlayer%", localPlayer.getDisplayName());
+                    format = format.replaceAll("%toWorld%", localPlayer.getWorld().getName());
+                }
+                format = format.replaceAll("%message%", message);
+                format = Chat.colorize(format);
+                if (! format.isEmpty())
+                    localPlayer.sendMessage(format);
+                return;
+            }
+            RemotePlayerImpl remotePlayer = Players.findRemote(playerName);
+            if (remotePlayer != null) {
+                ((Server)remotePlayer.getRemoteServer()).sendPrivateMessage(ctx.getPlayer(), remotePlayer, message);
+                return;
+            }
+            throw new CommandException("unknown or ambiguous player name");
         }
         
         if ("set".startsWith(subCmd)) {

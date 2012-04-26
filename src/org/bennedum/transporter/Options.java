@@ -136,6 +136,12 @@ public final class Options {
                 m.invoke(target, Double.parseDouble(value));
             else if (rCls == String.class)
                 m.invoke(target, value);
+            else if (rCls.isEnum())
+                try {
+                    m.invoke(target, Utils.valueOf(rCls, value));
+                } catch (IllegalArgumentException iae) {
+                    throw new OptionsException(iae.getMessage() + " option value '%s'", value);
+                }
             else
                 throw new OptionsException("unsupported option type '%s'", rCls);
 

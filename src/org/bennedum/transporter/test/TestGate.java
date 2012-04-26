@@ -21,7 +21,7 @@ import java.util.Set;
 import org.bennedum.transporter.GateException;
 import org.bennedum.transporter.GateMap.Point;
 import org.bennedum.transporter.GateMap.Volume;
-import org.bennedum.transporter.GateType;
+import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.LocalGateImpl;
 import org.bennedum.transporter.OldGateMap;
 import org.bennedum.transporter.config.Configuration;

@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.bennedum.transporter.api.LocalWorld;
 import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
@@ -28,7 +29,7 @@ import org.bukkit.WorldCreator;
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public final class WorldProxy implements OptionsListener {
+public final class LocalWorldImpl implements OptionsListener, LocalWorld {
 
     private static final Set<String> OPTIONS = new HashSet<String>();
 
@@ -46,12 +47,12 @@ public final class WorldProxy implements OptionsListener {
 
     private Options options = new Options(this, OPTIONS, "trp.world", this);
     private String name;
-    private String environment;
+    private Environment environment;
     private String generator;
     private String seed;
     private boolean autoLoad;
 
-    public WorldProxy(String name, String environment, String generator, String seed) throws WorldException {
+    public LocalWorldImpl(String name, Environment environment, String generator, String seed) throws WorldException {
         try {
             setName(name);
             setEnvironment(environment);
@@ -63,14 +64,18 @@ public final class WorldProxy implements OptionsListener {
         }
     }
 
-    public WorldProxy(ConfigurationNode node) throws WorldException {
+    public LocalWorldImpl(ConfigurationNode node) throws WorldException {
         try {
             setName(node.getString("name"));
 
             // try to convert old environment to new environment/generator
             String envStr = node.getString("environment", "NORMAL");
             if (envStr.equals("SKYLANDS")) envStr = "NORMAL";
-            setEnvironment(envStr);
+            try {
+                setEnvironment(Utils.valueOf(Environment.class, envStr));
+            } catch (IllegalArgumentException iae) {
+                throw new WorldException(iae.getMessage() + " environment");
+            }
 
             setGenerator(node.getString("generator", null));
             setSeed(node.getString("seed", null));
@@ -80,11 +85,12 @@ public final class WorldProxy implements OptionsListener {
         }
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    private void setName(String name) {
         if (name == null)
             throw new IllegalArgumentException("name is required");
         if (! isValidName(name))
@@ -94,6 +100,18 @@ public final class WorldProxy implements OptionsListener {
 
     /* Begin options */
 
+    @Override
+    public Environment getEnvironment() {
+        return environment;
+    }
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        if (environment == null) environment = Environment.NORMAL;
+        this.environment = environment;
+    }
+
+    /*
     public String getEnvironment() {
         return environment;
     }
@@ -109,31 +127,38 @@ public final class WorldProxy implements OptionsListener {
         }
         this.environment = environment;
     }
-
+*/
+    
+    @Override
     public String getGenerator() {
         return generator;
     }
 
+    @Override
     public void setGenerator(String generator) {
         if ((generator != null) &&
             (generator.isEmpty() || generator.equals("-"))) generator = null;
         this.generator = generator;
     }
 
+    @Override
     public String getSeed() {
         return seed;
     }
 
+    @Override
     public void setSeed(String seed) {
         if ((seed != null) &&
             (seed.isEmpty() || seed.equals("-"))) seed = null;
         this.seed = seed;
     }
 
+    @Override
     public boolean getAutoLoad() {
         return autoLoad;
     }
 
+    @Override
     public void setAutoLoad(boolean b) {
         autoLoad = b;
     }
@@ -165,7 +190,7 @@ public final class WorldProxy implements OptionsListener {
     public Map<String,Object> encode() {
         Map<String,Object> node = new HashMap<String,Object>();
         node.put("name", name);
-        node.put("environment", environment);
+        node.put("environment", environment.toString());
         node.put("generator", generator);
         node.put("seed", seed);
         node.put("autoLoad", autoLoad);
@@ -182,12 +207,7 @@ public final class WorldProxy implements OptionsListener {
         if (world == null) {
             ctx.send("loading world '%s'...", name);
             WorldCreator wc = new WorldCreator(name);
-
-            try {
-                wc.environment(Utils.valueOf(Environment.class, environment));
-            } catch (IllegalArgumentException e) {
-                wc.environment(Environment.NORMAL);
-            }
+            wc.environment(environment);
             wc.generator(generator);
             if (seed != null)
                 try {
@@ -214,7 +234,7 @@ public final class WorldProxy implements OptionsListener {
         World world = getWorld();
         if (world != null) {
             Global.plugin.getServer().unloadWorld(world, true);
-            // TODO: remove when Bukkit sends onWorldUnloaded events
+            // Bukkit onWorldUnloaded event handler should do this, but just to be sure...
             Gates.removeGatesForWorld(world);
         }
         return world;

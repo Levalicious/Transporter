@@ -15,12 +15,33 @@
  */
 package org.bennedum.transporter.api;
 
+import org.bukkit.Location;
+
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface LocalAreaGate extends LocalGate {
     
-    // TODO: add options
+    public void resize(int num, ExpandDirection dir);
+    
+    public String getP1();
+    public void setP1(String s);
+    public Location getP1Location();
+    public void setP1Location(Location l);
+    public String getP2();
+    public void setP2(String s);
+    public Location getP2Location();
+    public void setP2Location(Location l);
+    public SpawnDirection getSpawnDirection();
+    public void setSpawnDirection(SpawnDirection dir);
+    public void setSpawnAir(boolean b);
+    public boolean getSpawnAir();
+    public boolean getSpawnSolid();
+    public void setSpawnSolid(boolean b);
+    public boolean getSpawnLiquid();
+    public void setSpawnLiquid(boolean b);
+    public SpawnSearch getSpawnSearch();
+    public void setSpawnSearch(SpawnSearch s);
     
 }

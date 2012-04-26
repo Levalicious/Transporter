@@ -82,7 +82,7 @@ public final class BuildableBlock {
                         try {
                             ((Directional)md).setFacingDirection(Utils.valueOf(BlockFace.class, str));
                         } catch (IllegalArgumentException iae) {
-                            throw new BlockException("invalid or ambiguous facing '%s'", str);
+                            throw new BlockException(iae.getMessage() + " facing '%s'", str);
                         }
                     }
                 }
@@ -92,7 +92,7 @@ public final class BuildableBlock {
                         try {
                             ((Colorable)md).setColor(Utils.valueOf(DyeColor.class, str));
                         } catch (IllegalArgumentException iae) {
-                            throw new BlockException("invalid or ambiguous color '%s'", str);
+                            throw new BlockException(iae.getMessage() + " color '%s'", str);
                         }
                     }
                 }

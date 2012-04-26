@@ -29,4 +29,6 @@ public interface Gate {
 
     public String getFullName();
     
+    public GateType getType();
+    
 }

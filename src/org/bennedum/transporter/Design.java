@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.bennedum.transporter.config.Configuration;
 import org.bennedum.transporter.config.ConfigurationNode;
-import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -75,6 +75,7 @@ public class Design {
     private boolean deleteInventory;
     private boolean receiveGameMode;
     private String allowGameModes;
+    private GameMode gameMode;
     private boolean receiveXP;
     private boolean randomNextLink;
     private boolean sendNextLink;
@@ -150,13 +151,24 @@ public class Design {
         receiveXP = conf.getBoolean("receiveXP", false);
         randomNextLink = conf.getBoolean("randomNextLink", false);
         sendNextLink = conf.getBoolean("sendNextLink", false);
-        teleportFormat = conf.getString("teleportFormat", ChatColor.GOLD + "teleported to '%toGateCtx%'");
+        teleportFormat = conf.getString("teleportFormat", "%GOLD%teleported to '%toGateCtx%'");
         noLinksFormat = conf.getString("noLinksFormat", "this gate has no links");
         noLinkSelectedFormat = conf.getString("noLinkSelectedFormat", "no link is selected");
         invalidLinkFormat = conf.getString("invalidLinkFormat", "invalid link selected");
         unknownLinkFormat = conf.getString("unknownLinkFormat", "unknown or offline destination endpoint");
         markerFormat = conf.getString("markerFormat", "%name%");
 
+        String gameModeStr = conf.getString("gameMode", null);
+        if (gameModeStr == null)
+            gameMode = null;
+        else {
+            try {
+                gameMode = Utils.valueOf(GameMode.class, gameModeStr);
+            } catch (IllegalArgumentException iae) {
+                throw new DesignException(iae.getMessage() + " game mode '%s'", gameModeStr);
+            }
+        }
+        
         List<String> items = conf.getStringList("bannedItems", new ArrayList<String>());
         for (String item : items) {
             String i = Inventory.normalizeItem(item);
@@ -464,6 +476,10 @@ public class Design {
 
     public String getAllowGameModes() {
         return allowGameModes;
+    }
+
+    public GameMode getGameMode() {
+        return gameMode;
     }
 
     public boolean getReceiveXP() {

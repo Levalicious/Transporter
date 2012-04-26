@@ -16,13 +16,16 @@
 package org.bennedum.transporter;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -38,98 +41,104 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 public final class PlayerListenerImpl implements Listener {
 
     // Logic map for player interaction
-    private static final Map<String,String> ACTIONS = new HashMap<String,String>();
+    private static final Map<Integer,String> ACTIONS = new HashMap<Integer,String>();
     
-    // Keys are strings composed of zeros and ones. Each position corresponds to
-    // a boolean test:
-    // 0: Is the gate currently open?
-    // 1: Does the player have trp.gate.open permission?
-    // 2: Does the player have trp.gate.close permission?
-    // 3: Does the player have trp.gate.changeLink permission?
-    // 4: Is the gate on its last link?
-    // 5: Is the gate block a trigger?
-    // 6: Is the gate block a switch?
+    // Masks are strings composed of zeros and ones. Each character position
+    // corresponds to a bit position (bit 0 is first position).
+    // 0 1  : Is the gate currently open?
+    // 1 2  : Does the player have trp.gate.open permission?
+    // 2 4  : Does the player have trp.gate.close permission?
+    // 3 8  : Does the player have trp.gate.changeLink permission?
+    // 4 16 : Does the gate have a valid destination?
+    // 5 32 : Is the gate on its last link?
+    // 6 64 : Is the gate block a trigger?
+    // 7 128: Is the gate block a switch?
     
     // Values are a comma separated list of actions to perform:
-    // NOTPERMITTED: issue a 'not permitted' message to the player
     // OPEN: open the gate
     // CLOSE: close the gate
     // CHANGELINK: change the gate's link
     
     static {
         // gate is closed
-        ACTIONS.put("0010011", "NOTPERMITTED");
-        ACTIONS.put("0010101", "NOTPERMITTED");
-        ACTIONS.put("0010110", "NOTPERMITTED");
-        ACTIONS.put("0010111", "NOTPERMITTED");
-        ACTIONS.put("0011001", "CHANGELINK");
-        ACTIONS.put("0011010", "NOTPERMITTED");
-        ACTIONS.put("0011011", "CHANGELINK");
-        ACTIONS.put("0011101", "CHANGELINK");
-        ACTIONS.put("0011110", "NOTPERMITTED");
-        ACTIONS.put("0011111", "NOTPERMITTED");
-        ACTIONS.put("0100001", "NOTPERMITTED");
-        ACTIONS.put("0100010", "OPEN");
-        ACTIONS.put("0100011", "OPEN");
-        ACTIONS.put("0100101", "NOTPERMITTED");
-        ACTIONS.put("0100110", "OPEN");
-        ACTIONS.put("0100111", "OPEN");
-        ACTIONS.put("0101001", "CHANGELINK");
-        ACTIONS.put("0101010", "OPEN");
-        ACTIONS.put("0101011", "CHANGELINK");
-        ACTIONS.put("0101101", "OPEN");
-        ACTIONS.put("0101110", "OPEN");
-        ACTIONS.put("0101111", "OPEN");
-        ACTIONS.put("0110001", "NOTPERMITTED");
-        ACTIONS.put("0110010", "OPEN");
-        ACTIONS.put("0110011", "OPEN");
-        ACTIONS.put("0110101", "NOTPERMITTED");
-        ACTIONS.put("0110110", "OPEN");
-        ACTIONS.put("0110111", "OPEN");
-        ACTIONS.put("0111001", "CHANGELINK");
-        ACTIONS.put("0111010", "OPEN");
-        ACTIONS.put("0111011", "OPEN");
-        ACTIONS.put("0111101", "CHANGELINK");
-        ACTIONS.put("0111110", "OPEN");
-        ACTIONS.put("0111111", "OPEN");
-
+        addAction("01xxxx1x", "OPEN");
+        addAction("0xx1xx01", "CHANGELINK");
+        addAction("00x1xxx1", "CHANGELINK");
+        addAction("01x10x11", "CHANGELINK,OPEN");
+                  
         // gate is open
-        ACTIONS.put("1010011", "CLOSE");
-        ACTIONS.put("1010101", "NOTPERMITTED");
-        ACTIONS.put("1010110", "CLOSE");
-        ACTIONS.put("1010111", "CLOSE");
-        ACTIONS.put("1011001", "CHANGELINK");
-        ACTIONS.put("1011010", "CLOSE");
-        ACTIONS.put("1011011", "CHANGELINK");
-        ACTIONS.put("1011101", "CHANGELINK");
-        ACTIONS.put("1011110", "CLOSE");
-        ACTIONS.put("1011111", "CLOSE,CHANGELINK");
-        ACTIONS.put("1100001", "NOTPERMITTED");
-        ACTIONS.put("1100010", "NOTPERMITTED");
-        ACTIONS.put("1100011", "NOTPERMITTED");
-        ACTIONS.put("1100101", "NOTPERMITTED");
-        ACTIONS.put("1100110", "NOTPERMITTED");
-        ACTIONS.put("1100111", "NOTPERMITTED");
-        ACTIONS.put("1101001", "CHANGELINK");
-        ACTIONS.put("1101010", "NOTPERMITTED");
-        ACTIONS.put("1101011", "CHANGELINK");
-        ACTIONS.put("1101101", "CHANGELINK");
-        ACTIONS.put("1101110", "NOTPERMITTED");
-        ACTIONS.put("1101111", "CHANGELINK");
-        ACTIONS.put("1110001", "NOTPERMITTED");
-        ACTIONS.put("1110010", "CLOSE");
-        ACTIONS.put("1110011", "CLOSE");
-        ACTIONS.put("1110101", "NOTPERMITTED");
-        ACTIONS.put("1110110", "CLOSE");
-        ACTIONS.put("1110111", "CLOSE");
-        ACTIONS.put("1111001", "CHANGELINK");
-        ACTIONS.put("1111010", "CLOSE");
-        ACTIONS.put("1111011", "CHANGELINK");
-        ACTIONS.put("1111101", "CHANGELINK");
-        ACTIONS.put("1111110", "CLOSE");
-        ACTIONS.put("1111111", "CLOSE,CHANGELINK");
- 
+        addAction("1x1xxx10", "CLOSE");
+        addAction("1x10xx11", "CLOSE");
+        addAction("1x11x111", "CLOSE,CHANGELINK");
+        addAction("1x01xxx1", "CHANGELINK");
+        addAction("1xx1xx01", "CHANGELINK");
+        addAction("1xx1x011", "CHANGELINK");
     }
+    
+    private static void addAction(String mask, String action) {
+        Set<Integer> masks = expandMask(mask);
+        for (Integer m : masks) {
+            //System.out.println("add " + expandMask(m) + " (" + m + ")");
+            ACTIONS.put(m, action);
+        }
+    }
+    
+    public static Set<Integer> expandMask(String mask) {
+        return expandMask(0, 0, mask.charAt(0), mask.substring(1));
+    }
+    
+    private static Set<Integer> expandMask(int bitPos, int prefix, char bit, String suffix) {
+        switch (bit) {
+            case '0':
+            case '1':
+                int bitValue = (bit == '0') ? 0 : (int)Math.pow(2, bitPos);
+                if (suffix.isEmpty()) {
+                    Set<Integer> masks = new HashSet<Integer>();
+                    masks.add(prefix + bitValue);
+                    return masks;
+                }
+                return expandMask(bitPos + 1, prefix + bitValue, suffix.charAt(0), suffix.substring(1));
+            default:
+                Set<Integer> masks = new HashSet<Integer>();
+                masks.addAll(expandMask(bitPos, prefix, '0', suffix));
+                masks.addAll(expandMask(bitPos, prefix, '1', suffix));
+                return masks;
+        }
+    }
+    
+    /*
+    private static void checkAction(String mask, String action) {
+        Set<Integer> masks = expandMask(mask);
+        for (Integer m : masks) {
+            String act = ACTIONS.get(m);
+            if (act == null) {
+                System.out.println("mask " + expandMask(m) + " (" + m + ") is not permitted but should be " + action);
+                continue;
+            }
+            if (! act.equals(action))
+                System.out.println("mask " + expandMask(m) + " (" + m + ") is " + act + " but should be " + action);
+        }
+    }
+    
+    private static String expandMask(int mask) {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < 8; i++)
+            b.append(((mask & (int)Math.pow(2, i)) > 0) ? "1" : "0");
+        return b.toString();
+    }
+    
+    private static void dumpAction(String action) {
+        List<String> masks = new ArrayList<String>();
+        for (int mask : ACTIONS.keySet()) {
+            if (! ACTIONS.get(mask).equals(action)) continue;
+            String m = expandMask(mask);
+            if (! masks.contains(m)) masks.add(m);
+        }
+        Collections.sort(masks);
+        for (String mask : masks)
+            System.out.println(mask);
+    }
+    */
     
     private Map<Player,Location> playerLocations = new HashMap<Player,Location>();
     
@@ -149,37 +158,34 @@ public final class PlayerListenerImpl implements Listener {
         Player player = event.getPlayer();
         Gates.setSelectedGate(player, testGate);
         
-        String key =
-                (testGate.isOpen() ? "1" : "0") +
-                (Permissions.has(player, "trp.gate.open." + testGate.getFullName()) ? "1" : "0") +
-                (Permissions.has(player, "trp.gate.close." + testGate.getFullName()) ? "1" : "0") +
-                (Permissions.has(player, "trp.gate.changeLink." + testGate.getFullName()) ? "1" : "0") +
-                (testGate.isLastLink() ? "1" : "0") +
-                ((triggerGate != null) ? "1" : "0") +
-                ((switchGate != null) ? "1" : "0");
+        int key = 
+                (testGate.isOpen() ? 1 : 0) +
+                (Permissions.has(player, "trp.gate.open." + testGate.getFullName()) ? 2 : 0) +
+                (Permissions.has(player, "trp.gate.close." + testGate.getFullName()) ? 4 : 0) +
+                (Permissions.has(player, "trp.gate.changeLink." + testGate.getFullName()) ? 8 : 0) +
+                (testGate.hasValidDestination() ? 16 : 0) +
+                (testGate.isLastLink() ? 32 : 0) +
+                ((triggerGate != null) ? 64 : 0) +
+                ((switchGate != null) ? 128 : 0);
         String value = ACTIONS.get(key);
+        Utils.debug("gate key/action is %s/%s", key, value);
+        
         if (value == null) {
-            Utils.severe("Action key '%s' doesn't map to any actions!", key);
+            ctx.send("not permitted");
             return;
         }
         String[] actions = value.split(",");
         
         for (String action : actions) {
             
-            if (action.equals("NOTPERMIITED")) {
-                ctx.send("not permitted");
-                return;
-            }
-            
             if (action.equals("OPEN")) {
-                if (testGate.hasValidDestination())
-                    try {
-                        testGate.open();
-                        ctx.send("opened gate '%s'", testGate.getName());
-                        Utils.debug("player '%s' open gate '%s'", player.getName(), testGate.getName());
-                    } catch (GateException ee) {
-                        ctx.warnLog(ee.getMessage());
-                    }
+                try {
+                    testGate.open();
+                    ctx.send("opened gate '%s'", testGate.getName());
+                    Utils.debug("player '%s' open gate '%s'", player.getName(), testGate.getName());
+                } catch (GateException ee) {
+                    ctx.warnLog(ee.getMessage());
+                }
             }
             
             if (action.equals("CLOSE")) {
@@ -205,19 +211,21 @@ public final class PlayerListenerImpl implements Listener {
         Location loc = quantizePlayerLocation(event.getPlayer(), event.getTo());
         if (loc == null) return;
         
+  //Utils.debug(Utils.blockCoords(loc));
+        
         Player player = event.getPlayer();
         LocalGateImpl fromGate = Gates.findGateForPortal(loc);
         if (fromGate == null) {
-            Reservation.removeGateLock(player);
+            ReservationImpl.removeGateLock(player);
             return;
         }
-        if (Reservation.isGateLocked(player)) {
+        if (ReservationImpl.isGateLocked(player)) {
             return;
         }
 
         Context ctx = new Context(player);
         try {
-            Reservation r = new Reservation(player, fromGate);
+            ReservationImpl r = new ReservationImpl(player, fromGate);
             r.depart();
             Location newLoc = r.getToLocation();
             if (newLoc != null) {
@@ -236,17 +244,17 @@ public final class PlayerListenerImpl implements Listener {
         if ((location == null) ||
             (location.getWorld() == null)) return;
         for (Server server : Servers.getAll())
-            server.sendPlayerChangedWorld(player);
+            server.sendPlayerChangeWorld(player);
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        Reservation r = Reservation.get(player);
+        ReservationImpl r = ReservationImpl.get(player);
         for (Server server : Servers.getAll())
-            server.sendPlayerJoined(player, r == null);
+            server.sendPlayerJoin(player, r != null);
         if (r == null) {
-            Reservation.addGateLock(player);
+            ReservationImpl.addGateLock(player);
             return;
         }
         try {
@@ -261,9 +269,9 @@ public final class PlayerListenerImpl implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        Reservation r = Reservation.get(player);
+        ReservationImpl r = ReservationImpl.get(player);
         for (Server server : Servers.getAll())
-            server.sendPlayerQuit(player, r == null);
+            server.sendPlayerQuit(player, r != null);
         if (r != null)
             event.setQuitMessage(null);
     }
@@ -271,13 +279,21 @@ public final class PlayerListenerImpl implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerKick(PlayerKickEvent event) {
         Player player = event.getPlayer();
-        Reservation r = Reservation.get(player);
+        ReservationImpl r = ReservationImpl.get(player);
         for (Server server : Servers.getAll())
-            server.sendPlayerKicked(player, r == null);
+            server.sendPlayerKick(player, r != null);
         if (r != null)
             event.setLeaveMessage(null);
     }
 
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = (Player)event.getEntity();
+        for (Server server : Servers.getAll())
+            server.sendPlayerDeath(player);
+    }
+
+    
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChat(PlayerChatEvent event) {
         Chat.send(event.getPlayer(), event.getMessage());

@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bennedum.transporter;
+package org.bennedum.transporter.api;
 
+import org.bennedum.transporter.Utils;
 import org.bukkit.block.BlockFace;
 
 /**
@@ -85,7 +86,11 @@ public enum SpawnDirection {
 
     public static SpawnDirection fromFacing(BlockFace facing) {
         if (facing == null) return null;
-        return Utils.valueOf(SpawnDirection.class, facing.toString());
+        try {
+            return Utils.valueOf(SpawnDirection.class, facing.toString());
+        } catch (IllegalArgumentException iae) {
+            return null;
+        }
     }
 
 }

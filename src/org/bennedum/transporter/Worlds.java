@@ -30,7 +30,7 @@ import org.bukkit.World;
 public final class Worlds {
 
     public static final File WorldBaseFolder = Utils.BukkitBaseFolder;
-    private static final Map<String,WorldProxy> worlds = new HashMap<String,WorldProxy>();
+    private static final Map<String,LocalWorldImpl> worlds = new HashMap<String,LocalWorldImpl>();
 
     public static void onConfigLoad(Context ctx) {
         worlds.clear();
@@ -48,7 +48,7 @@ public final class Worlds {
         if (worldNodes != null) {
             for (ConfigurationNode node : worldNodes) {
                 try {
-                    WorldProxy world = new WorldProxy(node);
+                    LocalWorldImpl world = new LocalWorldImpl(node);
                     if (add(world)) {
                         if (Global.started && Config.getAutoLoadWorlds() && world.getAutoLoad())
                             world.load(ctx);
@@ -65,36 +65,36 @@ public final class Worlds {
 
     public static void onConfigSave() {
         List<Map<String,Object>> worldNodes = new ArrayList<Map<String,Object>>();
-        for (WorldProxy world : worlds.values())
+        for (LocalWorldImpl world : worlds.values())
             worldNodes.add(world.encode());
         Config.setPropertyDirect("worlds", worldNodes);
     }
 
     public static void autoLoad(Context ctx) {
         if (! Config.getAutoLoadWorlds()) return;
-        for (WorldProxy world : worlds.values())
+        for (LocalWorldImpl world : worlds.values())
             if (world.getAutoLoad())
                 world.load(ctx);
     }
 
-    public static WorldProxy add(World world) throws WorldException {
+    public static LocalWorldImpl add(World world) throws WorldException {
         if (worlds.containsKey(world.getName())) return null;
-        WorldProxy wp = new WorldProxy(world.getName(), world.getEnvironment().toString(), null, world.getSeed() + "");
+        LocalWorldImpl wp = new LocalWorldImpl(world.getName(), world.getEnvironment(), null, world.getSeed() + "");
         add(wp);
         return wp;
     }
 
-    public static boolean add(WorldProxy world) {
+    public static boolean add(LocalWorldImpl world) {
         return worlds.put(world.getName(), world) == null;
     }
 
-    public static void remove(WorldProxy world) {
+    public static void remove(LocalWorldImpl world) {
         worlds.remove(world.getName());
     }
 
-    public static WorldProxy get(String name) {
+    public static LocalWorldImpl get(String name) {
         if (worlds.containsKey(name)) return worlds.get(name);
-        WorldProxy world = null;
+        LocalWorldImpl world = null;
         name = name.toLowerCase();
         for (String key : worlds.keySet()) {
             if (key.toLowerCase().startsWith(name)) {
@@ -105,8 +105,8 @@ public final class Worlds {
         return world;
     }
 
-    public static List<WorldProxy> getAll() {
-        return new ArrayList<WorldProxy>(worlds.values());
+    public static List<LocalWorldImpl> getAll() {
+        return new ArrayList<LocalWorldImpl>(worlds.values());
     }
 
     public static boolean isEmpty() {

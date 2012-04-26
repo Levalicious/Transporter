@@ -84,7 +84,7 @@ public class ServerCommand extends TrpCommandProcessor {
                                 server.getPluginAddress(),
                                 server.getKey(),
                                 (server.isEnabled() ? "up" : "down"),
-                                (! server.isConnected() ? "down" :
+                                (! server.isConnectionConnected() ? "down" :
                                     String.format("up %s %s v%s",
                                         server.isIncoming() ? "incoming" : "outgoing",
                                         server.getConnection().getName(),
@@ -101,7 +101,7 @@ public class ServerCommand extends TrpCommandProcessor {
                                     server.getPrivateAddress(),
                                     server.getNormalizedPrivateAddress().getAddress().getHostAddress(),
                                     server.getNormalizedPrivateAddress().getPort()));
-                    if (server.isConnected()) {
+                    if (server.isConnectionConnected()) {
                         ctx.send("    remotePublicAddress:  %s",
                                 server.getRemotePublicAddress());
                         ctx.send("    remotePrivateAddress: %s",
@@ -167,7 +167,7 @@ public class ServerCommand extends TrpCommandProcessor {
             if (server == null)
                 throw new CommandException("unknown server '%s'", args.get(0));
             Permissions.require(ctx.getPlayer(), "trp.server.connect");
-            if (server.isConnected())
+            if (server.isConnectionConnected())
                 ctx.sendLog("server '%s' is already connected", server.getName());
             else {
                 ctx.sendLog("requested server connect for '%s'", server.getName());
@@ -222,7 +222,7 @@ public class ServerCommand extends TrpCommandProcessor {
             Permissions.require(ctx.getPlayer(), "trp.server.ping");
             if (! server.isEnabled())
                 throw new CommandException("server '%s' is not enabled", server.getName());
-            if (! server.isConnected())
+            if (! server.isConnectionConnected())
                 throw new CommandException("server '%s' is not connected", server.getName());
             server.sendPing(ctx.getPlayer());
             ctx.send("pinging '%s'...", server.getName());
@@ -236,7 +236,7 @@ public class ServerCommand extends TrpCommandProcessor {
             if (server == null)
                 throw new CommandException("unknown server '%s'", args.get(0));
             Permissions.require(ctx.getPlayer(), "trp.server.refresh");
-            if (! server.isConnected())
+            if (! server.isConnectionConnected())
                 ctx.sendLog("server '%s' is not connected", server.getName());
             else {
                 server.refresh();

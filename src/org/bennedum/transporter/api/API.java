@@ -17,9 +17,11 @@ package org.bennedum.transporter.api;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Server;
 import org.bennedum.transporter.Servers;
+import org.bennedum.transporter.Worlds;
 
 /**
  *
@@ -44,6 +46,23 @@ public final class API {
     
     public Set<RemoteServer> getRemoteServers() {
         return new HashSet<RemoteServer>(Servers.getAll());
+    }
+
+    public Set<LocalWorld> getLocalWorlds() {
+        return new HashSet<LocalWorld>(Worlds.getAll());
+    }
+    
+    public void saveAll() {
+        saveConfig();
+        saveGates();
+    }
+    
+    public void saveConfig() {
+        Config.save(null);
+    }
+    
+    public void saveGates() {
+        Gates.save(null);
     }
     
     // TODO: add teleport methods

@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.api.RemoteGate;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
@@ -46,6 +47,7 @@ public abstract class RemoteGateImpl extends GateImpl implements RemoteGate {
         this.name = parts[1];
     }
     
+    @Override
     public abstract GateType getType();
     
     @Override

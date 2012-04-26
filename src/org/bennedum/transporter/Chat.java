@@ -21,6 +21,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.bennedum.transporter.api.event.RemotePlayerChatEvent;
+import org.bennedum.transporter.api.event.RemotePlayerPMEvent;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -30,6 +35,24 @@ import org.bukkit.entity.Player;
  */
 public final class Chat {
 
+    private static Pattern colorPattern = Pattern.compile("%(\\w+)%");
+    
+    public static String colorize(String msg) {
+        Matcher matcher = colorPattern.matcher(msg);
+        StringBuffer b = new StringBuffer();
+        while (matcher.find()) {
+            String name = matcher.group(1);
+            try {
+                ChatColor color = Utils.valueOf(ChatColor.class, name);
+                matcher.appendReplacement(b, color.toString());
+            } catch (IllegalArgumentException iae) {
+                matcher.appendReplacement(b, matcher.group());
+            }
+        }
+        matcher.appendTail(b);
+        return b.toString();
+    }
+    
     public static void send(Player player, String message) {
         Map<Server,Set<RemoteGateImpl>> servers = new HashMap<Server,Set<RemoteGateImpl>>();
 
@@ -62,10 +85,10 @@ public final class Chat {
     }
 
     public static void receive(RemotePlayerImpl player, String message, List<String> toGates) {
+        RemotePlayerChatEvent event = new RemotePlayerChatEvent(player, message);
+        Global.plugin.getServer().getPluginManager().callEvent(event);        
+        
         Player[] players = Global.plugin.getServer().getOnlinePlayers();
-//        Set<Player,Location> players = new HashMap<String,Location>();
-//        for (Player lp : Global.plugin.getServer().getOnlinePlayers())
-//            players.put(lp.getName(), lp.getLocation());
 
         final Set<Player> playersToReceive = new HashSet<Player>();
         if ((toGates == null) && ((Server)player.getRemoteServer()).getReceiveChat())
@@ -85,13 +108,31 @@ public final class Chat {
 
         if (playersToReceive.isEmpty()) return;
 
-        String format = Config.getServerChatFormat();
-        format = format.replace("%player%", player.getDisplayName());
-        format = format.replace("%server%", player.getRemoteServer().getName());
-        format = format.replace("%world%", player.getRemoteWorld().getName());
+        String format = player.format(Config.getServerChatFormat());
         format = format.replace("%message%", message);
+        format = colorize(format);
         for (Player p : playersToReceive)
             p.sendMessage(format);
     }
 
+    public static void receivePrivateMessage(RemotePlayerImpl remotePlayer, String localPlayerName, String message) {
+        Player localPlayer = Global.plugin.getServer().getPlayer(localPlayerName);
+        if (localPlayer == null) return;
+        RemotePlayerPMEvent event = new RemotePlayerPMEvent(remotePlayer, localPlayer, message);
+        Global.plugin.getServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) return;
+        
+        String format = Config.getServerPMFormat();
+        if (format == null) return;
+        format = format.replaceAll("%fromPlayer%", remotePlayer.getDisplayName());
+        format = format.replaceAll("%fromWorld%", remotePlayer.getRemoteWorld().getName());
+        format = format.replaceAll("%fromServer%", remotePlayer.getRemoteServer().getName());
+        format = format.replaceAll("%toPlayer%", localPlayer.getDisplayName());
+        format = format.replaceAll("%toWorld%", localPlayer.getWorld().getName());
+        format = format.replaceAll("%message%", message);
+        format = colorize(format);
+        if (! format.isEmpty())
+            localPlayer.sendMessage(format);
+    }
+    
 }

@@ -139,7 +139,12 @@ public final class Inventory {
 
     private static ItemStack decodeItem(ItemStack oldItem, String item) {
         String[] parts = item.split(":");
-        Material material = Utils.valueOf(Material.class, parts[0]);
+        Material material;
+        try {
+            material = Utils.valueOf(Material.class, parts[0]);
+        } catch (IllegalArgumentException iae) {
+            material = Material.AIR;
+        }
         int amount = oldItem.getAmount();
         short damage = oldItem.getDurability();
         if (parts.length > 1)

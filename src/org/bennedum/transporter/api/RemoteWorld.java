@@ -15,6 +15,9 @@
  */
 package org.bennedum.transporter.api;
 
+import org.bukkit.Difficulty;
+import org.bukkit.World.Environment;
+
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
@@ -25,7 +28,13 @@ public interface RemoteWorld {
     
     public String getName();
     
+    public void getDifficulty(Callback<Difficulty> cb);
+    
+    public void getEnvironment(Callback<Environment> cb);
+    
     public void getFullTime(Callback<Long> cb);
+    
+    public void getSeed(Callback<Long> cb);
     
     public void getTime(Callback<Long> cb);
     

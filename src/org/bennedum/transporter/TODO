@@ -1,64 +1,45 @@
 
+Ideas:
 * Deposit accounts for the money collected when building/creating/linking/using gates.
-* Add "org.bukkit.material.Openable" material data type to BuildableBlock and DesignBlockDetail
-* Add gate option for teleporting to a random, bounded area? (volumes)
-* API:
-    * Player private messaging (also between servers).
-    * Execute commands on remote servers.
-    * Get time in remote world.
-
 * Implement gate permissions when Permissions plugin supports adding a gate to a group.
 
 TODO:
-* Add private message command (trp pm) for remote players
-* Add server command lookup
 * Flesh out API methods
-    * teleport player
-    * save all gates, config, worlds
-    * remote command
-    * all local server options to interfaces
-    * all local world options to interfaces
-    * all local gate options to interfaces
-    * ?
-* Add "api" command with options like timeout, debug, allow*
-* Emit custom events
-    * remote player join, quit, kick, death
-    * player arrives from remote server
-    * player leaves for remote server
-    * remote player incoming chat
-    * local/remote gate is created/destroyed
-    * server is connected/disconnected
-* after a gate is loaded, re-open/attach to destination, also when remote gate becomes available
-    (so gates on remote servers left open are open and usable after server starts)
-* Add gate commands for area gates
-    * expand <num> [<direction>]
-    * shrink <num> [<direction>]
-    * corner 1|2 [pick]
-* Add gate options for area gates
-    * p1, p2
-    * spawnDirection
-    * spawnSolid (allow spawning into solid blocks)
-    * spawnLiquid (allow spawning into liquid blocks)
-    * spawnSearch (UP,DOWN,UPDOWN,DOWNUP)
-* Add gate option "gameMode" to set a player's game mode upon arrival
+    * teleport player to gate, world/spawn, world/location
+* Add API options like allow*
+* Review and fix inventory handling
+    * get rid of sendInventory?
+    * change default settings to prevent duplication exploits?
+    * delete inventory on incoming player on remote server?
+* Add per-world inventory
+    * global option to turn on/off
+* Add "org.bukkit.material.Openable" material data type to BuildableBlock and DesignBlockDetail
+* Change getExp to getTotalExperience
+* Transfer PotionEffect's
 
 Testing:
 * Test minecart teleportation
 * Test stairs with facing option
-* Test "portal" blocks with facing?
-* Test API
+* Test behaviour of inter-server gates
+    * Leave them open, stop and start one of the servers -> gates reopen
+* Test area gates
+* Test area gate corner command
 
 Wiki Updates:
-* Removed server options "sendJoin", "receiveJoin".
-* Added server option "announcePlayers".
+* Removed "sendJoin", "receiveJoin" server options.
+* Added "announcePlayers" server option.
+* Added "serverDeathFormat" global option.
+* Added "consolePMFormat", "localPMFormat", "worldPMFormat", "serverPMFormat" global options.
+* Added "gameMode" gate option.
+* Added "debug" and "timeout" API options.
 * Removed server ping timeout parameter.
-* Totally new API.
+* Totally new API, including custom events.
 * Removed "design" format substitution name for map markers.
 * Reduced gate hit detection times by over 99%!
 * Changed gate autosaving for option changes and other actions.
 * Fixed player facing direction bugs during server-to-server teleports.
-
-* Added global "apiTimeout" option, defaults to 5000 (must be greater than 1000).
-
-
-
+* Added "trp pm" command for private messaging.
+* Added color name format substitutions based on ChatColor enumeration.
+* Fixed open portal blocks being replaced by solid blocks by griefers.
+* Messed around with gate sign punching logic, so test carefully!
+* Inter-server gates should behave better after reload.
