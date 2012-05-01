@@ -79,10 +79,18 @@ public final class GateMap {
         public Point(int x, int y, int z) {
             this.x = x; this.y = y; this.z = z;
         }
+        public Point(Point p) {
+            this.x = p.x;
+            this.y = p.y;
+            this.z = p.z;
+        }
         public Point(Location loc) {
             x = loc.getBlockX();
             y = loc.getBlockY();
             z = loc.getBlockZ();
+        }
+        public Location toLocation(World world) {
+            return new Location(world, x, y, z);
         }
         @Override
         public boolean equals(Object o) {
@@ -97,6 +105,10 @@ public final class GateMap {
         @Override
         public String toString() {
             return "(" + x + "," + y + "," + z + ")";
+        }
+        @Override
+        public Point clone() {
+            return new Point(this);
         }
     }
     
@@ -153,12 +165,6 @@ public final class GateMap {
                 default:
                     return null;
             }
-        }
-        public Location getMinLocation(World w) {
-            return new Location(w, min.x, min.y, min.z);
-        }
-        public Location getMaxLocation(World w) {
-            return new Location(w, max.x, max.y, max.z);
         }
         @Override
         public String toString() {
@@ -235,9 +241,16 @@ public final class GateMap {
         }
         public boolean contains(Location loc) {
             Point lp = new Point(loc);
-            if (points == null) return true;
+            if (points == null) {
+                if (bounds.contains(loc)) {
+                    return true;
+                }
+                return false;
+            }
             for (Point p : points)
-                if (p.equals(lp)) return true;
+                if (p.equals(lp)) {
+                    return true;
+                }
             return false;
         }
         public Volume[] split(Point center) {

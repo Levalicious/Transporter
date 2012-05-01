@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.bennedum.transporter.api.GateException;
+import org.bennedum.transporter.api.TransporterException;
 import org.bennedum.transporter.config.Configuration;
 import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.GameMode;
@@ -70,13 +72,14 @@ public class Design {
     private boolean receiveChat;
     private int receiveChatDistance;
     private boolean requireAllowedItems;
-    private boolean sendInventory;
     private boolean receiveInventory;
     private boolean deleteInventory;
     private boolean receiveGameMode;
     private String allowGameModes;
     private GameMode gameMode;
     private boolean receiveXP;
+    private boolean receivePotions;
+    private boolean requireAllowedPotions;
     private boolean randomNextLink;
     private boolean sendNextLink;
     private String teleportFormat;
@@ -143,12 +146,13 @@ public class Design {
         receiveChat = conf.getBoolean("receiveChat", false);
         receiveChatDistance = conf.getInt("receiveChatDistance", 1000);
         requireAllowedItems = conf.getBoolean("requireAllowedItems", true);
-        sendInventory = conf.getBoolean("sendInventory", true);
         receiveInventory = conf.getBoolean("receiveInventory", true);
         deleteInventory = conf.getBoolean("deleteInventory", false);
         receiveGameMode = conf.getBoolean("receiveGameMode", false);
         allowGameModes = conf.getString("allowGameModes", "*");
         receiveXP = conf.getBoolean("receiveXP", false);
+        receivePotions = conf.getBoolean("receivePotions", false);
+        requireAllowedPotions = conf.getBoolean("requireAllowedPotions", true);
         randomNextLink = conf.getBoolean("randomNextLink", false);
         sendNextLink = conf.getBoolean("sendNextLink", false);
         teleportFormat = conf.getString("teleportFormat", "%GOLD%teleported to '%toGateCtx%'");
@@ -458,10 +462,6 @@ public class Design {
         return replaceItems;
     }
 
-    public boolean getSendInventory() {
-        return sendInventory;
-    }
-
     public boolean getReceiveInventory() {
         return receiveInventory;
     }
@@ -484,6 +484,14 @@ public class Design {
 
     public boolean getReceiveXP() {
         return receiveXP;
+    }
+
+    public boolean getReceivePotions() {
+        return receivePotions;
+    }
+
+    public boolean getRequireAllowedPotions() {
+        return requireAllowedPotions;
     }
 
     public boolean getRandomNextLink() {

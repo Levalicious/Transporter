@@ -15,10 +15,13 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.GateException;
+import java.util.ArrayList;
 import org.bennedum.transporter.api.SpawnSearch;
 import org.bennedum.transporter.api.SpawnDirection;
 import org.bennedum.transporter.api.GateType;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import org.bennedum.transporter.GateMap.Bounds;
@@ -27,6 +30,7 @@ import org.bennedum.transporter.GateMap.Volume;
 import org.bennedum.transporter.api.ExpandDirection;
 import org.bennedum.transporter.api.LocalAreaGate;
 import org.bennedum.transporter.config.Configuration;
+import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -50,6 +54,8 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
         OPTIONS.add("spawnSolid");
         OPTIONS.add("spawnLiquid");
         OPTIONS.add("spawnSearch");
+        OPTIONS.add("box");
+        OPTIONS.add("boxMaterial");
     }
     
     private Location p1;
@@ -59,6 +65,11 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
     private boolean spawnSolid;
     private boolean spawnLiquid;
     private SpawnSearch spawnSearch;
+    private boolean box;
+    private Material boxMaterial;
+    
+    private List<SavedBlock> boxBlocks = null;
+    
     
     // creation from file
     public LocalAreaGateImpl(World world, Configuration conf) throws GateException {
@@ -74,6 +85,41 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
             p2 = parseLocation(conf, "p2");
         } catch (GateException ge) {
             throw new GateException("p2: %s", ge.getMessage());
+        }
+        
+        try {
+            spawnDirection = Utils.valueOf(SpawnDirection.class, conf.getString("spawnDirection", "PLAYER"));
+        } catch (IllegalArgumentException iae) {
+            throw new GateException(iae.getMessage() + " spawnDirection");
+        }
+        spawnAir = conf.getBoolean("spawnAir", false);
+        spawnSolid = conf.getBoolean("spawnSolid", false);
+        spawnLiquid = conf.getBoolean("spawnLiquid", false);
+        try {
+            spawnSearch = Utils.valueOf(SpawnSearch.class, conf.getString("spawnSearch", "DOWNUP"));
+        } catch (IllegalArgumentException iae) {
+            throw new GateException(iae.getMessage() + " spawnSearch");
+        }
+        box = conf.getBoolean("box", false);
+        try {
+            boxMaterial = Utils.valueOf(Material.class, conf.getString("boxMaterial", "GLASS"));
+        } catch (IllegalArgumentException iae) {
+            throw new GateException(iae.getMessage() + " boxMaterial");
+        }
+        
+        List<ConfigurationNode> nodes = conf.getNodeList("boxBlocks", null);
+        if (nodes != null) {
+            boxBlocks = new ArrayList<SavedBlock>();
+            for (ConfigurationNode node : nodes) {
+                try {
+                    SavedBlock block = new SavedBlock(node);
+                    block.setWorld(world);
+                    boxBlocks.add(block);
+                } catch (BlockException be) {
+                    throw new GateException(be.getMessage());
+                }
+            }
+            if (boxBlocks.isEmpty()) boxBlocks = null;
         }
         
         calculateCenter();
@@ -93,6 +139,9 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
         spawnSolid = false;
         spawnLiquid = false;
         spawnSearch = SpawnSearch.DOWNUP;
+        box = false;
+        boxMaterial = Material.GLASS;
+        boxBlocks = null;
         
         calculateCenter();
         validate();
@@ -115,8 +164,8 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
             int y = bounds.min.y + random.nextInt(bounds.max.y - bounds.min.y);
             int z = bounds.min.z + random.nextInt(bounds.max.z - bounds.min.z);
             // adjust down to make room for head
-            if (y >= 255) y--;
-            else if (y <= 1) y++;
+            if (y > bounds.max.y) y--;
+            else if (y < bounds.min.y) y++;
             
             SpawnSearch dir = spawnSearch;
             if (dir == SpawnSearch.DOWNUP) dir = SpawnSearch.DOWN;
@@ -152,7 +201,7 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
                     switch (dir) {
                         case UP:
                             y++;
-                            if (y >= 255) {
+                            if (y > bounds.max.y) {
                                 if (spawnSearch == SpawnSearch.UPDOWN) {
                                     dir = SpawnSearch.DOWN;
                                     y = y - 2;
@@ -162,7 +211,7 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
                             break;
                         case DOWN:
                             y--;
-                            if (y <= 1) {
+                            if (y < bounds.min.y) {
                                 if (spawnSearch == SpawnSearch.DOWNUP) {
                                     dir = SpawnSearch.UP;
                                     y = y + 2;
@@ -173,7 +222,7 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
                 }
             }
             if (goodLocation)
-                return new Location(world, x, y, z);
+                return new Location(world, (double)x + 0.5, y, (double)z + 0.5);
         }
         Utils.warning("Unable to find a suitable spawnlocation for gate '%s'!", getLocalName());
         return p1;
@@ -189,12 +238,19 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
     public void onProtect(Location loc) {}
     
     @Override
+    public void rebuild() {
+        if (box) showBox();
+    }
+    
+    @Override
     protected void onValidate() throws GateException {}
 
     @Override
     protected void onAdd() {
         if (portalOpen)
             Gates.addPortalVolume(getPortalVolume());
+        if (protect && box)
+            Gates.addProtectionVolume(getBoxVolume());
     }
     
     @Override
@@ -232,6 +288,15 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
         conf.setProperty("spawnSolid", spawnSolid);
         conf.setProperty("spawnLiquid", spawnLiquid);
         conf.setProperty("spawnSearch", spawnSearch.toString());
+        conf.setProperty("box", box);
+        conf.setProperty("boxMaterial", boxMaterial.toString());
+        
+        if (boxBlocks != null) {
+            List<Object> node = new ArrayList<Object>();
+            for (SavedBlock block : boxBlocks)
+                node.add(block.encode());
+            conf.setProperty("boxBlocks", node);
+        }
     }
 
     @Override
@@ -256,8 +321,9 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
     
     @Override
     public void resize(int num, ExpandDirection dir) {
-        Location min = p1.clone();
-        Location max = p2.clone();
+        Bounds bounds = new Bounds(p1, p2);
+        Location min = bounds.min.toLocation(world);
+        Location max = bounds.max.toLocation(world);
         switch (dir) {
             case UP: max.add(0, num, 0); break;
             case DOWN: min.subtract(0, num, 0); break;
@@ -278,9 +344,13 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
     }
     
     private void setCorners(Location l1, Location l2) {
-        Bounds b = new Bounds(l1, l2);
-        p1 = b.getMinLocation(world);
-        p2 = b.getMaxLocation(world);
+        p1 = l1;
+        p2 = l2;
+        if (box) showBox();
+        if (portalOpen) {
+            Gates.removePortalVolume(this);
+            Gates.addPortalVolume(getPortalVolume());
+        }
     }
     
     private Location parseLocation(Configuration conf, String name) throws GateException {
@@ -331,6 +401,58 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
                (m == Material.STATIONARY_WATER) ||
                (m == Material.LAVA) ||
                (m == Material.STATIONARY_LAVA);
+    }
+    
+    private void hideBox() {
+        if (boxBlocks == null) return;
+        for (SavedBlock b : boxBlocks)
+            b.restore();
+        boxBlocks = null;
+    }
+    
+    private void showBox() {
+        if (boxBlocks != null) hideBox();
+        boxBlocks = new ArrayList<SavedBlock>();
+        Bounds bounds = new Bounds(p1, p2);
+        Location l = bounds.min.toLocation(world);
+        //Set<Location> hitLocations = new HashSet<Location>();
+
+        for (int x = bounds.min.x; x <= bounds.max.x; x++) {
+            l.setX(x);
+            for (int y = bounds.min.y; y <= bounds.max.y; y++) {
+                l.setY(y);
+                for (int z = bounds.min.z; z <= bounds.max.z; z++) {
+                    l.setZ(z);
+                    if ((x == bounds.min.x) || (x == bounds.max.x) ||
+                        (y == bounds.min.y) || (y == bounds.max.y) ||
+                        (z == bounds.min.z) || (z == bounds.max.z)) {
+                        boxBlocks.add(new SavedBlock(l));
+                        l.getBlock().setType(boxMaterial);
+                    }
+                }
+            }
+        }
+    }
+    
+    private Volume getBoxVolume() {
+        Volume vol = new Volume(this);
+        Bounds bounds = new Bounds(p1, p2);
+        Point p = bounds.min.clone();
+        for (int x = bounds.min.x; x <= bounds.max.x; x++) {
+            p.x = x;
+            for (int y = bounds.min.y; y <= bounds.max.y; y++) {
+                p.y = y;
+                for (int z = bounds.min.z; z <= bounds.max.z; z++) {
+                    p.z = z;
+                    if ((x == bounds.min.x) || (x == bounds.max.x) ||
+                        (y == bounds.min.y) || (y == bounds.max.y) ||
+                        (z == bounds.min.z) || (z == bounds.max.z)) {
+                        vol.addPoint(p.clone());
+                    }
+                }
+            }
+        }
+        return vol;
     }
     
     /* Begin options */
@@ -432,6 +554,45 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
     public void setSpawnSearch(SpawnSearch s) {
         spawnSearch = s;
         dirty = true;
+    }
+    
+    @Override
+    public boolean getBox() {
+        return box;
+    }
+    
+    @Override
+    public void setBox(boolean b) {
+        if (box) hideBox();
+        box = b;
+        dirty = true;
+        setCorners(p1, p2);
+        if (protect && box)
+            Gates.addProtectionVolume(getBoxVolume());
+        else if (protect)
+            Gates.removeProtectionVolume(this);
+    }
+    
+    @Override
+    public Material getBoxMaterial() {
+        return boxMaterial;
+    }
+    
+    @Override
+    public void setBoxMaterial(Material m) {
+        boxMaterial = m;
+        if (box) showBox();
+    }
+    
+    @Override
+    public void onOptionSet(Context ctx, String name, String value) {
+        super.onOptionSet(ctx, name, value);
+        if (name.equals("protect")) {
+            if (protect && box)
+                Gates.addProtectionVolume(getBoxVolume());
+            else
+                Gates.removeProtectionVolume(this);
+        }
     }
     
     /* End options */

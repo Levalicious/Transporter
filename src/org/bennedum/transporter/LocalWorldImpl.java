@@ -177,7 +177,7 @@ public final class LocalWorldImpl implements OptionsListener, LocalWorld {
 
     @Override
     public void onOptionSet(Context ctx, String name, String value) {
-        ctx.sendLog("option '%s' set to '%s' for world '%s'", name, value, getName());
+        ctx.send("option '%s' set to '%s' for world '%s'", name, value, getName());
     }
 
     @Override

@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.GateException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;

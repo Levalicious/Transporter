@@ -30,44 +30,44 @@ public final class RemoteLocation {
     private double z;
     
     public RemoteLocation(String serverName, String worldName, double x, double y, double z) {
-        setServer(serverName);
-        setWorld(worldName);
+        setRemoteServer(serverName);
+        setRemoteWorld(worldName);
         setX(x);
         setY(y);
         setZ(z);
     }
     
     public RemoteLocation(RemoteServer server, RemoteWorld world, double x, double y, double z) {
-        setServer(server);
-        setWorld(world);
+        setRemoteServer(server);
+        setRemoteWorld(world);
         setX(x);
         setY(y);
         setZ(z);
     }
     
-    public RemoteServer getServer() {
+    public RemoteServer getRemoteServer() {
         return server;
     }
     
-    public void setServer(RemoteServer server) {
+    private void setRemoteServer(RemoteServer server) {
         if (server == null) throw new IllegalArgumentException("server is required");
         this.server = server;
     }
     
-    public void setServer(String serverName) {
+    private void setRemoteServer(String serverName) {
         server = Servers.getRemoteServer(serverName);
     }
     
-    public RemoteWorld getWorld() {
+    public RemoteWorld getRemoteWorld() {
         return world;
     }
     
-    public void setWorld(RemoteWorld world) {
+    private void setRemoteWorld(RemoteWorld world) {
         if (world == null) throw new IllegalArgumentException("world is required");
         this.world = world;
     }
     
-    public void setWorld(String worldName) {
+    private void setRemoteWorld(String worldName) {
         world = server.getRemoteWorld(worldName);
     }
     
@@ -75,7 +75,7 @@ public final class RemoteLocation {
         return x;
     }
     
-    public void setX(double x) {
+    private void setX(double x) {
         this.x = x;
     }
     
@@ -83,7 +83,7 @@ public final class RemoteLocation {
         return y;
     }
     
-    public void setY(double y) {
+    private void setY(double y) {
         this.y = y;
     }
     
@@ -91,7 +91,7 @@ public final class RemoteLocation {
         return z;
     }
     
-    public void setZ(double z) {
+    private void setZ(double z) {
         this.z = z;
     }
     

@@ -18,15 +18,8 @@ package org.bennedum.transporter.command;
 import java.util.ArrayList;
 import java.util.List;
 import org.bennedum.transporter.Context;
-import org.bennedum.transporter.Global;
-import org.bennedum.transporter.TransporterException;
 import org.bennedum.transporter.Utils;
-import org.bennedum.transporter.api.API;
-import org.bennedum.transporter.api.Callback;
-import org.bennedum.transporter.api.RemoteException;
-import org.bennedum.transporter.api.RemotePlayer;
-import org.bennedum.transporter.api.RemoteServer;
-import org.bennedum.transporter.api.RemoteWorld;
+import org.bennedum.transporter.api.TransporterException;
 import org.bukkit.command.Command;
 
 /**
@@ -40,8 +33,8 @@ public class DebugCommand extends TrpCommandProcessor {
     @Override
     public boolean matches(Context ctx, Command cmd, List<String> args) {
         return super.matches(ctx, cmd, args) &&
-               GROUP.startsWith(args.get(0).toLowerCase()) &&
-               ctx.isConsole();
+               GROUP.startsWith(args.get(0).toLowerCase());// &&
+               //ctx.isConsole();
     }
 
     @Override
@@ -49,9 +42,9 @@ public class DebugCommand extends TrpCommandProcessor {
         if (! ctx.isConsole()) return null;
         List<String> cmds = new ArrayList<String>();
         cmds.add(getPrefix(ctx) + GROUP + "submit <player>");
-        cmds.add(getPrefix(ctx) + GROUP + "dump player [<player>]");
-        cmds.add(getPrefix(ctx) + GROUP + "dump gate <name>");
-        cmds.add(getPrefix(ctx) + GROUP + "dump design <name>");
+        //cmds.add(getPrefix(ctx) + GROUP + "dump player [<player>]");
+        //cmds.add(getPrefix(ctx) + GROUP + "dump gate <name>");
+        //cmds.add(getPrefix(ctx) + GROUP + "dump design <name>");
         return cmds;
     }
 
@@ -63,6 +56,8 @@ public class DebugCommand extends TrpCommandProcessor {
         String subCmd = args.remove(0).toLowerCase();
 
         if ("submit".startsWith(subCmd)) {
+            if (! ctx.isConsole())
+                throw new CommandException("this command is only available on the console");
             String name;
             if (ctx.isPlayer())
                 name = ctx.getPlayer().getName();
@@ -81,6 +76,46 @@ public class DebugCommand extends TrpCommandProcessor {
             return;
         }
 
+        /*
+        if ("potion".startsWith(subCmd)) {
+            if (! ctx.isPlayer())
+                throw new CommandException("this command is only available to players");
+            if (args.isEmpty())
+                throw new CommandException("type required");
+            String typeStr = args.remove(0);
+            if ("clear".startsWith(typeStr)) {
+                for (PotionEffectType pet : PotionEffectType.values()) {
+                    if (pet == null) continue;
+                    if (ctx.getPlayer().hasPotionEffect(pet)) {
+                        ctx.getPlayer().removePotionEffect(pet);
+                        ctx.send("removed %s", pet.getName());
+                    }
+                }
+                return;
+            }
+            if ("list".startsWith(typeStr)) {
+                for (PotionEffectType pet : PotionEffectType.values()) {
+                    if (pet == null) continue;
+                    if (ctx.getPlayer().hasPotionEffect(pet))
+                        ctx.send("has %s", pet.getName());
+                }
+                return;
+            }
+            PotionEffectType type = PotionEffectType.getByName(typeStr);
+            int duration = 3000;
+            int amplifier = 1;
+            if (! args.isEmpty())
+                duration = Integer.parseInt(args.remove(0));
+            if (! args.isEmpty())
+                amplifier = Integer.parseInt(args.remove(0));
+            PotionEffect pe = type.createEffect(duration, amplifier);
+            ctx.getPlayer().addPotionEffect(pe, true);
+            ctx.send("added potion %s %s %s", type.getName(), duration, amplifier);
+            return;
+        }
+        */
+        
+        /*
         if ("api".startsWith(subCmd)) {
             API api = Global.plugin.getAPI();
             for (RemoteServer server : api.getRemoteServers()) {
@@ -119,6 +154,7 @@ public class DebugCommand extends TrpCommandProcessor {
             }
             return;
         }
+        */
         
         /*
         if ("dump".startsWith(subCmd)) {

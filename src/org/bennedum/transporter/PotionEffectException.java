@@ -15,14 +15,16 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.TransporterException;
+
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class ReservationException extends TransporterException {
-    
-    public ReservationException(String msg, Object ... args) {
+public final class PotionEffectException extends TransporterException {
+
+    public PotionEffectException(String msg, Object ... args) {
         super(String.format(msg, args));
     }
-    
+
 }

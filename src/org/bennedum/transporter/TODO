@@ -4,26 +4,12 @@ Ideas:
 * Implement gate permissions when Permissions plugin supports adding a gate to a group.
 
 TODO:
-* Flesh out API methods
-    * teleport player to gate, world/spawn, world/location
 * Add API options like allow*
-* Review and fix inventory handling
-    * get rid of sendInventory?
-    * change default settings to prevent duplication exploits?
-    * delete inventory on incoming player on remote server?
 * Add per-world inventory
     * global option to turn on/off
-* Add "org.bukkit.material.Openable" material data type to BuildableBlock and DesignBlockDetail
-* Change getExp to getTotalExperience
-* Transfer PotionEffect's
 
 Testing:
-* Test minecart teleportation
 * Test stairs with facing option
-* Test behaviour of inter-server gates
-    * Leave them open, stop and start one of the servers -> gates reopen
-* Test area gates
-* Test area gate corner command
 
 Wiki Updates:
 * Removed "sendJoin", "receiveJoin" server options.
@@ -31,15 +17,24 @@ Wiki Updates:
 * Added "serverDeathFormat" global option.
 * Added "consolePMFormat", "localPMFormat", "worldPMFormat", "serverPMFormat" global options.
 * Added "gameMode" gate option.
-* Added "debug" and "timeout" API options.
+* Added "requireAllowedPotions" and "receivePotions" gate options.
+* Added potion effect transfer, transmutation, and banning to gates.
+* Changed item banning command syntax and permission nodes on gates.
+* Removed "sendInventory" gate option.
 * Removed server ping timeout parameter.
 * Totally new API, including custom events.
+* Added "debug" and "timeout" API options.
 * Removed "design" format substitution name for map markers.
 * Reduced gate hit detection times by over 99%!
 * Changed gate autosaving for option changes and other actions.
 * Fixed player facing direction bugs during server-to-server teleports.
-* Added "trp pm" command for private messaging.
+* Added "trp pm" command for private messaging, even across servers.
+* Added "trp send" command to teleport players to gates.
 * Added color name format substitutions based on ChatColor enumeration.
 * Fixed open portal blocks being replaced by solid blocks by griefers.
 * Messed around with gate sign punching logic, so test carefully!
-* Inter-server gates should behave better after reload.
+* Inter-server gates should behave better after a server reload/restart.
+* Added "open" option to design blocks to support "openable" blocks like doors and gates.
+* Changed default gate options so intra-server gates handle inventory more naturally.
+* Fixed inventory duplication exploit for intra-server gates.
+

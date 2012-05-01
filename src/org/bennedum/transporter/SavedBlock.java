@@ -30,7 +30,7 @@ public final class SavedBlock {
     private Location location = null;
 
     public SavedBlock(Location location) {
-        this.location = location;
+        this.location = location.clone();
         this.block = new BuildableBlock(location);
     }
 

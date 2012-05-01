@@ -15,6 +15,8 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.TransporterException;
+import org.bennedum.transporter.api.GateException;
 import org.bennedum.transporter.api.GateType;
 import java.io.File;
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
 /**
@@ -90,13 +93,14 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         BASEOPTIONS.add("receiveChat");
         BASEOPTIONS.add("receiveChatDistance");
         BASEOPTIONS.add("requireAllowedItems");
-        BASEOPTIONS.add("sendInventory");
         BASEOPTIONS.add("receiveInventory");
         BASEOPTIONS.add("deleteInventory");
         BASEOPTIONS.add("receiveGameMode");
         BASEOPTIONS.add("allowGameModes");
         BASEOPTIONS.add("gameMode");
         BASEOPTIONS.add("receiveXP");
+        BASEOPTIONS.add("receivePotions");
+        BASEOPTIONS.add("requireAllowedPotions");
         BASEOPTIONS.add("randomNextLink");
         BASEOPTIONS.add("sendNextLink");
         BASEOPTIONS.add("teleportFormat");
@@ -142,13 +146,14 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     protected boolean receiveChat;
     protected int receiveChatDistance;
     protected boolean requireAllowedItems;
-    protected boolean sendInventory;
     protected boolean receiveInventory;
     protected boolean deleteInventory;
     protected boolean receiveGameMode;
     protected String allowGameModes;
     protected GameMode gameMode;
     protected boolean receiveXP;
+    protected boolean receivePotions;
+    protected boolean requireAllowedPotions;
     protected boolean randomNextLink;
     protected boolean sendNextLink;
     protected String teleportFormat;
@@ -173,6 +178,9 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     protected final Set<String> bannedItems = new HashSet<String>();
     protected final Set<String> allowedItems = new HashSet<String>();
     protected final Map<String,String> replaceItems = new HashMap<String,String>();
+    protected final Set<String> bannedPotions = new HashSet<String>();
+    protected final Set<String> allowedPotions = new HashSet<String>();
+    protected final Map<String,String> replacePotions = new HashMap<String,String>();
 
     protected Set<String> incoming = new HashSet<String>();
     protected String outgoing = null;
@@ -250,6 +258,36 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             }
         }
 
+        List<String> potions = conf.getStringList("bannedPotions", new ArrayList<String>());
+        for (String potion : potions) {
+            String p = PotionEffects.normalizePotion(potion);
+            if (p == null)
+                throw new GateException("invalid banned potion effect '%s'", potion);
+            bannedPotions.add(p);
+        }
+
+        potions = conf.getStringList("allowedPotions", new ArrayList<String>());
+        for (String potion : potions) {
+            String p = PotionEffects.normalizePotion(potion);
+            if (p == null)
+                throw new GateException("invalid allowed potion effect '%s'", potion);
+            allowedPotions.add(p);
+        }
+
+        potions = conf.getKeys("replacePotions");
+        if (potions != null) {
+            for (String oldPotion : potions) {
+                String op = PotionEffects.normalizePotion(oldPotion);
+                if (op == null)
+                    throw new GateException("invalid replace potion effect '%s'", oldPotion);
+                String newPotion = conf.getString("replacePotions." + oldPotion);
+                String np = PotionEffects.normalizePotion(newPotion);
+                if (np == null)
+                    throw new GateException("invalid replace potion effect '%s'", newPotion);
+                replacePotions.put(op, np);
+            }
+        }
+        
         requirePin = conf.getBoolean("requirePin", false);
         requireValidPin = conf.getBoolean("requireValidPin", true);
         invalidPinDamage = conf.getInt("invalidPinDamage", 0);
@@ -259,12 +297,13 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         receiveChat = conf.getBoolean("receiveChat", false);
         receiveChatDistance = conf.getInt("receiveChatDistance", 1000);
         requireAllowedItems = conf.getBoolean("requireAllowedItems", true);
-        sendInventory = conf.getBoolean("sendInventory", true);
         receiveInventory = conf.getBoolean("receiveInventory", true);
         deleteInventory = conf.getBoolean("deleteInventory", false);
         receiveGameMode = conf.getBoolean("receiveGameMode", false);
         allowGameModes = conf.getString("allowGameModes", "*");
         receiveXP = conf.getBoolean("receiveXP", false);
+        receivePotions = conf.getBoolean("receivePotions", false);
+        requireAllowedPotions = conf.getBoolean("requireAllowedPotions", true);
         randomNextLink = conf.getBoolean("randomNextLink", false);
         sendNextLink = conf.getBoolean("sendNextLink", false);
         teleportFormat = conf.getString("teleportFormat", "%GOLD%teleported to '%toGateCtx%'");
@@ -314,13 +353,14 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         setReceiveChat(false);
         setReceiveChatDistance(1000);
         setRequireAllowedItems(true);
-        setSendInventory(true);
         setReceiveInventory(true);
         setDeleteInventory(false);
         setReceiveGameMode(false);
         setAllowGameModes("*");
         setGameMode(null);
         setReceiveXP(false);
+        setReceivePotions(false);
+        setRequireAllowedPotions(true);
         setRandomNextLink(false);
         setSendNextLink(false);
         setTeleportFormat(null);
@@ -341,6 +381,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         setReceiveServerCost(0);
     }
     
+    @Override
     public abstract GateType getType();
     public abstract Location getSpawnLocation(Location fromLoc, BlockFace fromDirection);
     
@@ -530,6 +571,8 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         if (gate == null)
             throw new GateException("unknown or offline gate '%s'", outgoing);
 
+        portalOpen = true;
+        portalOpenTime = System.currentTimeMillis();
         gate.attach(this);
         onOpen();
         onDestinationChanged();
@@ -547,6 +590,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     public void close() {
         if (! portalOpen) return;
+        portalOpen = false;
 
         incoming.clear();
         onClose();
@@ -568,6 +612,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
         Configuration conf = new Configuration(file);
         conf.setProperty("name", name);
+        conf.setProperty("type", getType().toString());
         conf.setProperty("creatorName", creatorName);
         conf.setProperty("direction", direction.toString());
         conf.setProperty("duration", duration);
@@ -597,13 +642,17 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         conf.setProperty("receiveChat", receiveChat);
         conf.setProperty("receiveChatDistance", receiveChatDistance);
         conf.setProperty("requireAllowedItems", requireAllowedItems);
-        conf.setProperty("sendInventory", sendInventory);
         conf.setProperty("receiveInventory", receiveInventory);
         conf.setProperty("deleteInventory", deleteInventory);
         conf.setProperty("receiveGameMode", receiveGameMode);
         conf.setProperty("allowGameModes", allowGameModes);
         conf.setProperty("gameMode", gameMode);
         conf.setProperty("receiveXP", receiveXP);
+        conf.setProperty("receivePotions", receivePotions);
+        conf.setProperty("requireAllowedPotions", requireAllowedPotions);
+        conf.setProperty("bannedPotions", new ArrayList<String>(bannedPotions));
+        conf.setProperty("allowedPotions", new ArrayList<String>(allowedPotions));
+        conf.setProperty("replacePotions", replacePotions);
         conf.setProperty("randomNextLink", randomNextLink);
         conf.setProperty("sendNextLink", sendNextLink);
         conf.setProperty("teleportFormat", teleportFormat);
@@ -912,17 +961,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     }
 
     @Override
-    public boolean getSendInventory() {
-        return sendInventory;
-    }
-
-    @Override
-    public void setSendInventory(boolean b) {
-        sendInventory = b;
-        dirty = true;
-    }
-
-    @Override
     public boolean getReceiveInventory() {
         return receiveInventory;
     }
@@ -1007,6 +1045,28 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     }
     
     @Override
+    public boolean getReceivePotions() {
+        return receivePotions;
+    }
+    
+    @Override
+    public void setReceivePotions(boolean b) {
+        receivePotions = b;
+        dirty = true;
+    }
+
+    @Override
+    public boolean getRequireAllowedPotions() {
+        return requireAllowedPotions;
+    }
+
+    @Override
+    public void setRequireAllowedPotions(boolean b) {
+        requireAllowedPotions = b;
+        dirty = true;
+    }
+    
+    @Override
     public boolean getRandomNextLink() {
         return randomNextLink;
     }
@@ -1039,7 +1099,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
             if (s.equals("-")) s = "";
             else if (s.equals("*")) s = null;
         }
-        if (s == null) s = "%GOLD%teleported to '%toNameCtx%'";
+        if (s == null) s = "%GOLD%teleported to '%toGateCtx%'";
         teleportFormat = s;
         dirty = true;
     }
@@ -1257,7 +1317,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
 
     @Override
     public void onOptionSet(Context ctx, String name, String value) {
-        ctx.sendLog("option '%s' set to '%s' for gate '%s'", name, value, getName(ctx));
+        ctx.send("option '%s' set to '%s' for gate '%s'", name, value, getName(ctx));
     }
 
     @Override
@@ -1460,6 +1520,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return gate;
     }
 
+    @Override
     public boolean addPin(String pin) throws GateException {
         if (! Pins.isValidPin(pin))
             throw new GateException("invalid pin");
@@ -1469,6 +1530,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return true;
     }
 
+    @Override
     public boolean removePin(String pin) {
         if (pins.contains(pin)) return false;
         pins.remove(pin);
@@ -1476,19 +1538,23 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return true;
     }
 
+    @Override
     public void removeAllPins() {
         pins.clear();
         dirty = true;
     }
 
+    @Override
     public boolean hasPin(String pin) {
         return pins.contains(pin);
     }
 
+    @Override
     public Set<String> getBannedItems() {
         return bannedItems;
     }
     
+    @Override
     public boolean addBannedItem(String item) throws GateException {
         try {
             if (! Inventory.appendItemList(bannedItems, item)) return false;
@@ -1499,6 +1565,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return true;
     }
 
+    @Override
     public boolean removeBannedItem(String item) throws GateException {
         try {
             if (! Inventory.removeItemList(bannedItems, item)) return false;
@@ -1509,15 +1576,18 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return true;
     }
 
+    @Override
     public void removeAllBannedItems() {
         bannedItems.clear();
         dirty = true;
     }
 
+    @Override
     public Set<String> getAllowedItems() {
         return allowedItems;
     }
     
+    @Override
     public boolean addAllowedItem(String item) throws GateException {
         try {
             if (! Inventory.appendItemList(allowedItems, item)) return false;
@@ -1528,6 +1598,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return true;
     }
 
+    @Override
     public boolean removeAllowedItem(String item) throws GateException {
         try {
             if (! Inventory.removeItemList(allowedItems, item)) return false;
@@ -1538,15 +1609,18 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return true;
     }
 
+    @Override
     public void removeAllAllowedItems() {
         allowedItems.clear();
         dirty = true;
     }
 
+    @Override
     public Map<String,String> getReplaceItems() {
         return replaceItems;
     }
     
+    @Override
     public boolean addReplaceItem(String fromItem, String toItem) throws GateException {
         try {
             if (! Inventory.appendItemMap(replaceItems, fromItem, toItem)) return false;
@@ -1557,6 +1631,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return true;
     }
 
+    @Override
     public boolean removeReplaceItem(String item) throws GateException {
         try {
             if (! Inventory.removeItemMap(replaceItems, item)) return false;
@@ -1567,6 +1642,7 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return true;
     }
 
+    @Override
     public void removeAllReplaceItems() {
         replaceItems.clear();
         dirty = true;
@@ -1583,7 +1659,6 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
     public boolean isAcceptableInventory(ItemStack[] stacks) {
         if (stacks == null) return true;
         if (! requireAllowedItems) return true;
-        if (stacks == null) return true;
         for (int i = 0; i < stacks.length; i++) {
             ItemStack stack = stacks[i];
             if (stack == null) continue;
@@ -1605,6 +1680,138 @@ public abstract class LocalGateImpl extends GateImpl implements LocalGate, Optio
         return filtered;
     }
 
+    @Override
+    public Set<String> getBannedPotions() {
+        return bannedPotions;
+    }
+    
+    @Override
+    public boolean addBannedPotion(String potion) throws GateException {
+        try {
+            if (! PotionEffects.appendPotionList(bannedPotions, potion)) return false;
+        } catch (PotionEffectException e) {
+            throw new GateException(e.getMessage());
+        }
+        dirty = true;
+        return true;
+    }
+
+    @Override
+    public boolean removeBannedPotion(String potion) throws GateException {
+        try {
+            if (! PotionEffects.removePotionList(bannedPotions, potion)) return false;
+        } catch (PotionEffectException e) {
+            throw new GateException(e.getMessage());
+        }
+        dirty = true;
+        return true;
+    }
+
+    @Override
+    public void removeAllBannedPotions() {
+        bannedPotions.clear();
+        dirty = true;
+    }
+
+    @Override
+    public Set<String> getAllowedPotions() {
+        return allowedPotions;
+    }
+    
+    @Override
+    public boolean addAllowedPotion(String potion) throws GateException {
+        try {
+            if (! PotionEffects.appendPotionList(allowedPotions, potion)) return false;
+        } catch (PotionEffectException e) {
+            throw new GateException(e.getMessage());
+        }
+        dirty = true;
+        return true;
+    }
+
+    @Override
+    public boolean removeAllowedPotion(String potion) throws GateException {
+        try {
+            if (! PotionEffects.removePotionList(allowedPotions, potion)) return false;
+        } catch (PotionEffectException e) {
+            throw new GateException(e.getMessage());
+        }
+        dirty = true;
+        return true;
+    }
+
+    @Override
+    public void removeAllAllowedPotions() {
+        allowedPotions.clear();
+        dirty = true;
+    }
+
+    @Override
+    public Map<String,String> getReplacePotions() {
+        return replacePotions;
+    }
+    
+    @Override
+    public boolean addReplacePotion(String fromPotion, String toPotion) throws GateException {
+        try {
+            if (! PotionEffects.appendPotionMap(replacePotions, fromPotion, toPotion)) return false;
+        } catch (PotionEffectException e) {
+            throw new GateException(e.getMessage());
+        }
+        dirty = true;
+        return true;
+    }
+
+    @Override
+    public boolean removeReplacePotion(String potion) throws GateException {
+        try {
+            if (! PotionEffects.removePotionMap(replacePotions, potion)) return false;
+        } catch (PotionEffectException e) {
+            throw new GateException(e.getMessage());
+        }
+        dirty = true;
+        return true;
+    }
+
+    @Override
+    public void removeAllReplacePotions() {
+        replacePotions.clear();
+        dirty = true;
+    }
+    
+    public boolean isAcceptablePotions(PotionEffect[] effects) {
+        if (effects == null) return true;
+        if (! requireAllowedPotions) return true;
+        for (int i = 0; i < effects.length; i++) {
+            PotionEffect effect = effects[i];
+            if (effect == null) continue;
+            try {
+                PotionEffects.filterPotionEffect(effect, replacePotions, allowedPotions, bannedPotions);
+            } catch (PotionEffectException pee) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    public boolean filterPotions(PotionEffect[] effects) {
+        if (effects == null) return false;
+        boolean filtered = false;
+        PotionEffect newEffect;
+        for (int i = 0; i < effects.length; i++) {
+            try {
+                newEffect = PotionEffects.filterPotionEffect(effects[i], replacePotions, allowedPotions, bannedPotions);
+            } catch (PotionEffectException pee) {
+                newEffect = null;
+            }
+            if (newEffect != effects[i]) {
+                effects[i] = newEffect;
+                filtered = true;
+            }
+        }
+        return filtered;
+    }
+    
     public boolean isInChatSendProximity(Location location) {
         if (! sendChat) return false;
         if (location.getWorld() != world) return false;

@@ -16,7 +16,7 @@
 package org.bennedum.transporter.test;
 
 import java.util.Random;
-import org.bennedum.transporter.GateException;
+import org.bennedum.transporter.api.GateException;
 import org.bennedum.transporter.GateMap.Bounds;
 import org.bennedum.transporter.GateMap.Point;
 import org.bennedum.transporter.GateMap.Volume;

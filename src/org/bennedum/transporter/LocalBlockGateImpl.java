@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.GateException;
 import org.bennedum.transporter.api.GateType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,13 +116,14 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
         receiveChat = design.getReceiveChat();
         receiveChatDistance = design.getReceiveChatDistance();
         requireAllowedItems = design.getRequireAllowedItems();
-        sendInventory = design.getSendInventory();
         receiveInventory = design.getReceiveInventory();
         deleteInventory = design.getDeleteInventory();
         receiveGameMode = design.getReceiveGameMode();
         allowGameModes = design.getAllowGameModes();
         gameMode = design.getGameMode();
         receiveXP = design.getReceiveXP();
+        receivePotions = design.getReceivePotions();
+        requireAllowedPotions = design.getRequireAllowedPotions();
         randomNextLink = design.getRandomNextLink();
         sendNextLink = design.getSendNextLink();
         teleportFormat = design.getTeleportFormat();
@@ -217,6 +219,16 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
             gb.getDetail().isBuildable() &&
             ((! portalOpen) || (! gb.getDetail().isPortal())))
             gb.getDetail().getBuildBlock().build(loc);
+        updateScreens();
+    }
+    
+    @Override
+    public void rebuild() {
+        for (GateBlock gb : blocks) {
+            if (! gb.getDetail().isBuildable()) continue;
+            if (portalOpen && gb.getDetail().isPortal()) continue;
+            gb.getDetail().getBuildBlock().build(gb.getLocation());
+        }
         updateScreens();
     }
     
@@ -334,16 +346,6 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
         return designName;
     }
     
-    @Override
-    public void rebuild() {
-        for (GateBlock gb : blocks) {
-            if (! gb.getDetail().isBuildable()) continue;
-            if (portalOpen && gb.getDetail().isPortal()) continue;
-            gb.getDetail().getBuildBlock().build(gb.getLocation());
-        }
-        updateScreens();
-    }
-
     public GateBlock getGateBlock(Location loc) {
         for (GateBlock gb : blocks) {
             Location gbLoc = gb.getLocation();
@@ -470,9 +472,6 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     }
 
     private void openPortal() {
-        if (portalOpen) return;
-        portalOpen = true;
-        portalOpenTime = System.currentTimeMillis();
         savedBlocks = new ArrayList<SavedBlock>();
         for (GateBlock gb : blocks) {
             if (! gb.getDetail().isOpenable()) continue;
@@ -486,8 +485,6 @@ public final class LocalBlockGateImpl extends LocalGateImpl implements LocalBloc
     }
     
     private void closePortal() {
-        if (! portalOpen) return;
-        portalOpen = false;
         if (savedBlocks != null) {
             for (SavedBlock b : savedBlocks)
                 b.restore();

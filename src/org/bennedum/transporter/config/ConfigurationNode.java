@@ -25,6 +25,7 @@ public class ConfigurationNode extends HashMap<String,Object> {
 
     public ConfigurationNode() {}
 
+    @SuppressWarnings("unchecked")
     private static Object convertValue(Object val) {
         if (val == null) return null;
         if (val instanceof ConfigurationNode) {
@@ -91,6 +92,7 @@ public class ConfigurationNode extends HashMap<String,Object> {
         return child.getKeys(keyParts[1]);
     }
     
+    @SuppressWarnings("unchecked")
     public List<Object> getList(String key) {
         String[] keyParts = splitKey(key);
         Object child = get(keyParts[0]);

@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.TransporterException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;

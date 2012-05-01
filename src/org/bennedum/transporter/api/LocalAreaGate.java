@@ -16,6 +16,7 @@
 package org.bennedum.transporter.api;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 
 /**
  *
@@ -43,5 +44,9 @@ public interface LocalAreaGate extends LocalGate {
     public void setSpawnLiquid(boolean b);
     public SpawnSearch getSpawnSearch();
     public void setSpawnSearch(SpawnSearch s);
+    public boolean getBox();
+    public void setBox(boolean b);
+    public Material getBoxMaterial();
+    public void setBoxMaterial(Material m);
     
 }

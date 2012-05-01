@@ -15,12 +15,14 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.ReservationException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.bennedum.transporter.api.Gate;
+import org.bennedum.transporter.api.GateException;
 import org.bennedum.transporter.api.Reservation;
 import org.bennedum.transporter.api.event.EntityArriveEvent;
 import org.bennedum.transporter.api.event.EntityDepartEvent;
@@ -42,6 +44,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.material.MaterialData;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 /**
@@ -129,7 +133,9 @@ public final class ReservationImpl implements Reservation {
     private String gameMode = null;
     private int heldItemSlot = 0;
     private ItemStack[] armor = null;
+    private int level = 0;
     private float xp = 0;
+    private PotionEffect[] potionEffects = null;
     
     private Location fromLocation = null;
     private Vector fromVelocity = null;
@@ -234,11 +240,11 @@ public final class ReservationImpl implements Reservation {
         exhaustion = in.getFloat("exhaustion");
         saturation = in.getFloat("saturation");
         gameMode = in.getString("gameMode");
-
         heldItemSlot = in.getInt("heldItemSlot");
         armor = decodeItemStackArray(in.getMessageList("armor"));
-
+        level = in.getInt("level");
         xp = in.getFloat("xp");
+        potionEffects = decodePotionEffects(in.getMessageList("potionEffects"));
         
         fromWorldName = in.getString("fromWorld");
 
@@ -324,7 +330,9 @@ public final class ReservationImpl implements Reservation {
         inventory = Arrays.copyOf(inv.getContents(), inv.getSize());
         heldItemSlot = inv.getHeldItemSlot();
         armor = inv.getArmorContents();
+        level = player.getLevel();
         xp = player.getExp();
+        potionEffects = player.getActivePotionEffects().toArray(new PotionEffect[] {});
         fromLocation = player.getLocation();
         fromVelocity = player.getVelocity();
         fromWorldName = player.getWorld().getName();
@@ -384,12 +392,6 @@ public final class ReservationImpl implements Reservation {
             toWorld = toGateLocal.getWorld();
         } else
             toServer = (Server)((RemoteGateImpl)toGate).getRemoteServer();
-
-        if ((! fromGate.getSendInventory()) ||
-            ((toGateLocal != null) && (! toGateLocal.getReceiveInventory()))) {
-            inventory = null;
-            armor = null;
-        }
     }
 
     private void extractToGate(GateImpl toGate) {
@@ -401,10 +403,6 @@ public final class ReservationImpl implements Reservation {
             toDirection = toGateLocal.getDirection();
             if (fromDirection == null)
                 fromDirection = toDirection;
-            if (! toGateLocal.getReceiveInventory()) {
-                inventory = null;
-                armor = null;
-            }
         } else
             toServer = (Server)((RemoteGateImpl)toGate).getRemoteServer();
     }
@@ -436,7 +434,9 @@ public final class ReservationImpl implements Reservation {
         out.put("gameMode", gameMode);
         out.put("heldItemSlot", heldItemSlot);
         out.put("armor", encodeItemStackArray(armor));
+        out.put("level", level);
         out.put("xp", xp);
+        out.put("potionEffects", encodePotionEffects(potionEffects));
         out.put("fromGate", fromGateName);
         if (fromDirection != null)
             out.put("fromGateDirection", fromDirection.toString());
@@ -453,21 +453,25 @@ public final class ReservationImpl implements Reservation {
     private List<Message> encodeItemStackArray(ItemStack[] isa) {
         if (isa == null) return null;
         List<Message> inv = new ArrayList<Message>();
-        for (int slot = 0; slot < isa.length; slot++)
+        for (int slot = 0; slot < isa.length; slot++) {
                 inv.add(encodeItemStack(isa[slot]));
+        }
         return inv;
     }
 
     private ItemStack[] decodeItemStackArray(List<Message> inv) {
         if (inv == null) return null;
         ItemStack[] decoded = new ItemStack[inv.size()];
-        for (int slot = 0; slot < inv.size(); slot++)
+        for (int slot = 0; slot < inv.size(); slot++) {
             decoded[slot] = decodeItemStack(inv.get(slot));
+        }
         return decoded;
     }
 
     private Message encodeItemStack(ItemStack stack) {
-        if (stack == null) return null;
+        if (stack == null) {
+            return null;
+        }
         Message s = new Message();
         s.put("type", stack.getTypeId());
         s.put("amount", stack.getAmount());
@@ -483,7 +487,9 @@ public final class ReservationImpl implements Reservation {
     }
 
     private ItemStack decodeItemStack(Message s) {
-        if (s == null) return null;
+        if (s == null) {
+            return null;
+        }
         ItemStack stack = new ItemStack(
             s.getInt("type"),
             s.getInt("amount"),
@@ -500,6 +506,38 @@ public final class ReservationImpl implements Reservation {
         return stack;
     }
 
+    private List<Message> encodePotionEffects(PotionEffect[] effects) {
+        if (effects == null) return null;
+        List<Message> eff = new ArrayList<Message>();
+        for (PotionEffect pe : effects) {
+            if (pe == null) continue;
+            Message pm = new Message();
+            pm.put("type", pe.getType().toString());
+            pm.put("duration", pe.getDuration());
+            pm.put("amplifier", pe.getAmplifier());
+            eff.add(pm);
+        }
+        return eff;
+    }
+
+    private PotionEffect[] decodePotionEffects(List<Message> eff) {
+        if (eff == null) return null;
+        PotionEffect[] effects = new PotionEffect[eff.size()];
+        for (int i = 0; i < eff.size(); i++) {
+            Message pm = eff.get(i);
+            if (pm == null)
+                effects[i] = null;
+            else {
+                PotionEffectType type = PotionEffectType.getByName(gameMode);
+                if (type == null)
+                    effects[i] = null;
+                else
+                    effects[i] = type.createEffect(pm.getInt("duration"), pm.getInt("amplifier"));
+            }
+        }
+        return effects;
+    }
+    
     // called to handle departure on the sending side
     public void depart() throws ReservationException {
         put(this);
@@ -686,7 +724,7 @@ public final class ReservationImpl implements Reservation {
         }
     }
 
-    // called on the sending side to indicate an expeceted arrival arrived on the receiving side
+    // called on the sending side to indicate an expected arrival arrived on the receiving side
     public void arrived() {
         remove(this);
         Utils.debug("reservation to send %s to %s was completed", getTraveler(), getDestination());
@@ -810,9 +848,15 @@ public final class ReservationImpl implements Reservation {
 
         // check inventory
         // this is only checked on the arrival side
-        if ((! toGateLocal.isAcceptableInventory(inventory)) ||
-            (! toGateLocal.isAcceptableInventory(armor)))
+        if (toGateLocal.getReceiveInventory() &&
+                ((! toGateLocal.isAcceptableInventory(inventory)) ||
+                 (! toGateLocal.isAcceptableInventory(armor))))
             throw new ReservationException("remote gate won't allow some inventory items");
+
+        // check potions
+        // this is only checked on the arrival side
+        if (toGateLocal.getReceivePotions() && (! toGateLocal.isAcceptablePotions(potionEffects)))
+            throw new ReservationException("remote gate won't allow some potion effects");
 
         // check gate permission
         if ((fromGate != null) && Config.getUseGatePermissions()) {
@@ -960,7 +1004,7 @@ public final class ReservationImpl implements Reservation {
                 throw new ReservationException("player '%s' not found", playerName);
         }
         
-        if (toGateLocal != null) {
+        if ((toGateLocal != null) && toGateLocal.getReceiveInventory()) {
             // filter inventory
             boolean invFiltered = toGateLocal.filterInventory(inventory);
             boolean armorFiltered = toGateLocal.filterInventory(armor);
@@ -969,6 +1013,16 @@ public final class ReservationImpl implements Reservation {
                     Utils.debug("some inventory items where filtered by the arrival gate");
                 else
                     (new Context(player)).send("some inventory items where filtered by the arrival gate");
+            }
+        }
+        if ((toGateLocal != null) && toGateLocal.getReceivePotions()) {
+            // filter potions
+            boolean potionsFiltered = toGateLocal.filterPotions(potionEffects);
+            if (potionsFiltered) {
+                if (player == null)
+                    Utils.debug("some potion effects where filtered by the arrival gate");
+                else
+                    (new Context(player)).send("some potion effects where filtered by the arrival gate");
             }
         }
         
@@ -1012,34 +1066,50 @@ public final class ReservationImpl implements Reservation {
             player.setSaturation(saturation);
             if (toGateLocal != null) {
                 if (toGateLocal.getGameMode() != null)
-//                    player.setGameMode(Utils.valueOf(GameMode.class, toGateLocal.getGameMode()));
                     player.setGameMode(toGateLocal.getGameMode());
                 else if (toGateLocal.getReceiveGameMode())
                     player.setGameMode(Utils.valueOf(GameMode.class, gameMode));
-            }
-            if ((toGateLocal != null) && toGateLocal.getReceiveXP()) {
-                if (xp < 0) xp = 0;
-                player.setExp(xp);
+                if (toGateLocal.getReceiveXP()) {
+                    if (level < 0) level = 0;
+                    if (xp < 0) xp = 0;
+                    Utils.debug("set level and experience to %s/%s for %s", level, xp, player.getName());
+                    player.setLevel(level);
+                    player.setExp(xp);
+                }
             }
         }
         switch (entityType) {
             case PLAYER:
                 player.setFireTicks(fireTicks);
                 player.setVelocity(toVelocity);
-                if (inventory != null) {
+                if ((inventory != null) && ((toGateLocal == null) || toGateLocal.getReceiveInventory())) {
                     PlayerInventory inv = player.getInventory();
                     for (int slot = 0; slot < inventory.length; slot++) {
-                        if (inventory[slot] == null) continue;
-                        inv.setItem(slot, inventory[slot]);
+                        if (inventory[slot] == null) {
+                            inv.setItem(slot, new ItemStack(Material.AIR.getId()));
+                        } else {
+                            inv.setItem(slot, inventory[slot]);
+                        }
                     }
                     // PENDING: This doesn't work as expected. it replaces whatever's
                     // in slot 0 with whatever's in the held slot. There doesn't appear to
                     // be a way to change just the slot of the held item
                     //inv.setItemInHand(inv.getItem(heldItemSlot));
                 }
-                if (armor != null) {
+                if ((armor != null) && ((toGateLocal == null) || toGateLocal.getReceiveInventory())) {
                     PlayerInventory inv = player.getInventory();
                     inv.setArmorContents(armor);
+                }
+                if ((potionEffects != null) && ((toGateLocal == null) || toGateLocal.getReceivePotions())) {
+                    for (PotionEffectType pet : PotionEffectType.values()) {
+                        if (pet == null) continue;
+                        if (player.hasPotionEffect(pet))
+                            player.removePotionEffect(pet);
+                    }
+                    for (PotionEffect effect : potionEffects) {
+                        if (effect == null) continue;
+                        player.addPotionEffect(effect);
+                    }
                 }
                 break;
             case MINECART:
@@ -1055,7 +1125,7 @@ public final class ReservationImpl implements Reservation {
             case STORAGE_MINECART:
                 entity.setFireTicks(fireTicks);
                 entity.setVelocity(toVelocity);
-                if (inventory != null) {
+                if ((inventory != null) && ((toGateLocal == null) || toGateLocal.getReceiveInventory())) {
                     StorageMinecart mc = (StorageMinecart)entity;
                     Inventory inv = mc.getInventory();
                     for (int slot = 0; slot <  inventory.length; slot++)

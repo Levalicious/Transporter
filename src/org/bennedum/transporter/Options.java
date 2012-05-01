@@ -47,7 +47,7 @@ public final class Options {
         if (opt != null)
             options.add(opt);
         else {
-            if (option.equals("*")) option = ".*";
+            option = option.replaceAll("(^|[^\\.])\\*", ".*");
             for (String o : names)
                 try {
                     if (o.matches(option))
@@ -91,7 +91,7 @@ public final class Options {
                 option.substring(0, 1).toUpperCase() +
                 option.substring(1);
         try {
-            Class cls;
+            Class<?> cls;
             if (target instanceof Class)
                 cls = (Class)target;
             else
@@ -109,6 +109,7 @@ public final class Options {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void setOption(Context ctx, String option, String value) throws OptionsException, PermissionsException {
         option = resolveOption(option);
         if (option == null)
@@ -118,7 +119,7 @@ public final class Options {
                 option.substring(0, 1).toUpperCase() +
                 option.substring(1);
         try {
-            Class cls;
+            Class<?> cls;
             if (target instanceof Class)
                 cls = (Class)target;
             else

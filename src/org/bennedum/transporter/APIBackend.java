@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.TransporterException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;

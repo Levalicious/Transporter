@@ -15,9 +15,9 @@
  */
 package org.bennedum.transporter;
 
-import org.bennedum.transporter.api.SpawnDirection;
 import java.util.HashMap;
 import java.util.Map;
+import org.bennedum.transporter.api.SpawnDirection;
 import org.bennedum.transporter.config.ConfigurationNode;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;

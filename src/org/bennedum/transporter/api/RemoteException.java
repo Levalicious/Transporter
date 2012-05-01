@@ -15,8 +15,6 @@
  */
 package org.bennedum.transporter.api;
 
-import org.bennedum.transporter.TransporterException;
-
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>

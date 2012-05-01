@@ -29,14 +29,14 @@ import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
 import org.bennedum.transporter.LocalAreaGateImpl;
-import org.bennedum.transporter.LocalBlockGateImpl;
 import org.bennedum.transporter.LocalGateImpl;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.RemoteGateImpl;
 import org.bennedum.transporter.Server;
-import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.api.TransporterException;
 import org.bennedum.transporter.Utils;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 
@@ -70,12 +70,26 @@ public class GateCommand extends TrpCommandProcessor {
         cmds.add(getPrefix(ctx) + GROUP + "link next [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "pin add <pin> [<gate>]");
         cmds.add(getPrefix(ctx) + GROUP + "pin remove <pin>|* [<gate>]");
-        cmds.add(getPrefix(ctx) + GROUP + "ban add <item> [<gate>]");
-        cmds.add(getPrefix(ctx) + GROUP + "ban remove <item>|* [<gate>]");
-        cmds.add(getPrefix(ctx) + GROUP + "allow add <item> [<gate>]");
-        cmds.add(getPrefix(ctx) + GROUP + "allow remove <item>|* [<gate>]");
-        cmds.add(getPrefix(ctx) + GROUP + "replace add <old> <new> [<gate>]");
-        cmds.add(getPrefix(ctx) + GROUP + "replace remove <olditem>|* [<gate>]");
+        
+        cmds.add(getPrefix(ctx) + GROUP + "ban item list [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "ban item add <item> [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "ban item remove <item>|* [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "allow item list [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "allow item add <item> [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "allow item remove <item>|* [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "replace item list [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "replace item add <old> <new> [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "replace item remove <old>|* [<gate>]");
+        
+        cmds.add(getPrefix(ctx) + GROUP + "ban potion list [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "ban potion add <potion> [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "ban potion remove <potion>|* [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "allow potion list [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "allow potion add <potion> [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "allow potion remove <potion>|* [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "replace potion list [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "replace potion add <old> <new> [<gate>]");
+        cmds.add(getPrefix(ctx) + GROUP + "replace potion remove <old>|* [<gate>]");
         
         cmds.add(getPrefix(ctx) + GROUP + "resize <num>[,<direction>] [<gate>]");
         if (ctx.isPlayer()) {
@@ -189,10 +203,8 @@ public class GateCommand extends TrpCommandProcessor {
 
         if ("rebuild".startsWith(subCmd)) {
             LocalGateImpl gate = getGate(ctx, args);
-            if (gate.getType() != GateType.BLOCK)
-                throw new CommandException("this command can only be used on BLOCK gates");
             Permissions.require(ctx.getPlayer(), "trp.gate.rebuild." + gate.getFullName());
-            ((LocalBlockGateImpl)gate).rebuild();
+            gate.rebuild();
             ctx.sendLog("rebuilt gate '%s'", gate.getName(ctx));
             return;
         }
@@ -316,144 +328,270 @@ public class GateCommand extends TrpCommandProcessor {
 
         if ("ban".startsWith(subCmd)) {
             if (args.isEmpty())
+                throw new CommandException("what type of ban?");
+            String type = args.remove(0).toLowerCase();
+            if (args.isEmpty())
                 throw new CommandException("do what with a ban?");
             subCmd = args.remove(0).toLowerCase();
             
             LocalGateImpl gate;
-            
-            if ("list".startsWith(subCmd)) {
+
+            if ("item".startsWith(type)) {
+                if ("list".startsWith(subCmd)) {
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.ban.item.list." + gate.getFullName());
+                    List<String> items = new ArrayList<String>(gate.getBannedItems());
+                    Collections.sort(items);
+                    ctx.send("%s items", items.size());
+                    for (String item : items)
+                        ctx.send("  %s", item);
+                    return;
+                }
+                if (args.isEmpty())
+                    throw new CommandException("item required");
+                String item = args.remove(0);
                 gate = getGate(ctx, args);
-                Permissions.require(ctx.getPlayer(), "trp.gate.ban.list." + gate.getFullName());
-                List<String> items = new ArrayList<String>(gate.getBannedItems());
-                Collections.sort(items);
-                ctx.send("%s items", items.size());
-                for (String item : items)
-                    ctx.send("  %s", item);
-                return;
+                if ("add".startsWith(subCmd)) {
+                    Permissions.require(ctx.getPlayer(), "trp.gate.ban.item.add." + gate.getFullName());
+                    if (gate.addBannedItem(item))
+                        ctx.send("added banned item to '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("item is already banned");
+                    return;
+                }
+                if ("remove".startsWith(subCmd)) {
+                    Permissions.require(ctx.getPlayer(), "trp.gate.ban.item.remove." + gate.getFullName());
+                    if (item.equals("*")) {
+                        gate.removeAllBannedItems();
+                        ctx.send("removed all banned items from '%s'", gate.getName(ctx));
+                    } else if (gate.removeBannedItem(item))
+                        ctx.send("removed banned item from '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("banned item not found");
+                    return;
+                }
+                throw new CommandException("do what with an item ban?");
             }
             
-            if (args.isEmpty())
-                throw new CommandException("item required");
-            String item = args.remove(0);
-            gate = getGate(ctx, args);
-
-            if ("add".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.ban.add." + gate.getFullName());
-                if (gate.addBannedItem(item))
-                    ctx.send("added banned item to '%s'", gate.getName(ctx));
-                else
-                    throw new CommandException("item is already banned");
-                return;
+            if ("potion".startsWith(type)) {
+                if ("list".startsWith(subCmd)) {
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.ban.potion.list." + gate.getFullName());
+                    List<String> potions = new ArrayList<String>(gate.getBannedPotions());
+                    Collections.sort(potions);
+                    ctx.send("%s potion effects", potions.size());
+                    for (String potion : potions)
+                        ctx.send("  %s", potion);
+                    return;
+                }
+                if (args.isEmpty())
+                    throw new CommandException("potion effect required");
+                String potion = args.remove(0);
+                gate = getGate(ctx, args);
+                if ("add".startsWith(subCmd)) {
+                    Permissions.require(ctx.getPlayer(), "trp.gate.ban.potion.add." + gate.getFullName());
+                    if (gate.addBannedPotion(potion))
+                        ctx.send("added banned potion effect to '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("potion effect is already banned");
+                    return;
+                }
+                if ("remove".startsWith(subCmd)) {
+                    Permissions.require(ctx.getPlayer(), "trp.gate.ban.potion.remove." + gate.getFullName());
+                    if (potion.equals("*")) {
+                        gate.removeAllBannedPotions();
+                        ctx.send("removed all banned potion effects from '%s'", gate.getName(ctx));
+                    } else if (gate.removeBannedPotion(potion))
+                        ctx.send("removed banned potion effect from '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("banned potion effect not found");
+                    return;
+                }
+                throw new CommandException("do what with a potion effect ban?");
             }
-
-            if ("remove".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.ban.remove." + gate.getFullName());
-                if (item.equals("*")) {
-                    gate.removeAllBannedItems();
-                    ctx.send("removed all banned items from '%s'", gate.getName(ctx));
-                } else if (gate.removeBannedItem(item))
-                    ctx.send("removed banned item from '%s'", gate.getName(ctx));
-                else
-                    throw new CommandException("banned item not found");
-                return;
-            }
+            
             throw new CommandException("do what with a ban?");
         }
 
         if ("allow".startsWith(subCmd)) {
+            if (args.isEmpty())
+                throw new CommandException("what type of allow?");
+            String type = args.remove(0).toLowerCase();
             if (args.isEmpty())
                 throw new CommandException("do what with an allow?");
             subCmd = args.remove(0).toLowerCase();
 
             LocalGateImpl gate;
             
-            if ("list".startsWith(subCmd)) {
+            if ("item".startsWith(type)) {
+                if ("list".startsWith(subCmd)) {
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.allow.item.list." + gate.getFullName());
+                    List<String> items = new ArrayList<String>(gate.getAllowedItems());
+                    Collections.sort(items);
+                    ctx.send("%s items", items.size());
+                    for (String item : items)
+                        ctx.send("  %s", item);
+                    return;
+                }
+                if (args.isEmpty())
+                    throw new CommandException("item required");
+                String item = args.remove(0);
                 gate = getGate(ctx, args);
-                Permissions.require(ctx.getPlayer(), "trp.gate.allow.list." + gate.getFullName());
-                List<String> items = new ArrayList<String>(gate.getAllowedItems());
-                Collections.sort(items);
-                ctx.send("%s items", items.size());
-                for (String item : items)
-                    ctx.send("  %s", item);
-                return;
+                if ("add".startsWith(subCmd)) {
+                    Permissions.require(ctx.getPlayer(), "trp.gate.allow.item.add." + gate.getFullName());
+                    if (gate.addAllowedItem(item))
+                        ctx.send("added allowed item to '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("item is already allowed");
+                    return;
+                }
+                if ("remove".startsWith(subCmd)) {
+                    Permissions.require(ctx.getPlayer(), "trp.gate.allow.item.remove." + gate.getFullName());
+                    if (item.equals("*")) {
+                        gate.removeAllAllowedItems();
+                        ctx.send("removed all allowed items from '%s'", gate.getName(ctx));
+                    } else if (gate.removeAllowedItem(item))
+                        ctx.send("removed allowed item from '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("allowed item not found");
+                    return;
+                }
+                throw new CommandException("do what with an item allow?");
+            }
+            if ("potion".startsWith(type)) {
+                if ("list".startsWith(subCmd)) {
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.allow.potion.list." + gate.getFullName());
+                    List<String> potions = new ArrayList<String>(gate.getAllowedPotions());
+                    Collections.sort(potions);
+                    ctx.send("%s potion effects", potions.size());
+                    for (String potion : potions)
+                        ctx.send("  %s", potion);
+                    return;
+                }
+                if (args.isEmpty())
+                    throw new CommandException("potion effect required");
+                String potion = args.remove(0);
+                gate = getGate(ctx, args);
+                if ("add".startsWith(subCmd)) {
+                    Permissions.require(ctx.getPlayer(), "trp.gate.allow.potion.add." + gate.getFullName());
+                    if (gate.addAllowedPotion(potion))
+                        ctx.send("added allowed potion effect to '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("potion effect is already allowed");
+                    return;
+                }
+                if ("remove".startsWith(subCmd)) {
+                    Permissions.require(ctx.getPlayer(), "trp.gate.allow.potion.remove." + gate.getFullName());
+                    if (potion.equals("*")) {
+                        gate.removeAllAllowedPotions();
+                        ctx.send("removed all allowed potions from '%s'", gate.getName(ctx));
+                    } else if (gate.removeAllowedPotion(potion))
+                        ctx.send("removed allowed potion effect from '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("allowed potion effect not found");
+                    return;
+                }
+                throw new CommandException("do what with a potion effect allow?");
             }
             
-            if (args.isEmpty())
-                throw new CommandException("item required");
-            String item = args.remove(0);
-            gate = getGate(ctx, args);
-
-            if ("add".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.allow.add." + gate.getFullName());
-                if (gate.addAllowedItem(item))
-                    ctx.send("added allowed item to '%s'", gate.getName(ctx));
-                else
-                    throw new CommandException("item is already allowed");
-                return;
-            }
-
-            if ("remove".startsWith(subCmd)) {
-                Permissions.require(ctx.getPlayer(), "trp.gate.allow.remove." + gate.getFullName());
-                if (item.equals("*")) {
-                    gate.removeAllAllowedItems();
-                    ctx.send("removed all allowed items from '%s'", gate.getName(ctx));
-                } else if (gate.removeAllowedItem(item))
-                    ctx.send("removed allowed item from '%s'", gate.getName(ctx));
-                else
-                    throw new CommandException("allowed item not found");
-                return;
-            }
             throw new CommandException("do what with an allow?");
         }
 
         if ("replace".startsWith(subCmd)) {
+            if (args.isEmpty())
+                throw new CommandException("what type of replace?");
+            String type = args.remove(0).toLowerCase();
             if (args.isEmpty())
                 throw new CommandException("do what with a replace?");
             subCmd = args.remove(0).toLowerCase();
             
             LocalGateImpl gate;
             
-            if ("list".startsWith(subCmd)) {
-                gate = getGate(ctx, args);
-                Permissions.require(ctx.getPlayer(), "trp.gate.replace.list." + gate.getFullName());
-                Map<String,String> items = new HashMap<String,String>(gate.getReplaceItems());
-                List<String> keys = new ArrayList<String>(items.keySet());
-                Collections.sort(keys);
-                ctx.send("%s items", items.size());
-                for (String key : keys)
-                    ctx.send("  %s => %s", key, items.get(key));
-                return;
+            if ("item".startsWith(type)) {
+                if ("list".startsWith(subCmd)) {
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.replace.item.list." + gate.getFullName());
+                    Map<String,String> items = new HashMap<String,String>(gate.getReplaceItems());
+                    List<String> keys = new ArrayList<String>(items.keySet());
+                    Collections.sort(keys);
+                    ctx.send("%s items", items.size());
+                    for (String key : keys)
+                        ctx.send("  %s => %s", key, items.get(key));
+                    return;
+                }
+                if (args.isEmpty())
+                    throw new CommandException("item required");
+                String oldItem = args.remove(0);
+                if ("add".startsWith(subCmd)) {
+                    if (args.isEmpty())
+                        throw new CommandException("new item required");
+                    String newItem = args.remove(0);
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.replace.item.add." + gate.getFullName());
+                    if (gate.addReplaceItem(oldItem, newItem))
+                        ctx.send("added replace item to '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("item is already replaced");
+                    return;
+                }
+                if ("remove".startsWith(subCmd)) {
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.replace.item.remove." + gate.getFullName());
+                    if (oldItem.equals("*")) {
+                        gate.removeAllReplaceItems();
+                        ctx.send("removed all replace items from '%s'", gate.getName(ctx));
+                    } else if ( gate.removeReplaceItem(oldItem))
+                        ctx.send("removed replace item from '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("replace item not found");
+                    return;
+                }
+                throw new CommandException("do what with an item replace?");
+            }
+            if ("potion".startsWith(type)) {
+                if ("list".startsWith(subCmd)) {
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.replace.potion.list." + gate.getFullName());
+                    Map<String,String> potions = new HashMap<String,String>(gate.getReplacePotions());
+                    List<String> keys = new ArrayList<String>(potions.keySet());
+                    Collections.sort(keys);
+                    ctx.send("%s potion effects", potions.size());
+                    for (String key : keys)
+                        ctx.send("  %s => %s", key, potions.get(key));
+                    return;
+                }
+                if (args.isEmpty())
+                    throw new CommandException("potion effect required");
+                String oldPotion = args.remove(0);
+                if ("add".startsWith(subCmd)) {
+                    if (args.isEmpty())
+                        throw new CommandException("new potion effect required");
+                    String newPotion = args.remove(0);
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.replace.potion.add." + gate.getFullName());
+                    if (gate.addReplacePotion(oldPotion, newPotion))
+                        ctx.send("added replace potion effect to '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("potion effect is already replaced");
+                    return;
+                }
+                if ("remove".startsWith(subCmd)) {
+                    gate = getGate(ctx, args);
+                    Permissions.require(ctx.getPlayer(), "trp.gate.replace.potion.remove." + gate.getFullName());
+                    if (oldPotion.equals("*")) {
+                        gate.removeAllReplacePotions();
+                        ctx.send("removed all replace potion effects from '%s'", gate.getName(ctx));
+                    } else if ( gate.removeReplacePotion(oldPotion))
+                        ctx.send("removed replace potion effect from '%s'", gate.getName(ctx));
+                    else
+                        throw new CommandException("replace potion effect not found");
+                    return;
+                }
+                throw new CommandException("do what with a potion replace?");
             }
             
-            if (args.isEmpty())
-                throw new CommandException("item required");
-            String oldItem = args.remove(0);
-
-            if ("add".startsWith(subCmd)) {
-                if (args.isEmpty())
-                    throw new CommandException("new item required");
-                String newItem = args.remove(0);
-                gate = getGate(ctx, args);
-                Permissions.require(ctx.getPlayer(), "trp.gate.replace.add." + gate.getFullName());
-                if (gate.addReplaceItem(oldItem, newItem))
-                    ctx.send("added replace item to '%s'", gate.getName(ctx));
-                else
-                    throw new CommandException("item is already replaced");
-                return;
-            }
-
-            if ("remove".startsWith(subCmd)) {
-                gate = getGate(ctx, args);
-                Permissions.require(ctx.getPlayer(), "trp.gate.replace.remove." + gate.getFullName());
-                if (oldItem.equals("*")) {
-                    gate.removeAllReplaceItems();
-                    ctx.send("removed all replace items from '%s'", gate.getName(ctx));
-                } else if ( gate.removeReplaceItem(oldItem))
-                    ctx.send("removed replace item from '%s'", gate.getName(ctx));
-                else
-                    throw new CommandException("replace item not found");
-                return;
-            }
             throw new CommandException("do what with a replace?");
         }
 
@@ -502,11 +640,12 @@ public class GateCommand extends TrpCommandProcessor {
             if ((num < 1) || (num > 2))
                 throw new CommandException("number must be 1 or 2");
             Location loc;
+            
             if (pick) {
-                List<Block> blocks = ctx.getPlayer().getLineOfSight(null, 1000);
-                if (blocks.isEmpty())
+                Block block = ctx.getPlayer().getTargetBlock(null, 1000);
+                if ((block == null) || (block.getType() == Material.AIR))
                     throw new CommandException("no block found");
-                loc = blocks.get(0).getLocation();
+                loc = block.getLocation();
             } else
                 loc = ctx.getPlayer().getLocation().getBlock().getLocation();
             LocalGateImpl gate = getGate(ctx, args);

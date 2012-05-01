@@ -15,6 +15,7 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.ReservationException;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.EventHandler;

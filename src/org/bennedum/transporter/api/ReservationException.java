@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bennedum.transporter;
+package org.bennedum.transporter.api;
+
+import org.bennedum.transporter.api.TransporterException;
 
 /**
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class TransporterException extends java.lang.Exception {
+public class ReservationException extends TransporterException {
     
-    public TransporterException(String msg, Object ... args) {
+    public ReservationException(String msg, Object ... args) {
         super(String.format(msg, args));
     }
     

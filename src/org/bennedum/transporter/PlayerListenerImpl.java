@@ -15,6 +15,9 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.ReservationException;
+import org.bennedum.transporter.api.TransporterException;
+import org.bennedum.transporter.api.GateException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;

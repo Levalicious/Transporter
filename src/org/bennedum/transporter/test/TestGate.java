@@ -18,7 +18,7 @@ package org.bennedum.transporter.test;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import org.bennedum.transporter.GateException;
+import org.bennedum.transporter.api.GateException;
 import org.bennedum.transporter.GateMap.Point;
 import org.bennedum.transporter.GateMap.Volume;
 import org.bennedum.transporter.api.GateType;
@@ -54,6 +54,9 @@ public final class TestGate extends LocalGateImpl {
     @Override
     public Location getSpawnLocation(Location fromLoc, BlockFace fromDirection) { return null; }
 
+    @Override
+    public void rebuild() {}
+    
     @Override
     public void onSend(Entity entity) {}
 

@@ -29,9 +29,9 @@ import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.Players;
 import org.bennedum.transporter.RemotePlayerImpl;
 import org.bennedum.transporter.ReservationImpl;
-import org.bennedum.transporter.ReservationException;
 import org.bennedum.transporter.Server;
-import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.api.ReservationException;
+import org.bennedum.transporter.api.TransporterException;
 import org.bennedum.transporter.api.event.LocalPlayerPMEvent;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
@@ -141,7 +141,30 @@ public final class GlobalCommands extends TrpCommandProcessor {
         }
 
         if ("send".startsWith(subCmd)) {
-            // TODO: add send command
+            if (args.isEmpty())
+                throw new CommandException("player name required");
+            Player player = Global.plugin.getServer().getPlayer(args.remove(0));
+            if (player == null)
+                throw new CommandException("unknown player");
+            GateImpl gate;
+            if (! args.isEmpty()) {
+                String name = args.remove(0);
+                gate = Gates.find(ctx, name);
+                if (gate == null)
+                    throw new CommandException("unknown gate '%s'", name);
+            } else
+                gate = Gates.getSelectedGate(ctx.getPlayer());
+            if (gate == null)
+                throw new CommandException("gate name required");
+            
+            Permissions.require(ctx.getPlayer(), "trp.send." + gate.getFullName());
+            try {
+                ReservationImpl res = new ReservationImpl(player, gate);
+                ctx.send("sending player '%s' to '%s'", player.getName(), gate.getLocalName());
+                res.depart();
+            } catch (ReservationException re) {
+                throw new CommandException(re.getMessage());
+            }
             return;
         }
         
@@ -156,6 +179,7 @@ public final class GlobalCommands extends TrpCommandProcessor {
                 if (message.length() > 0) message += " ";
                 message += arg;
             }
+            Permissions.require(ctx.getPlayer(), "trp.pm");
             Player localPlayer = Players.findLocal(playerName);
             if (localPlayer != null) {
                 LocalPlayerPMEvent event = new LocalPlayerPMEvent(ctx.getPlayer(), localPlayer, message);
@@ -206,7 +230,7 @@ public final class GlobalCommands extends TrpCommandProcessor {
                 throw new CommandException("option name required");
             String option = args.remove(0);
             Config.getOptions(ctx, option);
-            return;
+//            return;
         }
         
     }

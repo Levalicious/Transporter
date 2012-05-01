@@ -22,7 +22,7 @@ import java.util.List;
 import org.bennedum.transporter.LocalWorldImpl;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Permissions;
-import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.api.TransporterException;
 import org.bennedum.transporter.Utils;
 import org.bennedum.transporter.Worlds;
 import org.bukkit.Location;

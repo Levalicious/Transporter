@@ -15,7 +15,7 @@
  */
 package org.bennedum.transporter.command;
 
-import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.api.TransporterException;
 
 /**
  *

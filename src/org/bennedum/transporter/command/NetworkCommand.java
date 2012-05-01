@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Permissions;
-import org.bennedum.transporter.TransporterException;
+import org.bennedum.transporter.api.TransporterException;
 import org.bennedum.transporter.net.Network;
 import org.bukkit.command.Command;
 

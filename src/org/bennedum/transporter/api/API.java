@@ -18,10 +18,14 @@ package org.bennedum.transporter.api;
 import java.util.HashSet;
 import java.util.Set;
 import org.bennedum.transporter.Config;
+import org.bennedum.transporter.GateImpl;
 import org.bennedum.transporter.Gates;
+import org.bennedum.transporter.LocalGateImpl;
+import org.bennedum.transporter.ReservationImpl;
 import org.bennedum.transporter.Server;
 import org.bennedum.transporter.Servers;
 import org.bennedum.transporter.Worlds;
+import org.bukkit.entity.Player;
 
 /**
  *
@@ -65,6 +69,29 @@ public final class API {
         Gates.save(null);
     }
     
-    // TODO: add teleport methods
+    public void teleportPlayer(Player player, LocalGate fromGate) throws ReservationException {
+        ReservationImpl res = new ReservationImpl(player, (LocalGateImpl)fromGate);
+        res.depart();
+    }
+    
+    public void teleportPlayer(Player player, Gate toGate) throws ReservationException {
+        ReservationImpl res = new ReservationImpl(player, (GateImpl)toGate);
+        res.depart();
+    }
+    
+    public void teleportPlayer(Player player, RemoteServer server) throws ReservationException {
+        ReservationImpl res = new ReservationImpl(player, (Server)server);
+        res.depart();
+    }
+
+    public void teleportPlayer(Player player, RemoteWorld world) throws ReservationException {
+        ReservationImpl res = new ReservationImpl(player, (Server)world.getRemoteServer(), world.getName());
+        res.depart();
+    }
+
+    public void teleportPlayer(Player player, RemoteLocation location) throws ReservationException {
+        ReservationImpl res = new ReservationImpl(player, (Server)location.getRemoteServer(), location.getRemoteWorld().getName(), location.getX(), location.getY(), location.getZ());
+        res.depart();
+    }
     
 }

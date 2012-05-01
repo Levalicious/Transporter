@@ -15,6 +15,8 @@
  */
 package org.bennedum.transporter.api;
 
+import java.util.Map;
+import java.util.Set;
 import org.bukkit.GameMode;
 
 /**
@@ -24,6 +26,38 @@ import org.bukkit.GameMode;
 public interface LocalGate extends Gate {
     
     public void save(boolean force);
+    public void rebuild();
+
+    public boolean addPin(String pin) throws GateException;
+    public boolean removePin(String pin);
+    public void removeAllPins();
+    public boolean hasPin(String pin);
+
+    public Set<String> getBannedItems();
+    public boolean addBannedItem(String item) throws GateException;
+    public boolean removeBannedItem(String item) throws GateException;
+    public void removeAllBannedItems();
+    public Set<String> getAllowedItems();
+    public boolean addAllowedItem(String item) throws GateException;
+    public boolean removeAllowedItem(String item) throws GateException;
+    public void removeAllAllowedItems();
+    public Map<String,String> getReplaceItems();
+    public boolean addReplaceItem(String fromItem, String toItem) throws GateException;
+    public boolean removeReplaceItem(String item) throws GateException;
+    public void removeAllReplaceItems();
+
+    public Set<String> getBannedPotions();
+    public boolean addBannedPotion(String potion) throws GateException;
+    public boolean removeBannedPotion(String potion) throws GateException;
+    public void removeAllBannedPotions();
+    public Set<String> getAllowedPotions();
+    public boolean addAllowedPotion(String potion) throws GateException;
+    public boolean removeAllowedPotion(String potion) throws GateException;
+    public void removeAllAllowedPotions();
+    public Map<String,String> getReplacePotions();
+    public boolean addReplacePotion(String fromPotion, String toPotion) throws GateException;
+    public boolean removeReplacePotion(String potion) throws GateException;
+    public void removeAllReplacePotions();
     
     /* Options */
     
@@ -67,8 +101,6 @@ public interface LocalGate extends Gate {
     public void setReceiveChatDistance(int i);
     public boolean getRequireAllowedItems();
     public void setRequireAllowedItems(boolean b);
-    public boolean getSendInventory();
-    public void setSendInventory(boolean b);
     public boolean getReceiveInventory();
     public void setReceiveInventory(boolean b);
     public boolean getDeleteInventory();
@@ -81,6 +113,10 @@ public interface LocalGate extends Gate {
     public void setGameMode(GameMode m);
     public boolean getReceiveXP();
     public void setReceiveXP(boolean b);
+    public boolean getReceivePotions();
+    public void setReceivePotions(boolean b);
+    public boolean getRequireAllowedPotions();
+    public void setRequireAllowedPotions(boolean b);
     public boolean getRandomNextLink();
     public void setRandomNextLink(boolean b);
     public boolean getSendNextLink();

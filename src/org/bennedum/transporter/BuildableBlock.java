@@ -29,6 +29,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.material.Colorable;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
+import org.bukkit.material.Openable;
 
 /**
  *
@@ -95,6 +96,11 @@ public final class BuildableBlock {
                             throw new BlockException(iae.getMessage() + " color '%s'", str);
                         }
                     }
+                }
+                if (md instanceof Openable) {
+                    str = node.getString("open");
+                    if (str != null)
+                        ((Openable)md).setOpen(node.getBoolean("open"));
                 }
                 data = md.getData();
             }

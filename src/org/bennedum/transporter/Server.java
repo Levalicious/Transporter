@@ -15,6 +15,9 @@
  */
 package org.bennedum.transporter;
 
+import org.bennedum.transporter.api.ReservationException;
+import org.bennedum.transporter.api.TransporterException;
+import org.bennedum.transporter.api.GateException;
 import org.bennedum.transporter.api.GateType;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -487,7 +490,7 @@ public final class Server implements OptionsListener, RemoteServer {
 
     @Override
     public void onOptionSet(Context ctx, String name, String value) {
-        ctx.sendLog("option '%s' set to '%s' for server '%s'", name, value, getName());
+        ctx.send("option '%s' set to '%s' for server '%s'", name, value, getName());
     }
 
     @Override

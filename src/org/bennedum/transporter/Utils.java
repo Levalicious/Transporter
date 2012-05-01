@@ -326,6 +326,8 @@ public class Utils {
         s = s.toLowerCase();
         T theOne = null;
         for (T value : cls.getEnumConstants()) {
+            if (value.toString().toLowerCase().equals(s))
+                return value;
             if (value.toString().toLowerCase().startsWith(s)) {
                 if (theOne == null)
                     theOne = value;
