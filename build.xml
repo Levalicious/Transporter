@@ -71,4 +71,42 @@
     nbproject/build-impl.xml file. 
 
     -->
+    
+    <target name="-post-jar">
+        <mkdir dir="apidocs"/>
+        <condition else="" property="javadoc.endorsed.classpath.cmd.line.arg" value="-J${endorsed.classpath.cmd.line.arg}">
+            <and>
+                <isset property="endorsed.classpath.cmd.line.arg"/>
+                <not>
+                    <equals arg1="${endorsed.classpath.cmd.line.arg}" arg2=""/>
+                </not>
+            </and>
+        </condition>
+        <javadoc additionalparam="${javadoc.additionalparam}" author="${javadoc.author}" charset="UTF-8" destdir="apidocs" docencoding="UTF-8" encoding="${javadoc.encoding.used}" failonerror="true" noindex="${javadoc.noindex}" nonavbar="${javadoc.nonavbar}" notree="${javadoc.notree}" private="${javadoc.private}" source="${javac.source}" splitindex="${javadoc.splitindex}" use="${javadoc.use}" useexternalfile="true" version="${javadoc.version}" windowtitle="${javadoc.windowtitle}">
+            <classpath>
+                <path path="${javac.classpath}"/>
+            </classpath>
+            <fileset dir="${src.dir}" excludes="*.java,${excludes}" includes="${includes}">
+                <filename name="org/bennedum/transporter/api/**/*.java"/>
+            </fileset>
+            <fileset dir="${build.generated.sources.dir}" erroronmissingdir="false">
+                <include name="**/*.java"/>
+                <exclude name="*.java"/>
+            </fileset>
+            <arg line="${javadoc.endorsed.classpath.cmd.line.arg}"/>
+        </javadoc>
+        <copy todir="apidocs">
+            <fileset dir="${src.dir}" excludes="${excludes}" includes="${includes}">
+                <filename name="**/doc-files/**"/>
+            </fileset>
+            <fileset dir="${build.generated.sources.dir}" erroronmissingdir="false">
+                <include name="**/doc-files/**"/>
+            </fileset>
+        </copy>
+    </target>
+    
+    <target name="-post-clean">
+        <delete dir="apidocs" followsymlinks="false" includeemptydirs="true"/>
+    </target>
+    
 </project>

@@ -33,6 +33,10 @@ import org.bukkit.entity.Player;
  */
 public final class API {
     
+    /**
+     * Returns a set of all online players from connected remote servers.
+     * @return
+     */
     public Set<RemotePlayer> getRemotePlayers() {
         Set<RemotePlayer> players = new HashSet<RemotePlayer>();
         for (Server server : Servers.getAll())
