@@ -13,23 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.bennedum.transporter.api;
+package org.bennedum.transporter;
+
+import org.bennedum.transporter.api.Callback;
 
 /**
- * Represents an exception about a gate.
- * 
+ *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
-public class GateException extends TransporterException {
+public abstract class APICallback<T> extends Callback<T> {
     
-    /**
-     * Creates a new exception.
-     * 
-     * @param msg   a format string
-     * @param args  zero or more optional arguments used by the format string
-     */
-    public GateException(String msg, Object ... args) {
-        super(String.format(msg, args));
+    private long requestId = 0;
+    
+    public APICallback() {
+        super();
+    }
+    
+    public long getRequestId() {
+        return requestId;
+    }
+    
+    public void setRequestId(long rid) {
+        requestId = rid;
     }
     
 }

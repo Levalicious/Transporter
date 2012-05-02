@@ -19,32 +19,104 @@ import org.bennedum.transporter.Utils;
 import org.bukkit.block.BlockFace;
 
 /**
- *
+ * Specifies directions a {@link LocalAreaGate} will spawn and arriving player.
+ * <p>
+ * The final direction a player is facing when exiting a gate is determined
+ * by a number of factors, spawn direction being one of them. See the wiki
+ * page on Designs for more information about how the final direction is
+ * determined.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public enum SpawnDirection {
 
+    /**
+     * Spawn facing north.
+     */
     NORTH,
+    /**
+     * Spawn facing south.
+     */
     SOUTH,
+    /**
+     * Spawn facing east.
+     */
     EAST,
+    /**
+     * Spawn facing west.
+     */
     WEST,
+    /**
+     * Spawn facing north-east.
+     */
     NORTH_EAST,
+    /**
+     * Spawn facing east-north-east.
+     */
     EAST_NORTH_EAST,
+    /**
+     * Spawn facing north-north-east.
+     */
     NORTH_NORTH_EAST,
+    /**
+     * Spawn facing north-west.
+     */
     NORTH_WEST,
+    /**
+     * Spawn facing west-north-west.
+     */
     WEST_NORTH_WEST,
+    /**
+     * Spawn facing north-north-west.
+     */
     NORTH_NORTH_WEST,
+    /**
+     * Spawn facing south-east.
+     */
     SOUTH_EAST,
+    /**
+     * Spawn facing east-south-east.
+     */
     EAST_SOUTH_EAST,
+    /**
+     * Spawn facing east-south-east.
+     */
     SOUTH_SOUTH_EAST,
+    /**
+     * Spawn facing south-south-east.
+     */
     SOUTH_WEST,
+    /**
+     * Spawn facing west-south-west.
+     */
     WEST_SOUTH_WEST,
+    /**
+     * Spawn facing south-west.
+     */
     SOUTH_SOUTH_WEST,
+    /**
+     * Spawn facing a random direction.
+     */
     RANDOM,
+    /**
+     * Spawn facing the same direction the player faced when they entered the sending gate.
+     */
     PLAYER,
+    /**
+     * Spawn facing "forward" relative to the gate's direction.
+     */
     FORWARD,
+    /**
+     * Spawn facing "backwards" relative to the gate's direction.
+     */
     REVERSE;
 
+    /**
+     * Returns a new spawn direction based on this spawn direction and a gate's direction.
+     * 
+     * @param direction     the gate's direction
+     * @return              a new spawn direction
+     */
     public SpawnDirection rotate(BlockFace direction) {
         switch (this) {
             case RANDOM:
@@ -57,6 +129,15 @@ public enum SpawnDirection {
         }
     }
 
+    /**
+     * Returns a yaw angle based on this spawn direction, a player's current yaw,
+     * a sending gate's direction, and a destination gate's direction.
+     * 
+     * @param playerYaw         the player's yaw angle
+     * @param fromGateDirection the sending gate's direction
+     * @param toGateDirection   the destination gate's direction
+     * @return                  the new yaw angle
+     */
     public float calculateYaw(float playerYaw, BlockFace fromGateDirection, BlockFace toGateDirection) {
         switch (this) {
             case RANDOM:
@@ -76,6 +157,12 @@ public enum SpawnDirection {
         }
     }
 
+    /**
+     * Returns the equivalent <code>BlockFace</code> for this spawn direction, or
+     * null if there is no equivalent.
+     * 
+     * @return an equivalent <code>BlockFace</code>
+     */
     public BlockFace toFacing() {
         try {
             return Utils.valueOf(BlockFace.class, toString());
@@ -84,6 +171,13 @@ public enum SpawnDirection {
         }
     }
 
+    /**
+     * Returns an equivalent spawn direction for the specified <code>BlockFace</code>,
+     * or null if there is no equivalent.
+     * 
+     * @param facing    the <code>BlockFace</code>
+     * @return          the equivalent spawn direction
+     */
     public static SpawnDirection fromFacing(BlockFace facing) {
         if (facing == null) return null;
         try {

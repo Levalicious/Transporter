@@ -16,13 +16,24 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * Represents a gate on a remote server.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface RemoteGate extends Gate {
     
+    /**
+     * Returns the world in which this gate is located.
+     * 
+     * @return the world in which this gate is located
+     */
     public RemoteWorld getRemoteWorld();
     
+    /**
+     * Returns the server on which is gate is located.
+     * 
+     * @return the server on which is gate is located
+     */
     public RemoteServer getRemoteServer();
     
 }

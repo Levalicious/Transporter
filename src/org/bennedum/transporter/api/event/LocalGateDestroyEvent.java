@@ -20,27 +20,48 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
- *
+ * Fired when a local gate is destroyed.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class LocalGateDestroyEvent extends Event {
     
     private static final HandlerList handlers = new HandlerList();
 
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     public static HandlerList getHandlerList() {
         return handlers;
     }    
     
     private LocalGate gate;
     
+    /**
+     * Creates the event.
+     * 
+     * @param gate  the gate that was destroyed
+     */
     public LocalGateDestroyEvent(LocalGate gate) {
         this.gate = gate;
     }
  
+    /**
+     * Returns the gate that was destroyed.
+     * 
+     * @return the gate that was destroyed
+     */
     public LocalGate getLocalGate() {
         return gate;
     }
  
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     @Override
     public HandlerList getHandlers() {
         return handlers;

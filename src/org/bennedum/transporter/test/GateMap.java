@@ -16,12 +16,11 @@
 package org.bennedum.transporter.test;
 
 import java.util.Random;
-import org.bennedum.transporter.api.GateException;
 import org.bennedum.transporter.GateMap.Bounds;
 import org.bennedum.transporter.GateMap.Point;
 import org.bennedum.transporter.GateMap.Volume;
 import org.bennedum.transporter.LocalGateImpl;
-import org.bennedum.transporter.OldGateMap;
+import org.bennedum.transporter.api.GateException;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 
@@ -35,7 +34,7 @@ public class GateMap {
         
         //testBounds();
         //testVolume();
-        benchmark();
+        //benchmark();
         
     }
     
@@ -94,6 +93,7 @@ public class GateMap {
         
     }
     
+    /*
     private static void benchmark() {
         int numGates = 1000;
         OldGateMap ogm = new OldGateMap();
@@ -147,5 +147,5 @@ public class GateMap {
         System.out.println(numTests + " tests, " + foundCount + " found, " + (endTime - startTime) + "ms");
         
     }
-    
+    */
 }

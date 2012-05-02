@@ -16,19 +16,60 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * This interface specifies methods common to all gates managed by the
+ * Transporter plugin, whether local or remote.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface Gate {
     
-    // simplename
+    /**
+     * Returns the simple name of the gate.
+     * <p>
+     * A gate's simple name is the part of the name before any period ('.')
+     * in the gate's fully qualified name (or local name or full name).
+     * 
+     * @return the gate's simple name
+     */
     public String getName();
     
     // worldname.simplename
+    /**
+     * Returns the local name of the gate.
+     * <p>
+     * A gate's local name is how the gate is unambiguously referred to
+     * on the local server. For local gates, it is the name world where the
+     * gate is located, followed by a period ('.'), followed by the gate's
+     * simple name. For a remote gate, it is the same, except the server's name
+     * and an additional period are prefixed. For example:
+     * <ul>
+     *  <li>world.Gate (for a gate on the local server)</li>
+     *  <li>Server1.world.Gate (for a gate on a remote server)</li>
+     * </ul>
+     * 
+     * @return the gate's local name
+     */
     public String getLocalName();
 
+    /**
+     * Returns the full name of the gate.
+     * <p>
+     * A gate's full name is just like it's local name except that for local
+     * gates a "server name" of "local" is used. For example:
+     * <ul>
+     *  <li>local.world.Gate (for a gate on the local server)</li>
+     *  <li>Server1.world.Gate (for a gate on a remote server)</li>
+     * </ul>
+     * 
+     * @return the gate's full name
+     */
     public String getFullName();
     
+    /**
+     * Returns the type of the gate.
+     * 
+     * @return the type of the gate
+     */
     public GateType getType();
     
 }

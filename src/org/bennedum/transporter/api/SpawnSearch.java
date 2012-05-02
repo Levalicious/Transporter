@@ -16,14 +16,34 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * Specifies directions a {@link LocalAreaGate} will search for a
+ * spawn location when a player arrives.
+ * <p>
+ * When a player teleports to a LocalAreaGate, the gates randomly picks
+ * a location within the volume defined between its two corners. It then
+ * adjusts the y-coordinate (vertical) based on the gate options that
+ * allow or disallow spawning into solid or liquid blocks. This enumeration
+ * specifies how the gate will search for a suitable spawn location.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public enum SpawnSearch {
 
+    /**
+     * Search in an ascending vertical direction.
+     */
     UP,
+    /**
+     * Search in an descending vertical direction.
+     */
     DOWN,
+    /**
+     * Search in an ascending vertical direction, then in a descending direction.
+     */
     UPDOWN,
+    /**
+     * Search in an descending vertical direction, then in an ascending direction.
+     */
     DOWNUP;
 
 }

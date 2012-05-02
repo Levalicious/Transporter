@@ -20,27 +20,48 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
- *
+ * Fired when a local gate is created.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class LocalGateCreateEvent extends Event {
     
     private static final HandlerList handlers = new HandlerList();
 
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     public static HandlerList getHandlerList() {
         return handlers;
     }    
     
     private LocalGate gate;
     
+    /**
+     * Creates the event.
+     * 
+     * @param gate  the gate that was created
+     */
     public LocalGateCreateEvent(LocalGate gate) {
         this.gate = gate;
     }
  
+    /**
+     * Returns the gate that was created.
+     * 
+     * @return the gate that was created
+     */
     public LocalGate getLocalGate() {
         return gate;
     }
  
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     @Override
     public HandlerList getHandlers() {
         return handlers;

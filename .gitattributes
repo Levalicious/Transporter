@@ -122,6 +122,7 @@ nbproject/genfiles.properties -text
 nbproject/project.properties -text
 nbproject/project.xml -text
 src/org/bennedum/transporter/APIBackend.java -text
+src/org/bennedum/transporter/APICallback.java -text
 src/org/bennedum/transporter/Base64.java -text
 src/org/bennedum/transporter/BlockException.java -text
 src/org/bennedum/transporter/BlockListenerImpl.java -text
@@ -151,7 +152,6 @@ src/org/bennedum/transporter/LocalBlockGateImpl.java -text
 src/org/bennedum/transporter/LocalGateImpl.java -text
 src/org/bennedum/transporter/LocalWorldImpl.java -text
 src/org/bennedum/transporter/Markers.java -text
-src/org/bennedum/transporter/OldGateMap.java -text
 src/org/bennedum/transporter/Options.java -text
 src/org/bennedum/transporter/OptionsException.java -text
 src/org/bennedum/transporter/OptionsListener.java -text

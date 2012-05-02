@@ -15,11 +15,11 @@
  */
 package org.bennedum.transporter;
 
-import org.bennedum.transporter.api.TransporterException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import org.bennedum.transporter.api.RemoteException;
+import org.bennedum.transporter.api.TransporterException;
 import org.bennedum.transporter.net.Message;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -169,9 +169,7 @@ public final class APIBackend {
         if (player == null)
             throw new ServerException("player '%s' is unknown", playerName);
         
-        if (method.equals("getWorld"))
-            out.put("result", player.getWorld().getName());
-        else if (method.equals("getLocation")) {
+        if (method.equals("getLocation")) {
             Message locMsg = new Message();
             Location loc = player.getLocation();
             locMsg.put("world", loc.getWorld().getName());

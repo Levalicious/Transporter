@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import org.bennedum.transporter.Chat;
 import org.bennedum.transporter.Config;
 import org.bennedum.transporter.Context;
@@ -68,6 +69,7 @@ public final class GlobalCommands extends TrpCommandProcessor {
         return cmds;
     }
     
+    @SuppressWarnings("unchecked")
     @Override
     public void process(Context ctx, Command cmd, List<String> args) throws TransporterException {
         if (args.isEmpty())

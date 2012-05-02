@@ -20,27 +20,48 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
- *
+ * Fired when an entity arrives from a teleport.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class EntityArriveEvent extends Event {
     
     private static final HandlerList handlers = new HandlerList();
 
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     public static HandlerList getHandlerList() {
         return handlers;
     }    
     
     private Reservation reservation;
     
+    /**
+     * Creates the event.
+     * 
+     * @param reservation   the reservation used for teleportation
+     */
     public EntityArriveEvent(Reservation reservation) {
         this.reservation = reservation;
     }
  
+    /**
+     * Returns the reservation used for teleporation.
+     * 
+     * @return the reservation used for teleporation
+     */
     public Reservation getReservation() {
         return reservation;
     }
  
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     @Override
     public HandlerList getHandlers() {
         return handlers;

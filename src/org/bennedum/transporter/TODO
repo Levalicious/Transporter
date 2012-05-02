@@ -12,29 +12,4 @@ Testing:
 * Test stairs with facing option
 
 Wiki Updates:
-* Removed "sendJoin", "receiveJoin" server options.
-* Added "announcePlayers" server option.
-* Added "serverDeathFormat" global option.
-* Added "consolePMFormat", "localPMFormat", "worldPMFormat", "serverPMFormat" global options.
-* Added "gameMode" gate option.
-* Added "requireAllowedPotions" and "receivePotions" gate options.
-* Added potion effect transfer, transmutation, and banning to gates.
-* Changed item banning command syntax and permission nodes on gates.
-* Removed "sendInventory" gate option.
-* Removed server ping timeout parameter.
-* Totally new API, including custom events.
-* Added "debug" and "timeout" API options.
-* Removed "design" format substitution name for map markers.
-* Reduced gate hit detection times by over 99%!
-* Changed gate autosaving for option changes and other actions.
-* Fixed player facing direction bugs during server-to-server teleports.
-* Added "trp pm" command for private messaging, even across servers.
-* Added "trp send" command to teleport players to gates.
-* Added color name format substitutions based on ChatColor enumeration.
-* Fixed open portal blocks being replaced by solid blocks by griefers.
-* Messed around with gate sign punching logic, so test carefully!
-* Inter-server gates should behave better after a server reload/restart.
-* Added "open" option to design blocks to support "openable" blocks like doors and gates.
-* Changed default gate options so intra-server gates handle inventory more naturally.
-* Fixed inventory duplication exploit for intra-server gates.
 

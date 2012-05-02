@@ -18,27 +18,69 @@ package org.bennedum.transporter.api;
 import org.bukkit.entity.Player;
 
 /**
- *
+ * Represents an online player on a remote server.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface RemotePlayer {
     
+    /**
+     * Returns the player's name.
+     * 
+     * @return the player's name
+     */
     public String getName();
     
+    /**
+     * Returns the player's display name.
+     * 
+     * @return the player's display name
+     */
     public String getDisplayName();
     
+    /**
+     * Returns the world where the player is located.
+     * 
+     * @return the world where the player is located
+     */
     public RemoteWorld getRemoteWorld();
     
+    /**
+     * Returns the server where the player is located.
+     * 
+     * @return the server where the player is located
+     */
     public RemoteServer getRemoteServer();
 
-    public void getRemoteWorld(Callback<RemoteWorld> cb);
-    
+    /**
+     * Returns the location where the player is located.
+     * 
+     * @param cb    the callback to use when the call completes
+     */
     public void getRemoteLocation(Callback<RemoteLocation> cb);
     
+    /**
+     * Sends a message to the player.
+     * 
+     * @param cb    the callback to use when the call completes
+     * @param msg   the message to send
+     */
     public void sendMessage(Callback<Void> cb, String msg);
     
+    /**
+     * Sends a raw message to the player.
+     * 
+     * @param cb    the callback to use when the call completes
+     * @param msg   the message to send
+     */
     public void sendRawMessage(Callback<Void> cb, String msg);
     
+    /**
+     * Sends a private message to the player.
+     * 
+     * @param fromPlayer    the player sending the message
+     * @param message       the message to send
+     */
     public void sendPM(Player fromPlayer, String message);
     
 }

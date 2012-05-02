@@ -16,7 +16,8 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * Represents a BLOCK gate on a remote server.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface RemoteBlockGate extends RemoteGate {

@@ -52,7 +52,7 @@ public final class RemoteWorldImpl implements RemoteWorld {
     public void getDifficulty(final Callback<Difficulty> cb) {
         Message args = new Message();
         args.put("world", name);
-        server.sendAPIRequest(new Callback<Message>() {
+        server.sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(Utils.valueOf(Difficulty.class, m.getString("result")));
@@ -68,7 +68,7 @@ public final class RemoteWorldImpl implements RemoteWorld {
     public void getEnvironment(final Callback<Environment> cb) {
         Message args = new Message();
         args.put("world", name);
-        server.sendAPIRequest(new Callback<Message>() {
+        server.sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(Utils.valueOf(Environment.class, m.getString("result")));
@@ -84,7 +84,7 @@ public final class RemoteWorldImpl implements RemoteWorld {
     public void getFullTime(final Callback<Long> cb) {
         Message args = new Message();
         args.put("world", name);
-        server.sendAPIRequest(new Callback<Message>() {
+        server.sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getLong("result"));
@@ -100,7 +100,7 @@ public final class RemoteWorldImpl implements RemoteWorld {
     public void getSeed(final Callback<Long> cb) {
         Message args = new Message();
         args.put("world", name);
-        server.sendAPIRequest(new Callback<Message>() {
+        server.sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getLong("result"));
@@ -116,7 +116,7 @@ public final class RemoteWorldImpl implements RemoteWorld {
     public void getTime(final Callback<Long> cb) {
         Message args = new Message();
         args.put("world", name);
-        server.sendAPIRequest(new Callback<Message>() {
+        server.sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getLong("result"));

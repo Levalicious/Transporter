@@ -20,27 +20,48 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
- *
+ * Fired when a remote gate is destroyed.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class RemoteGateDestroyEvent extends Event {
     
     private static final HandlerList handlers = new HandlerList();
 
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     public static HandlerList getHandlerList() {
         return handlers;
     }    
     
     private RemoteGate gate;
     
+    /**
+     * Creates the event.
+     * 
+     * @param gate  the gate that was destroyed
+     */
     public RemoteGateDestroyEvent(RemoteGate gate) {
         this.gate = gate;
     }
  
+    /**
+     * Returns the gate that was destroyed.
+     * 
+     * @return the gate that was destroyed
+     */
     public RemoteGate getRemoteGate() {
         return gate;
     }
  
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     @Override
     public HandlerList getHandlers() {
         return handlers;

@@ -18,15 +18,33 @@ package org.bennedum.transporter.api;
 import org.bukkit.entity.Entity;
 
 /**
- *
+ * Represents a reservation to teleport an entity.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface Reservation {
     
+    /**
+     * Returns the local entity this reservation is for.
+     * 
+     * @return the local entity this reservation is for
+     */
     public Entity getEntity();
     
+    /**
+     * Returns the departure gate the entity left from, or null
+     * if the entity didn't depart from a gate.
+     * 
+     * @return the departure gate
+     */
     public Gate getDepartureGate();
     
+    /**
+     * Returns the arrival gate the entity arrived at, or
+     * null if the entity didn't arrive at a gate.
+     * 
+     * @return the arrival gate
+     */
     public Gate getArrivalGate();
     
 }

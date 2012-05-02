@@ -20,27 +20,48 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
- *
+ * Fired when a remote player changes world.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class RemotePlayerChangeWorldEvent extends Event {
     
     private static final HandlerList handlers = new HandlerList();
 
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     public static HandlerList getHandlerList() {
         return handlers;
     }    
     
     private RemotePlayer player;
     
+    /**
+     * Creates the event.
+     * 
+     * @param player the player
+     */
     public RemotePlayerChangeWorldEvent(RemotePlayer player) {
         this.player = player;
     }
  
+    /**
+     * Returns the {@link RemotePlayer} object of the player that changed worlds.
+     * 
+     * @return the player
+     */
     public RemotePlayer getRemotePlayer() {
         return player;
     }
  
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     @Override
     public HandlerList getHandlers() {
         return handlers;

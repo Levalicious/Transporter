@@ -18,12 +18,11 @@ package org.bennedum.transporter.test;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import org.bennedum.transporter.api.GateException;
 import org.bennedum.transporter.GateMap.Point;
 import org.bennedum.transporter.GateMap.Volume;
-import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.LocalGateImpl;
-import org.bennedum.transporter.OldGateMap;
+import org.bennedum.transporter.api.GateException;
+import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.config.Configuration;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -96,12 +95,14 @@ public final class TestGate extends LocalGateImpl {
     @Override
     protected void calculateCenter() {}
 
+    /*
     public OldGateMap getOldGateMap() {
         OldGateMap map = new OldGateMap();
         for (Location l : getBlocks())
             map.put(this, l);
         return map;
     }
+    */
     
     public Volume getVolume() {
         Volume vol = new Volume(this);

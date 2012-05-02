@@ -15,10 +15,6 @@
  */
 package org.bennedum.transporter;
 
-import org.bennedum.transporter.api.ReservationException;
-import org.bennedum.transporter.api.TransporterException;
-import org.bennedum.transporter.api.GateException;
-import org.bennedum.transporter.api.GateType;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,11 +30,15 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.bennedum.transporter.api.Callback;
+import org.bennedum.transporter.api.GateException;
+import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.api.RemoteException;
 import org.bennedum.transporter.api.RemoteGate;
 import org.bennedum.transporter.api.RemotePlayer;
 import org.bennedum.transporter.api.RemoteServer;
 import org.bennedum.transporter.api.RemoteWorld;
+import org.bennedum.transporter.api.ReservationException;
+import org.bennedum.transporter.api.TransporterException;
 import org.bennedum.transporter.api.event.RemoteGateCreateEvent;
 import org.bennedum.transporter.api.event.RemoteGateDestroyEvent;
 import org.bennedum.transporter.api.event.RemotePlayerChangeWorldEvent;
@@ -50,8 +50,8 @@ import org.bennedum.transporter.api.event.RemoteServerConnectEvent;
 import org.bennedum.transporter.api.event.RemoteServerDisconnectEvent;
 import org.bennedum.transporter.config.ConfigurationNode;
 import org.bennedum.transporter.net.Connection;
-import org.bennedum.transporter.net.Network;
 import org.bennedum.transporter.net.Message;
+import org.bennedum.transporter.net.Network;
 import org.bukkit.GameMode;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -263,7 +263,7 @@ public final class Server implements OptionsListener, RemoteServer {
         Message args = new Message();
         args.put("message", message);
         args.put("permission", permission);
-        sendAPIRequest(new Callback<Message>() {
+        sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getInt("result"));
@@ -279,7 +279,7 @@ public final class Server implements OptionsListener, RemoteServer {
     public void broadcastMessage(final Callback<Integer> cb, String message) {
         Message args = new Message();
         args.put("message", message);
-        sendAPIRequest(new Callback<Message>() {
+        sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getInt("result"));
@@ -301,7 +301,7 @@ public final class Server implements OptionsListener, RemoteServer {
             args.put("name", sender.getName());
         }
         args.put("commandLine", commandLine);
-        sendAPIRequest(new Callback<Message>() {
+        sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getBoolean("result"));
@@ -316,7 +316,7 @@ public final class Server implements OptionsListener, RemoteServer {
     @Override
     public void getDefaultGameMode(final Callback<GameMode> cb) {
         Message args = new Message();
-        sendAPIRequest(new Callback<Message>() {
+        sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(Utils.valueOf(GameMode.class, m.getString("result")));
@@ -331,7 +331,7 @@ public final class Server implements OptionsListener, RemoteServer {
     @Override
     public void getName(final Callback<String> cb) {
         Message args = new Message();
-        sendAPIRequest(new Callback<Message>() {
+        sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getString("result"));
@@ -346,7 +346,7 @@ public final class Server implements OptionsListener, RemoteServer {
     @Override
     public void getServerId(final Callback<String> cb) {
         Message args = new Message();
-        sendAPIRequest(new Callback<Message>() {
+        sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getString("result"));
@@ -361,7 +361,7 @@ public final class Server implements OptionsListener, RemoteServer {
     @Override
     public void getVersion(final Callback<String> cb) {
         Message args = new Message();
-        sendAPIRequest(new Callback<Message>() {
+        sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(m.getString("result"));
@@ -963,7 +963,7 @@ public final class Server implements OptionsListener, RemoteServer {
         sendMessage(message);
     }
     
-    public void sendAPIRequest(Callback<Message> cb, String target, String method, Message args) {
+    public void sendAPIRequest(APICallback<Message> cb, String target, String method, Message args) {
         if (! isConnectionConnected()) {
             cb.onFailure(new RemoteException("not connected"));
             return;

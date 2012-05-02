@@ -16,14 +16,31 @@
 package org.bennedum.transporter.api;
 
 /**
+ * Represents a local gate of the BLOCK type.
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface LocalBlockGate extends LocalGate {
     
+    /**
+     * Returns the name of the design this gate is based on.
+     * 
+     * @return the name of the design
+     */
     public String getDesignName();
     
+    /**
+     * Returns the value of the "restoreOnClose" option.
+     * 
+     * @return  the option value
+     */
     public boolean getRestoreOnClose();
+    
+    /**
+     * Sets the "restoreOnClose" option.
+     * 
+     * @param b     the option value
+     */
     public void setRestoreOnClose(boolean b);
     
 }

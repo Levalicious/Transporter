@@ -15,14 +15,19 @@
  */
 package org.bennedum.transporter.api;
 
-import org.bennedum.transporter.api.TransporterException;
-
 /**
+ * Represents an exception about a teleportation reservation.
  *
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public class ReservationException extends TransporterException {
     
+    /**
+     * Creates a new exception.
+     * 
+     * @param msg   a format string
+     * @param args  zero or more optional arguments used by the format string
+     */
     public ReservationException(String msg, Object ... args) {
         super(String.format(msg, args));
     }

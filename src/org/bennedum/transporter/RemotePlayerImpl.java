@@ -83,26 +83,10 @@ public final class RemotePlayerImpl implements RemotePlayer {
     }
 
     @Override
-    public void getRemoteWorld(final Callback<RemoteWorld> cb) {
-        Message args = new Message();
-        args.put("player", name);
-        server.sendAPIRequest(new Callback<Message>() {
-            @Override
-            public void onSuccess(Message m) {
-                cb.onSuccess(server.getRemoteWorld(m.getString("result")));
-            }
-            @Override
-            public void onFailure(RemoteException re) {
-                cb.onFailure(re);
-            }
-        }, "player", "getWorld", args);
-    }
-    
-    @Override
     public void getRemoteLocation(final Callback<RemoteLocation> cb) {
         Message args = new Message();
         args.put("player", name);
-        server.sendAPIRequest(new Callback<Message>() {
+        server.sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 Message locMsg = m.getMessage("result");
@@ -121,7 +105,7 @@ public final class RemotePlayerImpl implements RemotePlayer {
         Message args = new Message();
         args.put("player", name);
         args.put("message", msg);
-        server.sendAPIRequest(new Callback<Message>() {
+        server.sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(null);
@@ -138,7 +122,7 @@ public final class RemotePlayerImpl implements RemotePlayer {
         Message args = new Message();
         args.put("player", name);
         args.put("message", msg);
-        server.sendAPIRequest(new Callback<Message>() {
+        server.sendAPIRequest(new APICallback<Message>() {
             @Override
             public void onSuccess(Message m) {
                 if (cb != null) cb.onSuccess(null);

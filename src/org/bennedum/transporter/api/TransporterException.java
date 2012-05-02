@@ -16,11 +16,23 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * Base class for all Transporter exceptions.
+ * <p>
+ * All Transporter exceptions support a format string that can use
+ * optionally supplied arguments during exception creation. The
+ * format string follows the same rules as the <code>java.lang.String.format</code>
+ * method.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public class TransporterException extends java.lang.Exception {
     
+    /**
+     * Creates a new exception.
+     * 
+     * @param msg   a format string
+     * @param args  zero or more optional arguments used by the format string
+     */
     public TransporterException(String msg, Object ... args) {
         super(String.format(msg, args));
     }

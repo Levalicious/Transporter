@@ -18,7 +18,8 @@ package org.bennedum.transporter.api;
 import org.bennedum.transporter.Servers;
 
 /**
- *
+ * Represents a location in a remote world on a remote server.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class RemoteLocation {
@@ -29,6 +30,15 @@ public final class RemoteLocation {
     private double y;
     private double z;
     
+    /**
+     * Creates a remote location for the specified server, world, and coordinates.
+     * 
+     * @param serverName    the name of the remove server
+     * @param worldName     the name of the remote world
+     * @param x             the x-ordinate
+     * @param y             the y-ordinate
+     * @param z             the z-ordinate
+     */
     public RemoteLocation(String serverName, String worldName, double x, double y, double z) {
         setRemoteServer(serverName);
         setRemoteWorld(worldName);
@@ -37,6 +47,15 @@ public final class RemoteLocation {
         setZ(z);
     }
     
+    /**
+     * Creates a remote location for the specified server, world, and coordinates.
+     * 
+     * @param server    the remove server
+     * @param world     the remote world
+     * @param x         the x-ordinate
+     * @param y         the y-ordinate
+     * @param z         the z-ordinate
+     */
     public RemoteLocation(RemoteServer server, RemoteWorld world, double x, double y, double z) {
         setRemoteServer(server);
         setRemoteWorld(world);
@@ -45,6 +64,11 @@ public final class RemoteLocation {
         setZ(z);
     }
     
+    /**
+     * Returns the remote server where this location is located.
+     * 
+     * @return the remote server
+     */
     public RemoteServer getRemoteServer() {
         return server;
     }
@@ -58,6 +82,11 @@ public final class RemoteLocation {
         server = Servers.getRemoteServer(serverName);
     }
     
+    /**
+     * Returns the remote world where this location is located.
+     * 
+     * @return the remote world
+     */
     public RemoteWorld getRemoteWorld() {
         return world;
     }
@@ -71,6 +100,11 @@ public final class RemoteLocation {
         world = server.getRemoteWorld(worldName);
     }
     
+    /**
+     * Returns the x-ordinate of this location.
+     * 
+     * @return the x-ordinate
+     */
     public double getX() {
         return x;
     }
@@ -79,6 +113,11 @@ public final class RemoteLocation {
         this.x = x;
     }
     
+    /**
+     * Returns the y-ordinate of this location.
+     * 
+     * @return the y-ordinate
+     */
     public double getY() {
         return y;
     }
@@ -87,6 +126,11 @@ public final class RemoteLocation {
         this.y = y;
     }
     
+    /**
+     * Returns the z-ordinate of this location.
+     * 
+     * @return the z-ordinate
+     */
     public double getZ() {
         return z;
     }

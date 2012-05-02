@@ -19,23 +19,59 @@ import org.bukkit.Difficulty;
 import org.bukkit.World.Environment;
 
 /**
- *
+ * Represents a world on a remote server.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface RemoteWorld {
     
+    /**
+     * Returns the server where the world is located.
+     * 
+     * @return the server where the world is located
+     */
     public RemoteServer getRemoteServer();
     
+    /**
+     * Returns the name of the world.
+     * 
+     * @return the name of the world.
+     */
     public String getName();
     
+    /**
+     * Returns the difficulty setting of the world.
+     * 
+     * @param cb    the callback to use when the call completes
+     */
     public void getDifficulty(Callback<Difficulty> cb);
     
+    /**
+     * Returns the environment setting of the world.
+     * 
+     * @param cb    the callback to use when the call completes
+     */
     public void getEnvironment(Callback<Environment> cb);
     
+    /**
+     * Returns the full time of the world.
+     * 
+     * @param cb    the callback to use when the call completes
+     */
     public void getFullTime(Callback<Long> cb);
     
+    /**
+     * Returns the seed setting of the world.
+     * 
+     * @param cb    the callback to use when the call completes
+     */
     public void getSeed(Callback<Long> cb);
     
+    /**
+     * Returns the time setting of the world.
+     * 
+     * @param cb    the callback to use when the call completes
+     */
     public void getTime(Callback<Long> cb);
     
 }

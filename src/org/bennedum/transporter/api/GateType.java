@@ -16,12 +16,19 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * Represents the type of gate.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public enum GateType {
     
+    /**
+     * The type corresponding to block gates.
+     */
     BLOCK,
+    /**
+     * The type corresponding to area gates.
+     */
     AREA;
     
 }

@@ -16,11 +16,18 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * Represents an exception about a remote API call.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class RemoteException extends TransporterException {
     
+    /**
+     * Creates a new exception.
+     * 
+     * @param msg   a format string
+     * @param args  zero or more optional arguments used by the format string
+     */
     public RemoteException(String msg, Object ... args) {
         super(msg, args);
     }

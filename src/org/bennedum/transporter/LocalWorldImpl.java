@@ -197,6 +197,7 @@ public final class LocalWorldImpl implements OptionsListener, LocalWorld {
         return node;
     }
 
+    @Override
     public World getWorld() {
         return Global.plugin.getServer().getWorld(name);
     }
@@ -240,6 +241,7 @@ public final class LocalWorldImpl implements OptionsListener, LocalWorld {
         return world;
     }
 
+    @Override
     public boolean isLoaded() {
         return getWorld() != null;
     }

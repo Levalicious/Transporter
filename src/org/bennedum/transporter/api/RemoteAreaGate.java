@@ -16,7 +16,8 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * Represents an AREA gate on a remote server.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public interface RemoteAreaGate extends RemoteGate {

@@ -16,17 +16,39 @@
 package org.bennedum.transporter.api;
 
 /**
- *
+ * Specifies directions a {@link LocalAreaGate} can be resized.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public enum ExpandDirection {
     
+    /**
+     * Resize in all directions.
+     */
     ALL,
+    /**
+     * Resize in the "up" direction.
+     */
     UP,
+    /**
+     * Resize in the "down" direction.
+     */
     DOWN,
+    /**
+     * Resize in the "north" direction.
+     */
     NORTH,
+    /**
+     * Resize in the "east" direction.
+     */
     EAST,
+    /**
+     * Resize in the "west" direction.
+     */
     WEST,
+    /**
+     * Resize in the "south" direction.
+     */
     SOUTH;
     
 }

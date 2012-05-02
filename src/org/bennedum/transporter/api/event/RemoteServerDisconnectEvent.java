@@ -20,27 +20,48 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
- *
+ * Fires when a server disconnects.
+ * 
  * @author frdfsnlght <frdfsnlght@gmail.com>
  */
 public final class RemoteServerDisconnectEvent extends Event {
     
     private static final HandlerList handlers = new HandlerList();
 
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     public static HandlerList getHandlerList() {
         return handlers;
     }    
     
     private RemoteServer server;
     
+    /**
+     * Creates the event.
+     * 
+     * @param server    the server that disconnected
+     */
     public RemoteServerDisconnectEvent(RemoteServer server) {
         this.server = server;
     }
  
+    /**
+     * Returns the server that disconnected.
+     * 
+     * @return the server that disconnected
+     */
     public RemoteServer getRemoteServer() {
         return server;
     }
  
+    /**
+     * Returns the list of event handlers for this event.
+     * 
+     * @return the list of event handlers for this event
+     */
     @Override
     public HandlerList getHandlers() {
         return handlers;
