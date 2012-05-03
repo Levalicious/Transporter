@@ -23,9 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.bennedum.transporter.Context;
 import org.bennedum.transporter.Economy;
-import org.bennedum.transporter.api.ExpandDirection;
 import org.bennedum.transporter.GateImpl;
-import org.bennedum.transporter.api.GateType;
 import org.bennedum.transporter.Gates;
 import org.bennedum.transporter.Global;
 import org.bennedum.transporter.LocalAreaGateImpl;
@@ -33,8 +31,10 @@ import org.bennedum.transporter.LocalGateImpl;
 import org.bennedum.transporter.Permissions;
 import org.bennedum.transporter.RemoteGateImpl;
 import org.bennedum.transporter.Server;
-import org.bennedum.transporter.api.TransporterException;
 import org.bennedum.transporter.Utils;
+import org.bennedum.transporter.api.ExpandDirection;
+import org.bennedum.transporter.api.GateType;
+import org.bennedum.transporter.api.TransporterException;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -616,6 +616,7 @@ public class GateCommand extends TrpCommandProcessor {
             LocalGateImpl gate = getGate(ctx, args);
             if (gate.getType() != GateType.AREA)
                 throw new CommandException("this command is only valid for %s gates", GateType.AREA);
+            Permissions.require(ctx.getPlayer(), "trp.gate.resize." + gate.getFullName());
             ((LocalAreaGateImpl)gate).resize(num, dir);
             return;
         }
@@ -651,6 +652,7 @@ public class GateCommand extends TrpCommandProcessor {
             LocalGateImpl gate = getGate(ctx, args);
             if (gate.getType() != GateType.AREA)
                 throw new CommandException("this command is only valid for %s gates", GateType.AREA);
+            Permissions.require(ctx.getPlayer(), "trp.gate.corner." + gate.getFullName());
             if (num == 1)
                 ((LocalAreaGateImpl)gate).setP1Location(loc);
             else if (num == 2)

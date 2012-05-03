@@ -261,6 +261,7 @@ public final class LocalAreaGateImpl extends LocalGateImpl implements LocalAreaG
     @Override
     protected void onDestroy(boolean unbuild) {
         Gates.removePortalVolume(this);
+        if (unbuild && box) hideBox();
     }
     
     @Override
